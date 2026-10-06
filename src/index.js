@@ -48,3 +48,32 @@ MongoDB
 Actual database
 "Where is the data stored?"
 */
+
+import express from "express";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import userRouter from "./routes/user.routes.js";
+
+dotenv.config();
+
+const app = express();
+
+// Middleware
+app.use(express.json());
+
+// Routes
+app.use("/api", userRouter);
+
+// MongoDB
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB connected");
+
+    app.listen(5000, () => {
+      console.log("Server running on port 5000");
+    });
+  })
+  .catch((error) => {
+    console.log("MongoDB connection failed:", error);
+  });
