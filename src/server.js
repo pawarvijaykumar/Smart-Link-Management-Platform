@@ -9,11 +9,11 @@ const PORT = process.env.PORT || 5000;
 
 const connectDB = require("./config/db");
 
-console.log("connectDB =", connectDB);
-console.log("type =", typeof connectDB);
+console.log("DB FILE:", require.resolve("./config/db"));
+console.log("connectDB:", connectDB);
+console.log("type:", typeof connectDB);
 
 connectDB();
-
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
