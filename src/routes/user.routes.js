@@ -1,10 +1,21 @@
 import { Router } from "express";
 
-import { createUser } from "../controllers/user.controller.js";
+import { createUser, getUsers,updateUser } from "../controllers/user.controller.js";
 
 const router = Router();
 
-router.post("/register", createUser);// If a POST request comes to /register, execute createUser.
+router.post("/register", createUser);
+router.get("/", getUsers);//GET
+router.patch("/:id", updateUser);//PATCH
+/* why usee the "/"-->
+/api/v1/users
+       +
+router.get("/")
+       =
+GET /api/v1/users*/
+
+// If a POST request comes to /register, execute createUser.
+
 /*
 POST /users
     ↓
