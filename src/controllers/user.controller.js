@@ -2,13 +2,12 @@ import { User } from "../models/user.model.js";
 //POST use to api test
 const createUser = async (req, res) => {
   try {
-    const { name, email, password, age } = req.body;
+    const { username, email } = req.body;
 
     const user = await User.create({
-      name,
+      username,
       email,
-      password,
-      age
+      
     });//uses our Mongoose User model to insert the data into MongoDB.
 
     res.status(201).json({
@@ -46,14 +45,14 @@ const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { name, email, age } = req.body;
+    const { username, email } = req.body;
 
     const user = await User.findByIdAndUpdate(
       id,
       {
-        name,
+        username,
         email,
-        age
+        
       },
       {
         new: true
@@ -80,5 +79,33 @@ const updateUser = async (req, res) => {
     });
   }
 };
-export { createUser, getUsers,updateUser };
+//DELETE
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findByIdAndDelete(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+      user
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export { createUser, getUsers,updateUser,deleteUser };
 

@@ -1,12 +1,13 @@
 import { Router } from "express";
 
-import { createUser, getUsers,updateUser } from "../controllers/user.controller.js";
+import { createUser, getUsers,updateUser,deleteUser } from "../controllers/user.controller.js";
 
 const router = Router();
 
 router.post("/register", createUser);
 router.get("/", getUsers);//GET
 router.patch("/:id", updateUser);//PATCH
+router.delete("/:id", deleteUser);//DELETE
 /* why usee the "/"-->
 /api/v1/users
        +
