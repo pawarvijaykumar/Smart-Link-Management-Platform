@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { createUser, getUsers,updateUser,deleteUser ,loginUser} from "../controllers/user.controller.js";
+import { createUser, getUsers,updateUser,deleteUser ,loginUser, getMyProfile} from "../controllers/user.controller.js";
 
 
 import { verifyJWT } from "../middleware/auth.middleware.js";
@@ -12,6 +12,7 @@ router.post("/login", loginUser);//use this api POST http://localhost:5000/api/v
 router.get("/",verifyJWT,    getUsers);//GET
 router.patch("/:id", updateUser);//PATCH
 router.delete("/:id", deleteUser);//DELETE
+router.get("/me", verifyJWT, getMyProfile);
 /* why usee the "/"-->
 /api/v1/users
        +
