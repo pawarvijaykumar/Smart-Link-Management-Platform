@@ -1,10 +1,11 @@
 import { Router } from "express";
 
-import { createUser, getUsers,updateUser,deleteUser } from "../controllers/user.controller.js";
+import { createUser, getUsers,updateUser,deleteUser ,loginUser} from "../controllers/user.controller.js";
 
 const router = Router();
 
 router.post("/register", createUser);
+router.post("/login", loginUser);//use this api POST http://localhost:5000/api/v1/users/login
 router.get("/", getUsers);//GET
 router.patch("/:id", updateUser);//PATCH
 router.delete("/:id", deleteUser);//DELETE

@@ -1,19 +1,38 @@
 import { User } from "../models/user.model.js";
+import bcrypt from "bcrypt";
+
 //POST use to api test
 const createUser = async (req, res) => {
   try {
-    const { username, email } = req.body;
+    const { username, email,password } = req.body;
 
-    const user = await User.create({
-      username,
-      email,
-      
-    });//uses our Mongoose User model to insert the data into MongoDB.
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+const user = await User.create({
+    username,
+    email,
+    password: hashedPassword
+});//uses our Mongoose User model to insert the data into MongoDB.
+
+
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    /*
+    MongoDB:
+username
+email
+password ← stored
+
+API response:
+username
+email
+password ← removed
+    */
 
     res.status(201).json({
       success: true,
       message: "User created successfully",
-      user
+      user: userResponse//means this never response the password in the postman 
     });
 
   } catch (error) {
@@ -106,6 +125,59 @@ const deleteUser = async (req, res) => {
     });
   }
 };
+//loginUser
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-export { createUser, getUsers,updateUser,deleteUser };
+    // 1. Check required fields
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required"
+      });
+    }
+
+    // 2. Find user
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // 3. Compare password
+    const isPasswordCorrect = await bcrypt.compare(
+      password,
+      user.password
+    );
+
+    if (!isPasswordCorrect) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid password"
+      });
+    }
+
+    // 4. Remove password from response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    // 5. Login successful
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      user: userResponse
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+export { createUser, getUsers,updateUser,deleteUser,loginUser };
 
