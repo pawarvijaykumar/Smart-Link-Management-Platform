@@ -1,5 +1,6 @@
 import { User } from "../models/user.model.js";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 //POST use to api test
 const createUser = async (req, res) => {
@@ -161,6 +162,12 @@ const loginUser = async (req, res) => {
       });
     }
 
+    const token = jwt.sign(
+  { userId: user._id },
+  process.env.JWT_SECRET,
+  { expiresIn: "1d" }//means the token expires after 1 day.
+);
+
     // 4. Remove password from response
     const userResponse = user.toObject();
     delete userResponse.password;
@@ -169,6 +176,7 @@ const loginUser = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Login successful",
+      token,
       user: userResponse
     });
 
