@@ -60,6 +60,8 @@ const getUsers = async (req, res) => {
     });
   }
 };
+
+
 //PATCH -> it only chage the value it vijay t king
 const updateUser = async (req, res) => {
   try {
@@ -99,6 +101,8 @@ const updateUser = async (req, res) => {
     });
   }
 };
+
+
 //DELETE
 const deleteUser = async (req, res) => {
   try {
