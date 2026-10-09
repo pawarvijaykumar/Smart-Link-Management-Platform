@@ -67,6 +67,12 @@ const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
 
+    if (req.user.userId !== id) {
+  return res.status(403).json({
+    success: false,
+    message: "You can only update your own account"
+  });
+}
     const { username, email } = req.body;
 
     const user = await User.findByIdAndUpdate(
@@ -77,10 +83,11 @@ const updateUser = async (req, res) => {
         
       },
       {
-        new: true
-      }
+  new: true,
+  runValidators: true
+}
     );
-
+   
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -107,6 +114,12 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
+        if (req.user.userId !== id) {
+  return res.status(403).json({
+    success: false,
+    message: "You can only update your own account"
+  });
+}
 
     const user = await User.findByIdAndDelete(id);
 
