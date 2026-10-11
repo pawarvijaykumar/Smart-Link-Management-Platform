@@ -1,4 +1,3 @@
-
 import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
@@ -7,6 +6,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-
 export { cloudinary };
+
+
+
+
+
 //means of the file this -->Uploads and stores the image online

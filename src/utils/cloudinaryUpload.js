@@ -11,9 +11,11 @@ const uploadOnCloudinary = async (localFilePath) => {
 
     return response;
   } catch (error) {
-    console.error("Cloudinary upload failed:", error.message);
-    return null;
-  }
+  console.error("Cloudinary upload error:", error);
+  console.error("HTTP status:", error.http_code);
+  console.error("Response body:", error.response?.body);
+  return null;
+}
 };
 
 export { uploadOnCloudinary };

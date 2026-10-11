@@ -63,7 +63,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api", userRouter);
-
+app.use("/api/images", imageRouter);
 // MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
