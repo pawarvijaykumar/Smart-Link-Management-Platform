@@ -1,21 +1,22 @@
-//Connects our backend to Cloudinary using credentials
-import { cloudinary } from "../config/cloudinary.js";
 
-const uploadOnCloudinary = async (localFilePath) => {
+import imagekit from "../config/imagekit.js";
+import fs from "fs";
+
+const uploadOnImageKit = async (localFilePath) => {
   try {
     if (!localFilePath) return null;
 
-    const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "auto"
+    const response = await imagekit.upload({
+      file: fs.readFileSync(localFilePath),
+      fileName: localFilePath.split(/[\\/]/).pop(),
+      folder: "/smart-link-management",
     });
 
     return response;
   } catch (error) {
-  console.error("Cloudinary upload error:", error);
-  console.error("HTTP status:", error.http_code);
-  console.error("Response body:", error.response?.body);
-  return null;
-}
+    console.error("ImageKit upload failed:", error.message);
+    return null;
+  }
 };
 
-export { uploadOnCloudinary };
+export { uploadOnImageKit };

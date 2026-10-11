@@ -1,19 +1,24 @@
 
-const dns = require("dns");
+import "dotenv/config";
+import dns from "dns";
+import app from "./app.js";
+import connectDB from "./config/db.js";
 
-dns.setServers(["8.8.8.8", "1.1.1.1"]);//"For DNS lookups, use Google's DNS (8.8.8.8) and Cloudflare's DNS (1.1.1.1)."
-
-const app = require('./app');
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 const PORT = process.env.PORT || 5000;
 
-const connectDB = require("./config/db");
+const startServer = async () => {
+  try {
+    await connectDB();
 
-console.log("DB FILE:", require.resolve("./config/db"));
-console.log("connectDB:", connectDB);
-console.log("type:", typeof connectDB);
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error.message);
+    process.exit(1);
+  }
+};
 
-connectDB();
-app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-});
+startServer();

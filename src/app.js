@@ -1,10 +1,15 @@
 
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const userRoutes = require("./routes/user.routes").default;
-const healthRoutes = require('./routes/health.routes');
-const uploadRoutes = require("./routes/upload.routes").default;
+
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import cors from "cors";
+
+import userRoutes from "./routes/user.routes.js";
+import healthRoutes from "./routes/health.routes.js";
+import uploadRoutes from "./routes/upload.routes.js";
+import linkRouter from "./routes/link.routes.js";
 
 const app = express();
 
@@ -16,12 +21,13 @@ app.use(express.json());
 app.use('/api', healthRoutes);//its show api testing 
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/upload", uploadRoutes);
+app.use("/api/links", linkRouter);
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });
 });
 
-module.exports = app;
+export default app;//allows server.js to import the Express application.
 /*
 
 Postman
