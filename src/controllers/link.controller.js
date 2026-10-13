@@ -120,6 +120,30 @@ const getClickHistory = async (req, res) => {
   }
 };
 
+const getMyLinks = async (req, res) => {
+  try {
+    const links = await Link.find({
+      user: req.user.userId,
+    }).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      totalLinks: links.length,
+      totalClicks: links.reduce(
+        (total, link) => total + link.clicks,
+        0
+      ),
+      data: links,
+    });
+  } catch (error) {
+    console.error("Get my links error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch links",
+    });
+  }
+};
 
 
-export { createLink, redirectLink,getClickHistory };
+export { createLink, redirectLink,getClickHistory,getMyLinks};
