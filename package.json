@@ -2,6 +2,7 @@
   "name": "smart-link-management-platform",
   "version": "1.0.0",
   "description": "Smart Link Management Platform - Backend API",
+  "type": "module",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

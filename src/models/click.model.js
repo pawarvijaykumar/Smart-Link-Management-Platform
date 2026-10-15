@@ -12,6 +12,15 @@ const clickSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    deviceType: {
+      type: String,
+      enum: ["mobile", "desktop", "tablet", "unknown"],
+      default: "unknown",
+    },
+    browser: {
+      type: String,
+      default: "Unknown",
+    },
   },
   { timestamps: true }
 );
