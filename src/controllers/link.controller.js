@@ -1,27 +1,64 @@
-
 import Link from "../models/link.model.js";
 import Click from "../models/click.model.js";
 import crypto from "crypto";
 import { parseUserAgent } from "../utils/userAgentParser.js";
+
+// Helper to validate whether a URL string has a valid HTTP/HTTPS web scheme
+const isValidHttpUrl = (urlString) => {
+  if (!urlString || typeof urlString !== "string") return false;
+  const trimmed = urlString.trim();
+  if (trimmed.length > 2048) return false;
+  try {
+    const parsed = new URL(trimmed);
+    return (
+      (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+      Boolean(parsed.hostname && parsed.hostname.length > 0)
+    );
+  } catch {
+    return false;
+  }
+};
+
+// Safe helper for formatting Date to IST string
+const safeFormatIST = (date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  try {
+    return d.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+  } catch {
+    return "";
+  }
+};
 
 const createLink = async (req, res) => {
   try {
     const { originalUrl } = req.body;
 
     // Check whether the URL was provided
-    if (!originalUrl) {
+    if (!originalUrl || typeof originalUrl !== "string" || !originalUrl.trim()) {
       return res.status(400).json({
         success: false,
         message: "Original URL is required",
       });
     }
 
+    const trimmedUrl = originalUrl.trim();
+
+    // Validate that the URL has a safe http or https protocol
+    if (!isValidHttpUrl(trimmedUrl)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid HTTP or HTTPS URL (e.g. https://example.com)",
+      });
+    }
+
     // Generate a unique short code
-    const shortCode = crypto.randomBytes(4).toString("hex");//Generates random bytes for a short code
+    const shortCode = crypto.randomBytes(4).toString("hex");
 
     // Save the link in MongoDB
     const link = await Link.create({
-      originalUrl,
+      originalUrl: trimmedUrl,
       shortCode,
       user: req.user.userId,
     });
@@ -40,6 +77,7 @@ const createLink = async (req, res) => {
     });
   }
 };
+
 // Redirect visitors to original URL while recording click details
 const redirectLink = async (req, res) => {
   try {
@@ -58,17 +96,28 @@ const redirectLink = async (req, res) => {
       });
     }
 
-    // Safely parse visitor device type and browser from User-Agent
-    const userAgent = req.headers["user-agent"] || "";
-    const { deviceType, browser } = parseUserAgent(userAgent);
+    // Ensure the destination URL uses a safe web protocol
+    if (!isValidHttpUrl(link.originalUrl)) {
+      return res.status(400).json({
+        success: false,
+        message: "Destination URL is invalid or unsafe",
+      });
+    }
 
-    // Save individual click with timestamp, device, and browser
-    await Click.create({
-      link: link._id,
-      clickedAt: new Date(),
-      deviceType,
-      browser,
-    });
+    // Safely record visitor device type and browser asynchronously
+    try {
+      const userAgent = req.headers["user-agent"] || "";
+      const { deviceType, browser } = parseUserAgent(userAgent);
+
+      await Click.create({
+        link: link._id,
+        clickedAt: new Date(),
+        deviceType,
+        browser,
+      });
+    } catch (clickError) {
+      console.error("Failed to record individual click event:", clickError.message);
+    }
 
     return res.redirect(link.originalUrl);
   } catch (error) {
@@ -110,22 +159,25 @@ const calculateAnalytics = (clicks, totalClicks) => {
 
     // 3. Daily Trends (Asia/Kolkata timezone)
     if (click.clickedAt) {
-      const isoDateIST = new Date(click.clickedAt).toLocaleDateString("en-CA", {
-        timeZone: "Asia/Kolkata",
-      });
-      const displayDate = new Date(click.clickedAt).toLocaleDateString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        day: "numeric",
-        month: "short",
-      });
-      if (!dailyMap[isoDateIST]) {
-        dailyMap[isoDateIST] = {
-          isoDate: isoDateIST,
-          date: displayDate,
-          count: 0,
-        };
+      const clickDate = new Date(click.clickedAt);
+      if (!isNaN(clickDate.getTime())) {
+        const isoDateIST = clickDate.toLocaleDateString("en-CA", {
+          timeZone: "Asia/Kolkata",
+        });
+        const displayDate = clickDate.toLocaleDateString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          day: "numeric",
+          month: "short",
+        });
+        if (!dailyMap[isoDateIST]) {
+          dailyMap[isoDateIST] = {
+            isoDate: isoDateIST,
+            date: displayDate,
+            count: 0,
+          };
+        }
+        dailyMap[isoDateIST].count += 1;
       }
-      dailyMap[isoDateIST].count += 1;
     }
   }
 
@@ -198,11 +250,7 @@ const getClickHistory = async (req, res) => {
     const history = clicks.map((click) => ({
       _id: click._id,
       clickedAt: click.clickedAt,
-      clickedAtIST: click.clickedAt
-        ? new Date(click.clickedAt).toLocaleString("en-IN", {
-            timeZone: "Asia/Kolkata",
-          })
-        : "",
+      clickedAtIST: safeFormatIST(click.clickedAt),
       deviceType: click.deviceType || "unknown",
       browser: click.browser || "Unknown",
     }));
@@ -255,11 +303,7 @@ const getLinkAnalytics = async (req, res) => {
     const history = clicks.map((click) => ({
       _id: click._id,
       clickedAt: click.clickedAt,
-      clickedAtIST: click.clickedAt
-        ? new Date(click.clickedAt).toLocaleString("en-IN", {
-            timeZone: "Asia/Kolkata",
-          })
-        : "",
+      clickedAtIST: safeFormatIST(click.clickedAt),
       deviceType: click.deviceType || "unknown",
       browser: click.browser || "Unknown",
     }));

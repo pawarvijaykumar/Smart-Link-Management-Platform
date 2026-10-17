@@ -5,58 +5,84 @@ import jwt from "jsonwebtoken";
 //POST use to api test
 const createUser = async (req, res) => {
   try {
-    const { username, email,password } = req.body;
+    const { username, email, password } = req.body;
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+    if (!username || typeof username !== "string" || !username.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Username is required",
+      });
+    }
 
-const user = await User.create({
-    username,
-    email,
-    password: hashedPassword
-});//uses our Mongoose User model to insert the data into MongoDB.
+    if (!email || typeof email !== "string" || !email.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid email address",
+      });
+    }
+
+    if (!password || typeof password !== "string" || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters long",
+      });
+    }
+
+    const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "A user with this email already exists",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      username: username.trim(),
+      email: email.trim().toLowerCase(),
+      password: hashedPassword,
+    });
 
     const userResponse = user.toObject();
     delete userResponse.password;
-    /*
-    MongoDB:
-username
-email
-password ← stored
 
-API response:
-username
-email
-password ← removed
-    */
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "User created successfully",
-      user: userResponse//means this never response the password in the postman 
+      user: userResponse,
     });
-
   } catch (error) {
-    res.status(500).json({
+    console.error("Create user error:", error);
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: "Failed to create user",
     });
   }
 };
+
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find().select("-password");
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Users fetched successfully",
-      users
+      users,
     });
-
   } catch (error) {
-    res.status(500).json({
+    console.error("Get users error:", error);
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: "Failed to fetch users",
     });
   }
 };
@@ -68,139 +94,151 @@ const updateUser = async (req, res) => {
     const { id } = req.params;
 
     if (req.user.userId !== id) {
-  return res.status(403).json({
-    success: false,
-    message: "You can only update your own account"
-  });
-}
+      return res.status(403).json({
+        success: false,
+        message: "You can only update your own account",
+      });
+    }
+
     const { username, email } = req.body;
+    const updateData = {};
+
+    if (username && typeof username === "string" && username.trim()) {
+      updateData.username = username.trim();
+    }
+
+    if (email && typeof email === "string" && email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return res.status(400).json({
+          success: false,
+          message: "Please provide a valid email address",
+        });
+      }
+      updateData.email = email.trim().toLowerCase();
+    }
 
     const user = await User.findByIdAndUpdate(
       id,
+      updateData,
       {
-        username,
-        email,
-        
-      },
-      {
-  new: true,
-  runValidators: true
-}
-    );
-   
+        new: true,
+        runValidators: true,
+      }
+    ).select("-password");
+
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "User updated successfully",
-      user
+      user,
     });
-
   } catch (error) {
-    res.status(500).json({
+    console.error("Update user error:", error);
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: "Failed to update user",
     });
   }
 };
 
-
-//DELETE
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-        if (req.user.userId !== id) {
-  return res.status(403).json({
-    success: false,
-    message: "You can only update your own account"
-  });
-}
 
-    const user = await User.findByIdAndDelete(id);
+    if (req.user.userId !== id) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only delete your own account",
+      });
+    }
+
+    const user = await User.findByIdAndDelete(id).select("-password");
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "User deleted successfully",
-      user
+      user,
     });
-
   } catch (error) {
-    res.status(500).json({
+    console.error("Delete user error:", error);
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: "Failed to delete user",
     });
   }
 };
-//loginUser
+
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Check required fields
-    if (!email || !password) {
+    if (!email || !password || typeof email !== "string" || typeof password !== "string") {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required"
+        message: "Email and password are required",
       });
     }
 
-    // 2. Find user
-    const user = await User.findOne({ email });
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is missing from environment variables");
+      return res.status(500).json({
+        success: false,
+        message: "Authentication service misconfiguration",
+      });
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
-    // 3. Compare password
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
     if (!isPasswordCorrect) {
       return res.status(401).json({
         success: false,
-        message: "Invalid password"
+        message: "Invalid password",
       });
     }
 
     const token = jwt.sign(
-  { userId: user._id },
-  process.env.JWT_SECRET,
-  { expiresIn: "1d" }//means the token expires after 1 day.
-);
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
-    // 4. Remove password from response
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    // 5. Login successful
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Login successful",
       token,
-      user: userResponse
+      user: userResponse,
     });
-
   } catch (error) {
-    res.status(500).json({
+    console.error("Login user error:", error);
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: "Failed to log in",
     });
   }
 };

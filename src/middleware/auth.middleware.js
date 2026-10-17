@@ -2,12 +2,21 @@ import jwt from "jsonwebtoken";
 
 const verifyJWT = async (req, res, next) => {
   try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
+    const authHeader = req.header("Authorization");
+    const token = authHeader?.replace(/^Bearer\s+/i, "").trim();
     
     if (!token) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized request"
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not configured in environment variables");
+      return res.status(500).json({
+        success: false,
+        message: "Authentication service misconfiguration"
       });
     }
 
