@@ -245,7 +245,8 @@ const loginUser = async (req, res) => {
 const getMyProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId)
-      .select("-password");
+      .select("-password")
+      .lean();
 
     if (!user) {
       return res.status(404).json({

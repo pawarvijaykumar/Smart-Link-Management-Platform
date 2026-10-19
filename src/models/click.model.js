@@ -25,6 +25,9 @@ const clickSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Compound index to optimize click history retrieval and eliminate in-memory sorting
+clickSchema.index({ link: 1, clickedAt: -1 });
+
 const Click = mongoose.model("Click", clickSchema);
 
 export default Click;

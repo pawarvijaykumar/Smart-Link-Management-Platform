@@ -32,6 +32,9 @@ const linkSchema = new mongoose.Schema(
   }
 );
 
+// Compound index to optimize user dashboard queries and eliminate in-memory sorting
+linkSchema.index({ user: 1, createdAt: -1 });
+
 const Link = mongoose.model("Link", linkSchema);
 
 export default Link;
