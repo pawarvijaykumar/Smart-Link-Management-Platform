@@ -365,8 +365,12 @@ const calculateTrafficIntelligence = ({
 
 // High-performance MongoDB aggregation for device, browser, and IST daily trends
 const getAggregatedAnalytics = async (linkId, totalClicks) => {
+  const matchCondition = Array.isArray(linkId)
+    ? { link: { $in: linkId } }
+    : { link: linkId };
+
   const [aggResult] = await Click.aggregate([
-    { $match: { link: linkId } },
+    { $match: matchCondition },
     {
       $facet: {
         devices: [
@@ -647,6 +651,93 @@ const getLinkAnalytics = async (req, res) => {
   }
 };
 
+// Retrieve aggregated analytics across ALL links belonging to the authenticated user
+const getAllLinksAnalytics = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const userLinks = await Link.find({ user: userId })
+      .select("_id shortCode originalUrl clicks createdAt")
+      .lean();
+
+    const totalLinks = userLinks.length;
+    const totalClicks = userLinks.reduce((sum, l) => sum + (l.clicks || 0), 0);
+    const linkIds = userLinks.map((l) => l._id);
+
+    if (linkIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        isAllLinks: true,
+        totalLinks: 0,
+        totalClicks: 0,
+        totalRecordedClicks: 0,
+        devices: [],
+        browsers: [],
+        dailyTrends: [],
+        intelligence: calculateTrafficIntelligence({
+          totalClicks: 0,
+          totalRecordedClicks: 0,
+          dailyTrends: [],
+          devices: [],
+          browsers: [],
+          hourlyTrends: [],
+        }),
+        history: [],
+      });
+    }
+
+    // Database-level pagination with sensible defaults (default: 100, max: 500)
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = req.query.limit
+      ? Math.max(1, Math.min(parseInt(req.query.limit), 500))
+      : 100;
+    const skip = (page - 1) * limit;
+
+    // Concurrently fetch clicks across all user's links and aggregated analytics
+    const [paginatedClicks, analytics] = await Promise.all([
+      Click.find({ link: { $in: linkIds } })
+        .select("link clickedAt deviceType browser")
+        .sort({ clickedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      getAggregatedAnalytics(linkIds, totalClicks),
+    ]);
+
+    const history = paginatedClicks.map((click) => ({
+      _id: click._id,
+      link: click.link,
+      clickedAt: click.clickedAt,
+      clickedAtIST: safeFormatIST(click.clickedAt),
+      deviceType: click.deviceType || "unknown",
+      browser: click.browser || "Unknown",
+    }));
+
+    return res.status(200).json({
+      success: true,
+      isAllLinks: true,
+      totalLinks,
+      totalClicks,
+      totalRecordedClicks: analytics.totalRecordedClicks,
+      page,
+      limit,
+      totalPages: Math.ceil(analytics.totalRecordedClicks / limit) || 1,
+      devices: analytics.devices,
+      browsers: analytics.browsers,
+      dailyTrends: analytics.dailyTrends,
+      intelligence: analytics.intelligence,
+      history,
+    });
+  } catch (error) {
+    console.error("All links analytics error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch all links analytics",
+    });
+  }
+};
+
 const getMyLinks = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -706,4 +797,11 @@ const getMyLinks = async (req, res) => {
   }
 };
 
-export { createLink, redirectLink, getClickHistory, getLinkAnalytics, getMyLinks };
+export {
+  createLink,
+  redirectLink,
+  getClickHistory,
+  getLinkAnalytics,
+  getAllLinksAnalytics,
+  getMyLinks,
+};

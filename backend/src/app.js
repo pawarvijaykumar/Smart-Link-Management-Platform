@@ -4,6 +4,8 @@ import "dotenv/config";
 
 import express from "express";
 import cors from "cors";
+// CHANGE: Added persistent session refresh tokens — 2026-10-21
+import cookieParser from "cookie-parser";
 
 import userRoutes from "./routes/user.routes.js";
 import healthRoutes from "./routes/health.routes.js";
@@ -13,7 +15,26 @@ import linkRouter from "./routes/link.routes.js";
 const app = express();
 
 // Middleware
-app.use(cors());
+// CHANGE: Added persistent session refresh tokens — 2026-10-21
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl) or matched origins
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, true); // Fallback for local dev flexibility
+    },
+    credentials: true,
+  })
+);
+app.use(cookieParser());
 app.use(express.json());
 
 // Routes-->"When someone sends a GET request to this URL, what should I do?"

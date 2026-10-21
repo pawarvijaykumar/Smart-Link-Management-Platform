@@ -2,8 +2,11 @@ import jwt from "jsonwebtoken";
 
 const verifyJWT = async (req, res, next) => {
   try {
+    // CHANGE: Added persistent session refresh tokens — 2026-10-21
     const authHeader = req.header("Authorization");
-    const token = authHeader?.replace(/^Bearer\s+/i, "").trim();
+    const token =
+      authHeader?.replace(/^Bearer\s+/i, "").trim() ||
+      req.cookies?.accessToken;
     
     if (!token) {
       return res.status(401).json({
