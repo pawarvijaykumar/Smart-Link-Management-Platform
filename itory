@@ -1,0 +1,52 @@
+ .gitignore                                         |   24 [32m+[m[31m-[m
+ .env.example => backend/.env.example               |    0
+ backend/.gitignore                                 |    3 [32m+[m
+ README.md => backend/README.md                     |  Bin
+ package-lock.json => backend/package-lock.json     |   32 [32m+[m[31m-[m
+ package.json => backend/package.json               |    4 [32m+[m[31m-[m
+ {src => backend/src}/app.js                        |   23 [32m+[m[31m-[m
+ {src => backend/src}/config/db.js                  |    0
+ {src => backend/src}/config/imagekit.js            |    0
+ .../src}/controllers/health.controller.js          |    0
+ .../src}/controllers/link.controller.js            |  102 [32m+[m[31m-[m
+ .../src}/controllers/upload.controller.js          |    0
+ backend/src/controllers/user.controller.js         |  559 [32m++++[m
+ {src => backend/src}/index.js                      |    0
+ {src => backend/src}/middleware/auth.middleware.js |    5 [32m+[m[31m-[m
+ .../src}/middleware/multer.middleware.js           |    0
+ {src => backend/src}/models/click.model.js         |    0
+ {src => backend/src}/models/link.model.js          |    0
+ backend/src/models/user.model.js                   |   57 [32m+[m
+ {src => backend/src}/routes/health.routes.js       |    0
+ {src => backend/src}/routes/link.routes.js         |    5 [32m+[m
+ {src => backend/src}/routes/upload.routes.js       |    0
+ {src => backend/src}/routes/user.routes.js         |   23 [32m+[m[31m-[m
+ {src => backend/src}/server.js                     |    0
+ {src => backend/src}/utils/cloudinaryUpload.js     |    0
+ backend/src/utils/emailService.js                  |  128 [32m+[m
+ {src => backend/src}/utils/userAgentParser.js      |    0
+ backend/test_audit.js                              |  315 [32m++[m
+ frontend/.gitignore                                |   24 [32m+[m
+ frontend/README.md                                 |   16 [32m+[m
+ frontend/eslint.config.js                          |   21 [32m+[m
+ frontend/index.html                                |   13 [32m+[m
+ frontend/package-lock.json                         | 3405 [32m++++++++++++++++++++[m
+ frontend/package.json                              |   30 [32m+[m
+ frontend/public/favicon.svg                        |    1 [32m+[m
+ frontend/public/icons.svg                          |   24 [32m+[m
+ frontend/src/App.css                               | 1799 [32m+++++++++++[m
+ frontend/src/App.jsx                               | 1403 [32m++++++++[m
+ frontend/src/ClicksOverviewChart.jsx               |  662 [32m++++[m
+ frontend/src/Login.jsx                             |  579 [32m++++[m
+ frontend/src/assets/hero.png                       |  Bin [31m0[m -> [32m13057[m bytes
+ frontend/src/assets/react.svg                      |    1 [32m+[m
+ frontend/src/assets/vite.svg                       |    1 [32m+[m
+ frontend/src/components/ClicksOverviewChart.jsx    |   13 [32m+[m
+ frontend/src/components/Login.jsx                  |    1 [32m+[m
+ frontend/src/index.css                             |  109 [32m+[m
+ frontend/src/main.jsx                              |   10 [32m+[m
+ frontend/vite.config.js                            |   23 [32m+[m
+ public/temp/1791732378608-vijay.jpg                |  Bin [31m25981[m -> [32m0[m bytes
+ src/controllers/user.controller.js                 |  272 [31m--[m
+ src/models/user.model.js                           |   32 [31m-[m
+ 51 files changed, 9404 insertions(+), 315 deletions(-)
