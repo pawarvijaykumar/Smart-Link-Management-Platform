@@ -31,6 +31,6 @@ router.get("/:shortCode/history", verifyJWT, getClickHistory);
 router.get("/:shortCode", redirectLink);
 
 
-
+//this all the backend logics
 
 export default router;

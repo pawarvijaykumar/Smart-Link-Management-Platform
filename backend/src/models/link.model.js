@@ -26,6 +26,56 @@ const linkSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    // CHANGE: Added optional UTM campaign fields — 2026-11-01
+
+
+    /*
+   utmSource (e.g., "google", "newsletter", "twitter"):
+Identifies the platform, site, or referrer where the link is being published. Answers: "Where is the traffic coming from?"
+
+  
+utmMedium (e.g., "cpc", "email", "social", "banner"):
+Identifies the marketing medium or channel type. Answers: "How is the link reaching visitors?"
+
+  
+utmCampaign (e.g., "diwali_sale", "product_launch_v2"):
+Identifies the specific marketing campaign or promotion name. Answers: "Which campaign generated this click?"
+
+  
+utmTerm (e.g., "link-management", "analytics-tool"):
+Identifies paid search keywords or audience segment tags associated with the link.
+
+  
+utmContent (e.g., "header_button", "sidebar_banner", "text_link"):
+Identifies the specific creative or element clicked, useful for A/B testing different links within the same campaign.
+    
+    */
+    utmSource: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    utmMedium: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    utmCampaign: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    utmTerm: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    utmContent: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   {
     timestamps: true,//Automatically records createdAt and updatedAt

@@ -32,6 +32,7 @@ const safeFormatIST = (date) => {
   }
 };
 
+// CHANGE: Added optional UTM campaign data during link creation — 2026-11-01
 const createLink = async (req, res) => {
   try {
     const { originalUrl } = req.body;
@@ -54,6 +55,35 @@ const createLink = async (req, res) => {
       });
     }
 
+    // Validate and normalize optional UTM campaign tracking parameters
+    const utmFields = ["utmSource", "utmMedium", "utmCampaign", "utmTerm", "utmContent"];
+    const normalizedUtm = {};
+
+    for (const field of utmFields) {
+      const val = req.body[field];
+
+      if (val === undefined || val === null) {
+        normalizedUtm[field] = null;
+      } else if (typeof val !== "string") {
+        return res.status(400).json({
+          success: false,
+          message: `${field} must be a string`,
+        });
+      } else {
+        const trimmed = val.trim();
+        if (trimmed.length === 0) {
+          normalizedUtm[field] = null;
+        } else if (trimmed.length > 200) {
+          return res.status(400).json({
+            success: false,
+            message: `${field} cannot exceed 200 characters`,
+          });
+        } else {
+          normalizedUtm[field] = trimmed;
+        }
+      }
+    }
+
     // Generate a unique short code
     const shortCode = crypto.randomBytes(4).toString("hex");
 
@@ -62,6 +92,11 @@ const createLink = async (req, res) => {
       originalUrl: trimmedUrl,
       shortCode,
       user: req.user.userId,
+      utmSource: normalizedUtm.utmSource,
+      utmMedium: normalizedUtm.utmMedium,
+      utmCampaign: normalizedUtm.utmCampaign,
+      utmTerm: normalizedUtm.utmTerm,
+      utmContent: normalizedUtm.utmContent,
     });
 
     return res.status(201).json({

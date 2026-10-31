@@ -21,6 +21,32 @@ const clickSchema = new mongoose.Schema(
       type: String,
       default: "Unknown",
     },
+    // CHANGE: Added optional UTM campaign fields — 2026-11-01
+    utmSource: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    utmMedium: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    utmCampaign: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    utmTerm: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    utmContent: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   { timestamps: true }
 );
