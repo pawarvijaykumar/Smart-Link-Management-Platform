@@ -32,6 +32,14 @@ const safeFormatIST = (date) => {
   }
 };
 
+// Calculate midnight IST boundary for the past N calendar days, converted to UTC Date
+const getISTCalendarStart = (days) => {
+  const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
+  const [year, month, day] = todayStr.split("-").map(Number);
+  const midnightUtcForIst = Date.UTC(year, month - 1, day - (days - 1), 0, 0, 0, 0) - (5.5 * 60 * 60 * 1000);
+  return new Date(midnightUtcForIst);
+};
+
 // CHANGE: Added optional UTM campaign data during link creation — 2026-11-01
 const createLink = async (req, res) => {
   try {
@@ -114,7 +122,7 @@ const createLink = async (req, res) => {
   }
 };
 
-// Redirect visitors to original URL while recording click details asynchronously
+// CHANGE: Added UTM campaign parameters to redirects and click snapshots — 2026-11-01
 const redirectLink = async (req, res) => {
   try {
     const { shortCode } = req.params;
@@ -124,7 +132,7 @@ const redirectLink = async (req, res) => {
       { $inc: { clicks: 1 } },
       { new: true }
     )
-      .select("originalUrl _id")
+      .select("originalUrl _id utmSource utmMedium utmCampaign utmTerm utmContent")
       .lean();
 
     if (!link) {
@@ -142,10 +150,33 @@ const redirectLink = async (req, res) => {
       });
     }
 
-    // 1. Immediately send HTTP 302 redirect to visitor for minimum latency
-    res.redirect(link.originalUrl);
+    // Build the final destination URL with UTM campaign parameters
+    let destinationUrl = link.originalUrl;
+    try {
+      const parsedUrl = new URL(link.originalUrl);
+      const utmMap = [
+        ["utm_source", link.utmSource],
+        ["utm_medium", link.utmMedium],
+        ["utm_campaign", link.utmCampaign],
+        ["utm_term", link.utmTerm],
+        ["utm_content", link.utmContent],
+      ];
 
-    // 2. Safely record visitor device type and browser asynchronously in the background
+      for (const [key, val] of utmMap) {
+        if (typeof val === "string" && val.trim().length > 0) {
+          parsedUrl.searchParams.set(key, val.trim());
+        }
+      }
+
+      destinationUrl = parsedUrl.toString();
+    } catch (urlError) {
+      console.warn("Failed to construct UTM destination URL, falling back to original URL:", urlError.message);
+    }
+
+    // 1. Immediately send HTTP 302 redirect to visitor for minimum latency
+    res.redirect(destinationUrl);
+
+    // 2. Safely record visitor device type, browser, and UTM snapshot asynchronously in the background
     try {
       const userAgent = req.headers["user-agent"] || "";
       const { deviceType, browser } = parseUserAgent(userAgent);
@@ -155,6 +186,11 @@ const redirectLink = async (req, res) => {
         clickedAt: new Date(),
         deviceType,
         browser,
+        utmSource: link.utmSource || null,
+        utmMedium: link.utmMedium || null,
+        utmCampaign: link.utmCampaign || null,
+        utmTerm: link.utmTerm || null,
+        utmContent: link.utmContent || null,
       }).catch((clickError) => {
         console.error("Non-blocking click record error:", clickError.message);
       });
@@ -773,6 +809,200 @@ const getAllLinksAnalytics = async (req, res) => {
   }
 };
 
+// CHANGE: Added user-scoped campaign analytics aggregation — 2026-11-01
+const getCampaignAnalytics = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const rawRange = (req.query.range || "all").toString().toLowerCase().trim();
+    const range = rawRange === "7d" || rawRange === "30d" ? rawRange : "all";
+
+    const UNTRACKED_LABEL = "Direct / Untracked";
+
+    // 1. User Isolation: Find only links owned by the authenticated user
+    const userLinks = await Link.find({ user: userId }).select("_id").lean();
+    const linkIds = userLinks.map((l) => l._id);
+
+    // If user has no links, return empty data structure immediately
+    if (linkIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          range,
+          summary: {
+            totalRecordedClicks: 0,
+            attributedClicks: 0,
+            unattributedClicks: 0,
+            totalCampaigns: 0,
+            topSource: null,
+            topCampaign: null,
+          },
+          campaigns: [],
+          sources: [],
+          mediums: [],
+        },
+      });
+    }
+
+    // 2. Date Filtering in IST
+    const matchCondition = {
+      link: { $in: linkIds },
+    };
+
+    if (range === "7d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(7) };
+    } else if (range === "30d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(30) };
+    }
+
+    // 3. Facet Aggregation
+    const [aggResult] = await Click.aggregate([
+      { $match: matchCondition },
+      {
+        $project: {
+          clickedAt: 1,
+          utmSource: {
+            $cond: [
+              { $gt: [{ $strLenCP: { $ifNull: ["$utmSource", ""] } }, 0] },
+              "$utmSource",
+              UNTRACKED_LABEL,
+            ],
+          },
+          utmMedium: {
+            $cond: [
+              { $gt: [{ $strLenCP: { $ifNull: ["$utmMedium", ""] } }, 0] },
+              "$utmMedium",
+              UNTRACKED_LABEL,
+            ],
+          },
+          utmCampaign: {
+            $cond: [
+              { $gt: [{ $strLenCP: { $ifNull: ["$utmCampaign", ""] } }, 0] },
+              "$utmCampaign",
+              UNTRACKED_LABEL,
+            ],
+          },
+          isAttributed: {
+            $cond: [
+              {
+                $or: [
+                  { $gt: [{ $strLenCP: { $ifNull: ["$utmSource", ""] } }, 0] },
+                  { $gt: [{ $strLenCP: { $ifNull: ["$utmMedium", ""] } }, 0] },
+                  { $gt: [{ $strLenCP: { $ifNull: ["$utmCampaign", ""] } }, 0] },
+                  { $gt: [{ $strLenCP: { $ifNull: ["$utmTerm", ""] } }, 0] },
+                  { $gt: [{ $strLenCP: { $ifNull: ["$utmContent", ""] } }, 0] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+      },
+      {
+        $facet: {
+          totals: [
+            {
+              $group: {
+                _id: null,
+                totalRecordedClicks: { $sum: 1 },
+                attributedClicks: { $sum: "$isAttributed" },
+              },
+            },
+          ],
+          campaigns: [
+            {
+              $group: {
+                _id: "$utmCampaign",
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { count: -1 } },
+          ],
+          sources: [
+            {
+              $group: {
+                _id: "$utmSource",
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { count: -1 } },
+          ],
+          mediums: [
+            {
+              $group: {
+                _id: "$utmMedium",
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { count: -1 } },
+          ],
+        },
+      },
+    ]);
+
+    const totalRecordedClicks = aggResult?.totals?.[0]?.totalRecordedClicks || 0;
+    const attributedClicks = aggResult?.totals?.[0]?.attributedClicks || 0;
+    const unattributedClicks = Math.max(0, totalRecordedClicks - attributedClicks);
+
+    // Format breakdown lists
+    const campaigns = (aggResult?.campaigns || []).map((c) => ({
+      name: c._id,
+      count: c.count,
+    }));
+
+    const sources = (aggResult?.sources || []).map((s) => ({
+      name: s._id,
+      count: s.count,
+    }));
+
+    const mediums = (aggResult?.mediums || []).map((m) => ({
+      name: m._id,
+      count: m.count,
+    }));
+
+    // Define distinct non-empty campaign names only (excluding UNTRACKED_LABEL)
+    const distinctNamedCampaigns = campaigns.filter((c) => c.name !== UNTRACKED_LABEL);
+    const totalCampaigns = distinctNamedCampaigns.length;
+
+    // Determine topCampaign and topSource (excluding UNTRACKED_LABEL; null if none exist)
+    const topCampaign =
+      distinctNamedCampaigns.length > 0
+        ? { name: distinctNamedCampaigns[0].name, count: distinctNamedCampaigns[0].count }
+        : null;
+
+    const distinctNamedSources = sources.filter((s) => s.name !== UNTRACKED_LABEL);
+    const topSource =
+      distinctNamedSources.length > 0
+        ? { name: distinctNamedSources[0].name, count: distinctNamedSources[0].count }
+        : null;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        range,
+        summary: {
+          totalRecordedClicks,
+          attributedClicks,
+          unattributedClicks,
+          totalCampaigns,
+          topSource,
+          topCampaign,
+        },
+        campaigns,
+        sources,
+        mediums,
+      },
+    });
+  } catch (error) {
+    console.error("Campaign analytics error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch campaign analytics",
+    });
+  }
+};
+
 const getMyLinks = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -839,4 +1069,5 @@ export {
   getLinkAnalytics,
   getAllLinksAnalytics,
   getMyLinks,
+  getCampaignAnalytics,
 };

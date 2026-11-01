@@ -669,6 +669,26 @@ function App() {
   const [createSuccessLink, setCreateSuccessLink] = useState(null);
   const [createError, setCreateError] = useState("");
 
+  // CHANGE: Added optional UTM campaign inputs — 2026-11-01
+  const initialUtmState = {
+    utmSource: "",
+    utmMedium: "",
+    utmCampaign: "",
+    utmTerm: "",
+    utmContent: "",
+  };
+  const [utmInputs, setUtmInputs] = useState(initialUtmState);
+  const [showUtmSection, setShowUtmSection] = useState(false);
+
+  const resetCreateModal = useCallback(() => {
+    setShowCreateModal(false);
+    setNewUrlInput("");
+    setUtmInputs(initialUtmState);
+    setShowUtmSection(false);
+    setCreateError("");
+    setCreateSuccessLink(null);
+  }, []);
+
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailLink, setDetailLink] = useState(null);
   const [detailAnalytics, setDetailAnalytics] = useState(null);
@@ -936,6 +956,7 @@ function App() {
   };
 
   // Create new link
+  // CHANGE: Added optional UTM campaign inputs — 2026-11-01
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!newUrlInput.trim()) return;
@@ -945,9 +966,18 @@ function App() {
     setCreateSuccessLink(null);
 
     try {
+      const payload = {
+        originalUrl: newUrlInput.trim(),
+        utmSource: utmInputs.utmSource.trim() || null,
+        utmMedium: utmInputs.utmMedium.trim() || null,
+        utmCampaign: utmInputs.utmCampaign.trim() || null,
+        utmTerm: utmInputs.utmTerm.trim() || null,
+        utmContent: utmInputs.utmContent.trim() || null,
+      };
+
       const res = await axios.post(
         API_URL,
-        { originalUrl: newUrlInput.trim() },
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -957,6 +987,8 @@ function App() {
         setCreateSuccessLink(created);
         setSelectedLink(created);
         setNewUrlInput("");
+        setUtmInputs(initialUtmState);
+        setShowUtmSection(false);
       }
     } catch (err) {
       if (err.response?.status === 401) {
@@ -1124,6 +1156,9 @@ function App() {
                 setShowCreateModal(true);
                 setCreateSuccessLink(null);
                 setCreateError("");
+                setNewUrlInput("");
+                setUtmInputs(initialUtmState);
+                setShowUtmSection(false);
               }}
             >
               <span>+ Create New Link</span>
@@ -1195,14 +1230,14 @@ function App() {
 
       {/* Create New Link Modal */}
       {showCreateModal && (
-        <div className="modal-backdrop" onClick={() => setShowCreateModal(false)}>
+        <div className="modal-backdrop" onClick={resetCreateModal}>
           <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Create a Short Link</h3>
               <button
                 type="button"
                 className="modal-close-btn"
-                onClick={() => setShowCreateModal(false)}
+                onClick={resetCreateModal}
                 aria-label="Close"
               >
                 ✕
@@ -1255,6 +1290,116 @@ function App() {
                     <p style={{ margin: "8px 0 0", fontSize: "12px", color: "var(--text-muted)" }}>
                       Destination must be a valid HTTP or HTTPS web address.
                     </p>
+
+                    {/* CHANGE: Added optional UTM campaign inputs — 2026-11-01 */}
+                    <div className="utm-collapsible-wrapper">
+                      <button
+                        type="button"
+                        className="utm-toggle-btn"
+                        onClick={() => setShowUtmSection((prev) => !prev)}
+                        aria-expanded={showUtmSection}
+                      >
+                        <span className="utm-toggle-title">
+                          <span className="utm-toggle-icon">{showUtmSection ? "▼" : "▶"}</span>
+                          Advanced Campaign Tracking (Optional)
+                        </span>
+                        <span className="utm-toggle-badge">
+                          {Object.values(utmInputs).filter((v) => v.trim()).length > 0
+                            ? `${Object.values(utmInputs).filter((v) => v.trim()).length} active`
+                            : "UTM tags"}
+                        </span>
+                      </button>
+
+                      {showUtmSection && (
+                        <div className="utm-inputs-panel">
+                          <p className="utm-section-desc">
+                            Add UTM parameters to track campaign performance, traffic sources, and channels.
+                          </p>
+
+                          <div className="utm-grid">
+                            <div className="utm-field">
+                              <label className="modal-input-label">
+                                Campaign Source <span className="utm-tag-hint">(utmSource)</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="modal-text-input utm-input"
+                                placeholder="e.g. google, newsletter, twitter"
+                                value={utmInputs.utmSource}
+                                onChange={(e) =>
+                                  setUtmInputs((prev) => ({ ...prev, utmSource: e.target.value }))
+                                }
+                                maxLength={200}
+                              />
+                            </div>
+
+                            <div className="utm-field">
+                              <label className="modal-input-label">
+                                Campaign Medium <span className="utm-tag-hint">(utmMedium)</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="modal-text-input utm-input"
+                                placeholder="e.g. cpc, email, social, banner"
+                                value={utmInputs.utmMedium}
+                                onChange={(e) =>
+                                  setUtmInputs((prev) => ({ ...prev, utmMedium: e.target.value }))
+                                }
+                                maxLength={200}
+                              />
+                            </div>
+
+                            <div className="utm-field">
+                              <label className="modal-input-label">
+                                Campaign Name <span className="utm-tag-hint">(utmCampaign)</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="modal-text-input utm-input"
+                                placeholder="e.g. spring_sale, product_launch"
+                                value={utmInputs.utmCampaign}
+                                onChange={(e) =>
+                                  setUtmInputs((prev) => ({ ...prev, utmCampaign: e.target.value }))
+                                }
+                                maxLength={200}
+                              />
+                            </div>
+
+                            <div className="utm-field">
+                              <label className="modal-input-label">
+                                Campaign Term <span className="utm-tag-hint">(utmTerm)</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="modal-text-input utm-input"
+                                placeholder="e.g. link-management, analytics"
+                                value={utmInputs.utmTerm}
+                                onChange={(e) =>
+                                  setUtmInputs((prev) => ({ ...prev, utmTerm: e.target.value }))
+                                }
+                                maxLength={200}
+                              />
+                            </div>
+
+                            <div className="utm-field utm-field-full">
+                              <label className="modal-input-label">
+                                Campaign Content <span className="utm-tag-hint">(utmContent)</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="modal-text-input utm-input"
+                                placeholder="e.g. hero_cta, sidebar_banner, text_link"
+                                value={utmInputs.utmContent}
+                                onChange={(e) =>
+                                  setUtmInputs((prev) => ({ ...prev, utmContent: e.target.value }))
+                                }
+                                maxLength={200}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1263,7 +1408,7 @@ function App() {
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={resetCreateModal}
                 >
                   {createSuccessLink ? "Done" : "Cancel"}
                 </button>
