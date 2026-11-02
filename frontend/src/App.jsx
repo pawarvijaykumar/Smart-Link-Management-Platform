@@ -640,6 +640,358 @@ function RecentLinksTable({
 }
 
 // -----------------------------------------------------------------------------
+// Component: CampaignMetricCards & CampaignAnalyticsView (Stage 5B: Campaign View)
+// CHANGE: Added separate Campaign Analytics frontend view — 2026-11-02
+// -----------------------------------------------------------------------------
+function CampaignMetricCards({ summary, loading = false }) {
+  const attributedClicks = summary?.attributedClicks || 0;
+  const totalRecordedClicks = summary?.totalRecordedClicks || 0;
+  const unattributedClicks = summary?.unattributedClicks || 0;
+  const totalCampaigns = summary?.totalCampaigns || 0;
+  const topSource = summary?.topSource;
+  const topCampaign = summary?.topCampaign;
+
+  const cards = [
+    {
+      id: "campaign_clicks",
+      label: "Total Campaign Clicks",
+      value: attributedClicks.toLocaleString(),
+      subtext: `${totalRecordedClicks.toLocaleString()} total clicks (${unattributedClicks.toLocaleString()} untracked)`,
+      badgeText: attributedClicks > 0 ? "Attributed Traffic" : "Awaiting clicks",
+      badgeType: attributedClicks > 0 ? "positive" : "neutral",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" />
+        </svg>
+      ),
+      iconBg: "rgba(124, 58, 237, 0.15)",
+      iconColor: "#8B5CF6",
+    },
+    {
+      id: "total_campaigns",
+      label: "Total Campaigns",
+      value: totalCampaigns.toLocaleString(),
+      subtext: totalCampaigns === 1 ? "1 active campaign" : `${totalCampaigns} active campaigns`,
+      badgeText: totalCampaigns > 0 ? "Active UTM Tags" : "None defined",
+      badgeType: totalCampaigns > 0 ? "positive" : "neutral",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+          <line x1="4" y1="22" x2="4" y2="15" />
+        </svg>
+      ),
+      iconBg: "rgba(6, 182, 212, 0.15)",
+      iconColor: "#06B6D4",
+    },
+    {
+      id: "top_source",
+      label: "Top Traffic Source",
+      value: topSource?.name || "None",
+      subtext: topSource ? `${topSource.count.toLocaleString()} clicks` : "No source recorded",
+      badgeText: topSource ? "utm_source" : "Awaiting data",
+      badgeType: topSource ? "positive" : "neutral",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        </svg>
+      ),
+      iconBg: "rgba(16, 185, 129, 0.15)",
+      iconColor: "#10B981",
+    },
+    {
+      id: "top_campaign",
+      label: "Top Campaign",
+      value: topCampaign?.name || "None",
+      subtext: topCampaign ? `${topCampaign.count.toLocaleString()} clicks` : "No campaign recorded",
+      badgeText: topCampaign ? "utm_campaign" : "Awaiting data",
+      badgeType: topCampaign ? "positive" : "neutral",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+      ),
+      iconBg: "rgba(245, 158, 11, 0.15)",
+      iconColor: "#F59E0B",
+    },
+  ];
+
+  return (
+    <div className={`metrics-grid ${loading ? "data-refreshing" : ""}`}>
+      {cards.map((card) => (
+        <div className="metric-card campaign-metric-card" key={card.id}>
+          <div className="metric-card-top">
+            <div className="metric-icon-badge" style={{ background: card.iconBg, color: card.iconColor }}>
+              {card.icon}
+            </div>
+            <span className={`metric-trend-pill ${card.badgeType}`}>{card.badgeText}</span>
+          </div>
+          <div
+            className="metric-card-val campaign-metric-val"
+            title={typeof card.value === "string" ? card.value : ""}
+          >
+            {card.value}
+          </div>
+          <div className="metric-card-label">{card.label}</div>
+          {card.subtext && <div className="campaign-metric-subtext">{card.subtext}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Component: CampaignPerformanceTable (Stage 5C: Campaign Performance Table)
+// CHANGE: Added campaign performance table and date-range filters — 2026-11-02
+// -----------------------------------------------------------------------------
+function CampaignPerformanceTable({ performance = [], loading = false }) {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredRows = useMemo(() => {
+    if (!searchTerm || !searchTerm.trim()) return performance;
+    const q = searchTerm.toLowerCase().trim();
+    return performance.filter(
+      (r) =>
+        r.campaign?.toLowerCase().includes(q) ||
+        r.source?.toLowerCase().includes(q) ||
+        r.medium?.toLowerCase().includes(q)
+    );
+  }, [performance, searchTerm]);
+
+  return (
+    <div className="links-table-card campaign-table-card">
+      <div className="table-topbar">
+        <div className="table-topbar-title">
+          <h3>Campaign Performance</h3>
+          <p>Real-time click distribution by campaign name, traffic source, and medium</p>
+        </div>
+
+        <div className="table-actions-group">
+          <input
+            type="search"
+            className="table-search-input"
+            placeholder="Filter campaigns..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Filter campaigns"
+          />
+        </div>
+      </div>
+
+      <div className="table-responsive-box">
+        <table className="custom-links-table">
+          <thead>
+            <tr>
+              <th>Campaign Name</th>
+              <th>Traffic Source</th>
+              <th>Traffic Medium</th>
+              <th style={{ textAlign: "right" }}>Click Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="table-empty-cell">
+                  <div className="table-loading-inline">
+                    <span className="spinner-purple-sm"></span>
+                    <span>Loading campaign performance...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : filteredRows.length > 0 ? (
+              filteredRows.map((row, idx) => {
+                const isUntracked = row.campaign === "Direct / Untracked";
+                return (
+                  <tr key={`${row.campaign}-${row.source}-${row.medium}-${idx}`}>
+                    <td>
+                      <div className="campaign-name-wrapper">
+                        {isUntracked ? (
+                          <span className="campaign-untracked-label">
+                            Direct / Untracked
+                          </span>
+                        ) : (
+                          <span className="campaign-name-pill" title={row.campaign}>
+                            {row.campaign}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <span className="campaign-tag-source" title={row.source}>
+                        {row.source}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="campaign-tag-medium" title={row.medium}>
+                        {row.medium}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <span className="campaign-click-count-badge">
+                        {row.count.toLocaleString()}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={4} className="table-empty-cell">
+                  <div className="table-empty-state">
+                    <span>
+                      {searchTerm
+                        ? "No campaign rows matched your search."
+                        : "No campaign clicks recorded for this time period."}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function CampaignAnalyticsView({
+  campaignAnalytics,
+  campaignLoading,
+  campaignError,
+  campaignRange,
+  onRangeChange,
+  onRefresh,
+}) {
+  const summary = campaignAnalytics?.summary;
+  const sources = campaignAnalytics?.sources || [];
+  const mediums = campaignAnalytics?.mediums || [];
+  const performance = campaignAnalytics?.performance || [];
+  const isZeroState = summary && summary.totalRecordedClicks === 0;
+
+  return (
+    <div className="campaign-view-container">
+      {/* Page Greeting & Filter Controls */}
+      <div className="page-greeting">
+        <div className="campaigns-title-row">
+          <div>
+            <h1>Campaign & UTM Analytics 📣</h1>
+            <p>Monitor campaign attribution, inbound traffic sources, and marketing channels.</p>
+          </div>
+
+          <div className="campaign-controls-group">
+            {/* CHANGE: Added campaign performance table and date-range filters — 2026-11-02 */}
+            <div className="time-filter-pills" role="radiogroup" aria-label="Campaign time range">
+              {[
+                { id: "all", label: "All Time" },
+                { id: "30d", label: "30 Days" },
+                { id: "7d", label: "7 Days" },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`time-pill-btn ${campaignRange === t.id ? "active" : ""}`}
+                  onClick={() => onRangeChange(t.id)}
+                  disabled={campaignLoading}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="btn-refresh-campaigns"
+              onClick={onRefresh}
+              disabled={campaignLoading}
+              title="Refresh campaign analytics"
+            >
+              <span className={campaignLoading ? "spinning" : ""}>🔄</span>
+              <span>{campaignLoading ? "Refreshing..." : "Refresh"}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Error state */}
+      {campaignError && (
+        <div className="campaign-error-banner">
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span className="error-icon">⚠️</span>
+            <span>{campaignError}</span>
+          </div>
+          <button type="button" onClick={onRefresh} className="btn-retry">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Loading state on initial load without data */}
+      {campaignLoading && !campaignAnalytics ? (
+        <div className="campaign-loading-state">
+          <div className="spinner-purple"></div>
+          <p>Loading campaign analytics...</p>
+        </div>
+      ) : (
+        <>
+          {/* 1. Campaign Metric Cards */}
+          <CampaignMetricCards summary={summary} loading={campaignLoading} />
+
+          {/* 2. Donut Charts (Sources & Mediums) */}
+          <div className={`donuts-grid ${campaignLoading ? "data-refreshing" : ""}`}>
+            <DonutChart
+              title="Traffic Sources (utm_source)"
+              icon="🌐"
+              data={sources}
+              emptyMessage="No traffic source data recorded yet. Share links with utm_source to view visitor sources."
+            />
+            <DonutChart
+              title="Traffic Mediums (utm_medium)"
+              icon="📡"
+              data={mediums}
+              emptyMessage="No traffic medium data recorded yet. Tag links with utm_medium to categorize channels."
+            />
+          </div>
+
+          {/* 3. Campaign Performance Table (Stage 5C) */}
+          <CampaignPerformanceTable
+            performance={performance}
+            loading={campaignLoading}
+          />
+
+          {/* 4. Empty state or attribution explainer */}
+          {isZeroState ? (
+            <div className="campaign-empty-banner">
+              <div className="campaign-empty-icon">🚀</div>
+              <div className="campaign-empty-text">
+                <h4>No campaign activity recorded yet</h4>
+                <p>
+                  Create your first trackable short link using <strong>+ Create New Link</strong> and expand
+                  <strong> Advanced Campaign Tracking (Optional)</strong> to specify UTM tags like source, medium, and campaign name.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="campaign-info-card">
+              <div className="campaign-info-icon">💡</div>
+              <div className="campaign-info-content">
+                <h4>Campaign Attribution & UTM Tracking</h4>
+                <p>
+                  Clicks are attributed when visitors access links with campaign parameters.
+                  Clicks from direct visits or legacy links without UTM tags are classified as <strong>Direct / Untracked</strong>.
+                </p>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
 // Main Application Component
 // -----------------------------------------------------------------------------
 function App() {
@@ -695,6 +1047,14 @@ function App() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [modalTimeRange, setModalTimeRange] = useState("7d");
 
+  // CHANGE: Added separate Campaign Analytics frontend view — 2026-11-02
+  const [activeView, setActiveView] = useState("dashboard"); // "dashboard" | "campaigns"
+  const [campaignAnalytics, setCampaignAnalytics] = useState(null);
+  const [campaignLoading, setCampaignLoading] = useState(false);
+  const [campaignError, setCampaignError] = useState("");
+  // CHANGE: Added campaign performance table and date-range filters — 2026-11-02
+  const [campaignRange, setCampaignRange] = useState("all"); // "all" | "30d" | "7d"
+
   // Handle session expiration
   const handleSessionExpired = useCallback(
     (message = "Your login session expired. Please log in again.") => {
@@ -702,6 +1062,9 @@ function App() {
       setToken("");
       setUser(null);
       setLinks([]);
+      setCampaignAnalytics(null);
+      setActiveView("dashboard");
+      setCampaignRange("all");
       setAuthError(message);
     },
     []
@@ -718,6 +1081,9 @@ function App() {
       setToken("");
       setUser(null);
       setLinks([]);
+      setCampaignAnalytics(null);
+      setActiveView("dashboard");
+      setCampaignRange("all");
       setError("");
       setAuthError("");
     }
@@ -930,6 +1296,64 @@ function App() {
     };
   }, [token, selectedLink, handleSessionExpired]);
 
+  // Fetch campaign analytics on demand
+  // CHANGE: Added campaign performance table and date-range filters — 2026-11-02
+  const fetchCampaignAnalytics = useCallback(
+    async (selectedRange = campaignRange) => {
+      if (!token) return;
+      setCampaignLoading(true);
+      setCampaignError("");
+      try {
+        const res = await axios.get(
+          `${API_URL}/user/analytics/campaigns?range=${encodeURIComponent(selectedRange)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (res.data?.success && res.data?.data) {
+          setCampaignAnalytics(res.data.data);
+        } else {
+          setCampaignAnalytics(null);
+        }
+      } catch (err) {
+        if (err.response?.status === 401) {
+          handleSessionExpired();
+        } else {
+          setCampaignError(
+            err.response?.data?.message || "Failed to load campaign analytics. Please try again."
+          );
+        }
+      } finally {
+        setCampaignLoading(false);
+      }
+    },
+    [token, campaignRange, handleSessionExpired]
+  );
+
+  const handleCampaignRangeChange = useCallback(
+    (newRange) => {
+      setCampaignRange(newRange);
+      fetchCampaignAnalytics(newRange);
+    },
+    [fetchCampaignAnalytics]
+  );
+
+  useEffect(() => {
+    if (activeView !== "campaigns" || !token) return;
+    let isMounted = true;
+
+    const timer = setTimeout(() => {
+      if (isMounted) {
+        fetchCampaignAnalytics(campaignRange);
+      }
+    }, 0);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [activeView, token, campaignRange, fetchCampaignAnalytics]);
+
   // Top metric calculations
   const totalClicks = useMemo(() => {
     return links.reduce((acc, l) => acc + (l.clicks || 0), 0);
@@ -1050,16 +1474,37 @@ function App() {
         <div className="sidebar-nav-group">
           <p className="sidebar-nav-heading">WORKSPACE</p>
           <nav className="sidebar-nav">
-            <button type="button" className="nav-item active">
+            <button
+              type="button"
+              className={`nav-item ${activeView === "dashboard" ? "active" : ""}`}
+              onClick={() => setActiveView("dashboard")}
+            >
               <span className="nav-item-icon">▦</span>
               <span>Dashboard</span>
+            </button>
+            {/* CHANGE: Added separate Campaign Analytics frontend view — 2026-11-02 */}
+            <button
+              type="button"
+              className={`nav-item ${activeView === "campaigns" ? "active" : ""}`}
+              onClick={() => setActiveView("campaigns")}
+            >
+              <span className="nav-item-icon">📣</span>
+              <span>Campaigns</span>
             </button>
             <button
               type="button"
               className="nav-item"
               onClick={() => {
-                const tableEl = document.querySelector(".links-table-card");
-                if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
+                if (activeView !== "dashboard") {
+                  setActiveView("dashboard");
+                  setTimeout(() => {
+                    const tableEl = document.querySelector(".links-table-card");
+                    if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
+                  }, 50);
+                } else {
+                  const tableEl = document.querySelector(".links-table-card");
+                  if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
+                }
               }}
             >
               <span className="nav-item-icon">↗</span>
@@ -1166,66 +1611,81 @@ function App() {
           </div>
         </header>
 
-        {/* Welcome Greeting */}
-        <div className="page-greeting">
-          <div>
-            <h1>Welcome back, {user?.username || "Vijay"}! 👋</h1>
-            <p>Here&apos;s an overview of your links and performance.</p>
-          </div>
-        </div>
+        {/* Main View Switcher: Dashboard vs Campaigns */}
+        {/* CHANGE: Added separate Campaign Analytics frontend view — 2026-11-02 */}
+        {activeView === "dashboard" ? (
+          <>
+            {/* Welcome Greeting */}
+            <div className="page-greeting">
+              <div>
+                <h1>Welcome back, {user?.username || "Vijay"}! 👋</h1>
+                <p>Here&apos;s an overview of your links and performance.</p>
+              </div>
+            </div>
 
-        {/* 1. Top 4 Statistic Cards */}
-        <MetricCards
-          totalLinks={links.length}
-          totalClicks={totalClicks}
-          activeLinks={activeLinks}
-          avgClicks={avgClicks}
-        />
+            {/* 1. Top 4 Statistic Cards */}
+            <MetricCards
+              totalLinks={links.length}
+              totalClicks={totalClicks}
+              activeLinks={activeLinks}
+              avgClicks={avgClicks}
+            />
 
-        {/* 2. Clicks Overview Chart */}
-        <ClicksOverviewChart
-          dailyTrends={dashboardAnalytics?.dailyTrends || []}
-          history={dashboardAnalytics?.history || []}
-          selectedLink={selectedLink}
-          links={links}
-          onSelectLink={setSelectedLink}
-          timeRange={timeRange}
-          onTimeRangeChange={setTimeRange}
-        />
+            {/* 2. Clicks Overview Chart */}
+            <ClicksOverviewChart
+              dailyTrends={dashboardAnalytics?.dailyTrends || []}
+              history={dashboardAnalytics?.history || []}
+              selectedLink={selectedLink}
+              links={links}
+              onSelectLink={setSelectedLink}
+              timeRange={timeRange}
+              onTimeRangeChange={setTimeRange}
+            />
 
-        {/* 3 & 4. Dual Donut Charts (Device & Browser Breakdown) */}
-        <div className="donuts-grid">
-          <DonutChart
-            title="Device Breakdown"
-            icon="📱"
-            data={dashboardAnalytics?.devices || []}
-            emptyMessage="No device data recorded yet. Share your short link to view visitor platforms."
+            {/* 3 & 4. Dual Donut Charts (Device & Browser Breakdown) */}
+            <div className="donuts-grid">
+              <DonutChart
+                title="Device Breakdown"
+                icon="📱"
+                data={dashboardAnalytics?.devices || []}
+                emptyMessage="No device data recorded yet. Share your short link to view visitor platforms."
+              />
+              <DonutChart
+                title="Browser Breakdown"
+                icon="🌐"
+                data={dashboardAnalytics?.browsers || []}
+                emptyMessage="No browser data recorded yet. Visitor browsers will appear after clicks."
+              />
+            </div>
+
+            {/* 5. Click Activity Heatmap (Day x Hour in IST) */}
+            <ActivityHeatmap history={dashboardAnalytics?.history || []} />
+
+            {/* 6. Smart Traffic Intelligence Cards */}
+            <SmartTrafficSection intelligence={dashboardAnalytics?.intelligence} />
+
+            {/* 7. Recent Links Table */}
+            <RecentLinksTable
+              links={links}
+              onCopy={handleCopy}
+              copiedLinkId={copiedLinkId}
+              onOpenAnalytics={handleOpenAnalytics}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              sortOrder={sortOrder}
+              setSortOrder={setSortOrder}
+            />
+          </>
+        ) : (
+          <CampaignAnalyticsView
+            campaignAnalytics={campaignAnalytics}
+            campaignLoading={campaignLoading}
+            campaignError={campaignError}
+            campaignRange={campaignRange}
+            onRangeChange={handleCampaignRangeChange}
+            onRefresh={() => fetchCampaignAnalytics(campaignRange)}
           />
-          <DonutChart
-            title="Browser Breakdown"
-            icon="🌐"
-            data={dashboardAnalytics?.browsers || []}
-            emptyMessage="No browser data recorded yet. Visitor browsers will appear after clicks."
-          />
-        </div>
-
-        {/* 5. Click Activity Heatmap (Day x Hour in IST) */}
-        <ActivityHeatmap history={dashboardAnalytics?.history || []} />
-
-        {/* 6. Smart Traffic Intelligence Cards */}
-        <SmartTrafficSection intelligence={dashboardAnalytics?.intelligence} />
-
-        {/* 7. Recent Links Table */}
-        <RecentLinksTable
-          links={links}
-          onCopy={handleCopy}
-          copiedLinkId={copiedLinkId}
-          onOpenAnalytics={handleOpenAnalytics}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          sortOrder={sortOrder}
-          setSortOrder={setSortOrder}
-        />
+        )}
       </main>
 
       {/* Create New Link Modal */}

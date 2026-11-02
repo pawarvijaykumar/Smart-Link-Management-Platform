@@ -839,6 +839,7 @@ const getCampaignAnalytics = async (req, res) => {
           campaigns: [],
           sources: [],
           mediums: [],
+          performance: [],
         },
       });
     }
@@ -862,22 +863,22 @@ const getCampaignAnalytics = async (req, res) => {
           clickedAt: 1,
           utmSource: {
             $cond: [
-              { $gt: [{ $strLenCP: { $ifNull: ["$utmSource", ""] } }, 0] },
-              "$utmSource",
+              { $gt: [{ $strLenCP: { $trim: { input: { $ifNull: ["$utmSource", ""] } } } }, 0] },
+              { $trim: { input: "$utmSource" } },
               UNTRACKED_LABEL,
             ],
           },
           utmMedium: {
             $cond: [
-              { $gt: [{ $strLenCP: { $ifNull: ["$utmMedium", ""] } }, 0] },
-              "$utmMedium",
+              { $gt: [{ $strLenCP: { $trim: { input: { $ifNull: ["$utmMedium", ""] } } } }, 0] },
+              { $trim: { input: "$utmMedium" } },
               UNTRACKED_LABEL,
             ],
           },
           utmCampaign: {
             $cond: [
-              { $gt: [{ $strLenCP: { $ifNull: ["$utmCampaign", ""] } }, 0] },
-              "$utmCampaign",
+              { $gt: [{ $strLenCP: { $trim: { input: { $ifNull: ["$utmCampaign", ""] } } } }, 0] },
+              { $trim: { input: "$utmCampaign" } },
               UNTRACKED_LABEL,
             ],
           },
@@ -885,11 +886,11 @@ const getCampaignAnalytics = async (req, res) => {
             $cond: [
               {
                 $or: [
-                  { $gt: [{ $strLenCP: { $ifNull: ["$utmSource", ""] } }, 0] },
-                  { $gt: [{ $strLenCP: { $ifNull: ["$utmMedium", ""] } }, 0] },
-                  { $gt: [{ $strLenCP: { $ifNull: ["$utmCampaign", ""] } }, 0] },
-                  { $gt: [{ $strLenCP: { $ifNull: ["$utmTerm", ""] } }, 0] },
-                  { $gt: [{ $strLenCP: { $ifNull: ["$utmContent", ""] } }, 0] },
+                  { $gt: [{ $strLenCP: { $trim: { input: { $ifNull: ["$utmSource", ""] } } } }, 0] },
+                  { $gt: [{ $strLenCP: { $trim: { input: { $ifNull: ["$utmMedium", ""] } } } }, 0] },
+                  { $gt: [{ $strLenCP: { $trim: { input: { $ifNull: ["$utmCampaign", ""] } } } }, 0] },
+                  { $gt: [{ $strLenCP: { $trim: { input: { $ifNull: ["$utmTerm", ""] } } } }, 0] },
+                  { $gt: [{ $strLenCP: { $trim: { input: { $ifNull: ["$utmContent", ""] } } } }, 0] },
                 ],
               },
               1,
@@ -936,6 +937,20 @@ const getCampaignAnalytics = async (req, res) => {
             },
             { $sort: { count: -1 } },
           ],
+          // CHANGE: Added campaign performance table and date-range filters — 2026-11-02
+          performance: [
+            {
+              $group: {
+                _id: {
+                  campaign: "$utmCampaign",
+                  source: "$utmSource",
+                  medium: "$utmMedium",
+                },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { count: -1 } },
+          ],
         },
       },
     ]);
@@ -960,8 +975,18 @@ const getCampaignAnalytics = async (req, res) => {
       count: m.count,
     }));
 
-    // Define distinct non-empty campaign names only (excluding UNTRACKED_LABEL)
-    const distinctNamedCampaigns = campaigns.filter((c) => c.name !== UNTRACKED_LABEL);
+    // Format row-by-row campaign performance relationships
+    const performance = (aggResult?.performance || []).map((p) => ({
+      campaign: p._id?.campaign || UNTRACKED_LABEL,
+      source: p._id?.source || UNTRACKED_LABEL,
+      medium: p._id?.medium || UNTRACKED_LABEL,
+      count: p.count,
+    }));
+
+    // Define distinct non-empty campaign names only (excluding UNTRACKED_LABEL and empty/whitespace)
+    const distinctNamedCampaigns = campaigns.filter(
+      (c) => c.name && c.name.trim() !== "" && c.name !== UNTRACKED_LABEL
+    );
     const totalCampaigns = distinctNamedCampaigns.length;
 
     // Determine topCampaign and topSource (excluding UNTRACKED_LABEL; null if none exist)
@@ -970,7 +995,9 @@ const getCampaignAnalytics = async (req, res) => {
         ? { name: distinctNamedCampaigns[0].name, count: distinctNamedCampaigns[0].count }
         : null;
 
-    const distinctNamedSources = sources.filter((s) => s.name !== UNTRACKED_LABEL);
+    const distinctNamedSources = sources.filter(
+      (s) => s.name && s.name.trim() !== "" && s.name !== UNTRACKED_LABEL
+    );
     const topSource =
       distinctNamedSources.length > 0
         ? { name: distinctNamedSources[0].name, count: distinctNamedSources[0].count }
@@ -991,6 +1018,7 @@ const getCampaignAnalytics = async (req, res) => {
         campaigns,
         sources,
         mediums,
+        performance,
       },
     });
   } catch (error) {
