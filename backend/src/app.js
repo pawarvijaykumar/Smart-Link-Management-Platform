@@ -11,6 +11,8 @@ import userRoutes from "./routes/user.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import uploadRoutes from "./routes/upload.routes.js";
 import linkRouter from "./routes/link.routes.js";
+// CHANGE: Notifications Step 2 — 2026-11-04
+import notificationRoutes from "./routes/notification.routes.js";
 
 const app = express();
 
@@ -42,6 +44,8 @@ app.use('/api', healthRoutes);//its show api testing
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/links", linkRouter);
+// CHANGE: Notifications Step 2 — 2026-11-04
+app.use("/api/notifications", notificationRoutes);
 // Global error handler to catch JSON parsing issues and avoid exposing stack traces or file paths
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
