@@ -1,8 +1,13 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
 import Login from "./Login";
-// CHANGE: Verified click graph data accuracy — 2026-10-20
-import ClicksOverviewChart from "./ClicksOverviewChart";
+import ClicksOverviewChart, {
+  getTodayISTStr,
+  shiftISODate,
+  getDaysBetween,
+  formatDisplayDate,
+  calculateNiceYAxis,
+} from "./ClicksOverviewChart";
 import "./App.css";
 
 const API_BASE_URL = "http://localhost:5000";
@@ -745,7 +750,7 @@ function CampaignMetricCards({ summary, loading = false }) {
 
 // -----------------------------------------------------------------------------
 // Component: CampaignPerformanceTable (Stage 5C: Campaign Performance Table)
-// CHANGE: Added campaign performance table and date-range filters — 2026-11-02
+// CHANGE: Stage 5C — 2026-11-03
 // -----------------------------------------------------------------------------
 function CampaignPerformanceTable({ performance = [], loading = false }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -857,6 +862,383 @@ function CampaignPerformanceTable({ performance = [], loading = false }) {
   );
 }
 
+// -----------------------------------------------------------------------------
+// Helper: buildContinuousCampaignTrends (Fill missing dates with zero clicks)
+// CHANGE: Added Campaign Clicks Over Time line chart — 2026-11-03
+// -----------------------------------------------------------------------------
+function buildContinuousCampaignTrends(dailyTrends = [], timeRange = "7d") {
+  const countByIso = {};
+  if (Array.isArray(dailyTrends)) {
+    dailyTrends.forEach((item) => {
+      if (!item) return;
+      const key = item.isoDate || (typeof item._id === "string" ? item._id : null);
+      if (key && /^\d{4}-\d{2}-\d{2}$/.test(key)) {
+        countByIso[key] = (countByIso[key] || 0) + Math.max(0, item.count || 0);
+      }
+    });
+  }
+
+  const todayIST = getTodayISTStr();
+
+  if (timeRange === "7d" || timeRange === "30d") {
+    const numDays = timeRange === "7d" ? 7 : 30;
+    const result = [];
+    for (let i = numDays - 1; i >= 0; i--) {
+      const iso = shiftISODate(todayIST, -i);
+      result.push({
+        isoDate: iso,
+        date: formatDisplayDate(iso),
+        count: Math.max(0, countByIso[iso] || 0),
+      });
+    }
+    return result;
+  }
+
+  // All time: include every recorded date from earliest campaign click up to today,
+  // filling zero-click dates in between so the graph has a continuous timeline.
+  const datesWithClicks = Object.keys(countByIso)
+    .filter((k) => (countByIso[k] || 0) > 0)
+    .sort();
+  const earliestClickDate = datesWithClicks[0] || todayIST;
+
+  // Ensure at least a 7-day span up to today so fresh campaigns never collapse to a single point
+  const minStartDate = shiftISODate(todayIST, -6);
+  const effectiveStartDate = earliestClickDate < minStartDate ? earliestClickDate : minStartDate;
+  const totalDays = Math.max(6, getDaysBetween(effectiveStartDate, todayIST));
+
+  const result = [];
+  for (let i = totalDays; i >= 0; i--) {
+    const iso = shiftISODate(todayIST, -i);
+    result.push({
+      isoDate: iso,
+      date: formatDisplayDate(iso),
+      count: Math.max(0, countByIso[iso] || 0),
+    });
+  }
+  return result;
+}
+
+// -----------------------------------------------------------------------------
+// Component: CampaignClicksChart (Campaign Clicks Over Time)
+// CHANGE: Added Campaign Clicks Over Time line chart — 2026-11-03
+// -----------------------------------------------------------------------------
+function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = false }) {
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+
+  const rangeLabel =
+    timeRange === "7d"
+      ? "last 7 days"
+      : timeRange === "30d"
+      ? "last 30 days"
+      : "all time";
+
+  const continuousTrends = useMemo(() => {
+    return buildContinuousCampaignTrends(dailyTrends, timeRange);
+  }, [dailyTrends, timeRange]);
+
+  const maxCount = useMemo(() => {
+    if (!continuousTrends || continuousTrends.length === 0) return 0;
+    return Math.max(0, ...continuousTrends.map((d) => Math.max(0, d.count || 0)));
+  }, [continuousTrends]);
+
+  const totalPeriodClicks = useMemo(() => {
+    if (!continuousTrends || continuousTrends.length === 0) return 0;
+    return continuousTrends.reduce((sum, d) => sum + Math.max(0, d.count || 0), 0);
+  }, [continuousTrends]);
+
+  const { max: effectiveMax, ticks: yTicks } = useMemo(() => {
+    return calculateNiceYAxis(maxCount);
+  }, [maxCount]);
+
+  const width = 800;
+  const height = 195;
+  const padLeft = 44;
+  const padRight = 20;
+  const padTop = 16;
+  const padBottom = 32;
+  const innerW = width - padLeft - padRight;
+  const innerH = height - padTop - padBottom;
+  const zeroY = height - padBottom;
+
+  const points = useMemo(() => {
+    if (continuousTrends.length === 0) return [];
+    const n = continuousTrends.length;
+    return continuousTrends.map((item, i) => {
+      const count = Math.max(0, item.count || 0);
+      const x = n === 1 ? padLeft + innerW / 2 : padLeft + (i / (n - 1)) * innerW;
+      const y = Math.min(zeroY, Math.max(padTop, zeroY - (count / effectiveMax) * innerH));
+      return {
+        x,
+        y,
+        date: item.date || item.isoDate || `Day ${i + 1}`,
+        count,
+      };
+    });
+  }, [continuousTrends, effectiveMax, innerW, innerH, padLeft, padTop, zeroY]);
+
+  // Monotone cubic Hermite spline interpolation (PCHIP) with strict zero baseline clamping
+  const { linePath, areaPath } = useMemo(() => {
+    if (points.length === 0) return { linePath: "", areaPath: "" };
+
+    if (points.length === 1) {
+      const p = points[0];
+      const lp = `M ${padLeft} ${p.y.toFixed(1)} L ${(width - padRight).toFixed(1)} ${p.y.toFixed(1)}`;
+      const ap = `M ${padLeft} ${p.y.toFixed(1)} L ${(width - padRight).toFixed(1)} ${p.y.toFixed(1)} L ${(width - padRight).toFixed(1)} ${zeroY.toFixed(1)} L ${padLeft} ${zeroY.toFixed(1)} Z`;
+      return { linePath: lp, areaPath: ap };
+    }
+
+    if (points.length === 2) {
+      const p0 = points[0];
+      const p1 = points[1];
+      const lp = `M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
+      const ap = `${lp} L ${p1.x.toFixed(1)} ${zeroY.toFixed(1)} L ${p0.x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
+      return { linePath: lp, areaPath: ap };
+    }
+
+    const n = points.length;
+    const dx = [];
+    const secants = [];
+
+    for (let i = 0; i < n - 1; i++) {
+      const dX = points[i + 1].x - points[i].x;
+      dx.push(dX);
+      secants.push(dX === 0 ? 0 : (points[i + 1].y - points[i].y) / dX);
+    }
+
+    const m = new Array(n);
+    m[0] = secants[0];
+    m[n - 1] = secants[n - 2];
+
+    for (let i = 1; i < n - 1; i++) {
+      const s0 = secants[i - 1];
+      const s1 = secants[i];
+      if (s0 * s1 <= 0) {
+        m[i] = 0;
+      } else {
+        m[i] = (2 * s0 * s1) / (s0 + s1);
+      }
+    }
+
+    let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+
+    for (let i = 0; i < n - 1; i++) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const dX = dx[i];
+
+      let cp1x = p1.x + dX / 3;
+      let cp1y = p1.y + (m[i] * dX) / 3;
+      let cp2x = p2.x - dX / 3;
+      let cp2y = p2.y - (m[i + 1] * dX) / 3;
+
+      cp1y = Math.min(zeroY, Math.max(padTop, cp1y));
+      cp2y = Math.min(zeroY, Math.max(padTop, cp2y));
+
+      d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+
+    const firstPt = points[0];
+    const lastPt = points[points.length - 1];
+    const area = `${d} L ${lastPt.x.toFixed(1)} ${zeroY.toFixed(1)} L ${firstPt.x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
+
+    return { linePath: d, areaPath: area };
+  }, [points, padLeft, padRight, width, padTop, zeroY]);
+
+  return (
+    <div className={`chart-card campaign-chart-card ${loading ? "data-refreshing" : ""}`}>
+      <div className="chart-card-header">
+        <div className="chart-title-group">
+          <div className="campaign-chart-title-row">
+            <h3>Campaign Clicks Over Time 📈</h3>
+            <span className="campaign-tag-source" style={{ fontSize: "11px", padding: "2px 8px" }}>
+              Attributed Clicks Only
+            </span>
+          </div>
+          <p>
+            Daily campaign-attributed clicks across all marketing channels ({totalPeriodClicks.toLocaleString()} click{totalPeriodClicks !== 1 ? "s" : ""} in {rangeLabel})
+          </p>
+        </div>
+      </div>
+
+      <div className="chart-svg-container" onMouseLeave={() => setHoveredPoint(null)}>
+        <svg viewBox={`0 0 ${width} ${height}`} className="chart-svg" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="campaignChartAreaGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.32" />
+              <stop offset="65%" stopColor="#7C3AED" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#7C3AED" stopOpacity="0.0" />
+            </linearGradient>
+            <linearGradient id="campaignChartLineGradient" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#7C3AED" />
+              <stop offset="50%" stopColor="#8B5CF6" />
+              <stop offset="100%" stopColor="#A78BFA" />
+            </linearGradient>
+            <filter id="campaignPurpleGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3.5" floodColor="#8B5CF6" floodOpacity="0.4" />
+            </filter>
+          </defs>
+
+          {/* Horizontal Grid Lines & Y-Axis */}
+          {yTicks.map((tickVal) => {
+            const yPos = zeroY - (tickVal / effectiveMax) * innerH;
+            const isBaseline = tickVal === 0;
+            return (
+              <g key={tickVal}>
+                <line
+                  x1={padLeft}
+                  y1={yPos}
+                  x2={width - padRight}
+                  y2={yPos}
+                  stroke={isBaseline ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.04)"}
+                  strokeDasharray={isBaseline ? undefined : "4 4"}
+                />
+                <text
+                  x={padLeft - 10}
+                  y={yPos + 3.5}
+                  fill="#64748B"
+                  fontSize="10"
+                  fontWeight="500"
+                  textAnchor="end"
+                  fontFamily="Inter, sans-serif"
+                >
+                  {tickVal.toLocaleString()}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Gradient Area Fill */}
+          <path d={areaPath} fill="url(#campaignChartAreaGradient)" />
+
+          {/* Spline Line */}
+          <path
+            d={linePath}
+            fill="none"
+            stroke="url(#campaignChartLineGradient)"
+            strokeWidth="2.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#campaignPurpleGlow)"
+          />
+
+          {/* Hover Crosshair Line */}
+          {hoveredPoint && (
+            <line
+              x1={hoveredPoint.x}
+              y1={padTop}
+              x2={hoveredPoint.x}
+              y2={zeroY}
+              stroke="rgba(167, 139, 250, 0.45)"
+              strokeWidth="1.5"
+              strokeDasharray="3 3"
+            />
+          )}
+
+          {/* Column hover catchers for smooth tracking across the graph */}
+          {points.map((pt, idx) => {
+            const prevX = idx === 0 ? padLeft : (points[idx - 1].x + pt.x) / 2;
+            const nextX = idx === points.length - 1 ? width - padRight : (points[idx + 1].x + pt.x) / 2;
+            const colW = Math.max(1, nextX - prevX);
+
+            return (
+              <rect
+                key={`camp-col-${idx}`}
+                x={prevX}
+                y={padTop}
+                width={colW}
+                height={innerH}
+                fill="transparent"
+                style={{ cursor: "pointer" }}
+                onMouseEnter={() => setHoveredPoint(pt)}
+              />
+            );
+          })}
+
+          {/* Visible Data Point Dots along the curve */}
+          {points.map((pt, idx) => {
+            const isHovered = hoveredPoint?.date === pt.date;
+            const stepInterval =
+              points.length <= 7
+                ? 1
+                : points.length <= 14
+                ? 2
+                : points.length <= 31
+                ? 5
+                : Math.ceil(points.length / 6);
+
+            const showDateLabel = idx % stepInterval === 0 || idx === points.length - 1;
+            const isLast = idx === points.length - 1;
+            const isNearClash =
+              isLast &&
+              points.length > 7 &&
+              (points.length - 1) % stepInterval !== 0 &&
+              (points.length - 1) % stepInterval <= 1;
+
+            return (
+              <g key={`camp-dot-${idx}`} style={{ pointerEvents: "none" }}>
+                {isHovered && (
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r="9"
+                    fill="#8B5CF6"
+                    fillOpacity="0.25"
+                    stroke="#A78BFA"
+                    strokeWidth="1"
+                  />
+                )}
+                <circle
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={isHovered ? "5" : points.length <= 10 ? "3.5" : "2.6"}
+                  fill={isHovered ? "#FFFFFF" : "#0B0F19"}
+                  stroke={isHovered ? "#8B5CF6" : "#A78BFA"}
+                  strokeWidth={isHovered ? "2.5" : "1.8"}
+                />
+                {/* Date labels along bottom */}
+                {showDateLabel && !isNearClash && (
+                  <text
+                    x={pt.x}
+                    y={zeroY + 18}
+                    fill={isHovered ? "#DDD6FE" : "#94A3B8"}
+                    fontWeight={isHovered ? "600" : "500"}
+                    fontSize="10"
+                    textAnchor="middle"
+                    fontFamily="Inter, sans-serif"
+                  >
+                    {pt.date}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Floating Dark-Purple Tooltip */}
+        {hoveredPoint && (
+          <div
+            className="chart-hover-tooltip"
+            style={{
+              left: `${Math.max(12, Math.min(88, (hoveredPoint.x / width) * 100))}%`,
+              top: `${(hoveredPoint.y / height) * 100}%`,
+              transform:
+                hoveredPoint.y < 46
+                  ? "translate(-50%, 14px)"
+                  : "translate(-50%, calc(-100% - 10px))",
+            }}
+          >
+            <div className="tooltip-date-label">{hoveredPoint.date} (IST)</div>
+            <div className="tooltip-clicks-val">
+              <span className="tooltip-dot" />
+              <strong>{Math.max(0, hoveredPoint.count).toLocaleString()}</strong> campaign click{hoveredPoint.count !== 1 ? "s" : ""}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function CampaignAnalyticsView({
   campaignAnalytics,
   campaignLoading,
@@ -882,12 +1264,12 @@ function CampaignAnalyticsView({
           </div>
 
           <div className="campaign-controls-group">
-            {/* CHANGE: Added campaign performance table and date-range filters — 2026-11-02 */}
+            {/* CHANGE: Stage 5C — 2026-11-03 */}
             <div className="time-filter-pills" role="radiogroup" aria-label="Campaign time range">
               {[
+                { id: "7d", label: "Last 7 Days" },
+                { id: "30d", label: "Last 30 Days" },
                 { id: "all", label: "All Time" },
-                { id: "30d", label: "30 Days" },
-                { id: "7d", label: "7 Days" },
               ].map((t) => (
                 <button
                   key={t.id}
@@ -939,7 +1321,15 @@ function CampaignAnalyticsView({
           {/* 1. Campaign Metric Cards */}
           <CampaignMetricCards summary={summary} loading={campaignLoading} />
 
-          {/* 2. Donut Charts (Sources & Mediums) */}
+          {/* 2. Campaign Clicks Over Time Line Chart */}
+          {/* CHANGE: Added Campaign Clicks Over Time line chart — 2026-11-03 */}
+          <CampaignClicksChart
+            dailyTrends={campaignAnalytics?.dailyTrends || []}
+            timeRange={campaignRange}
+            loading={campaignLoading}
+          />
+
+          {/* 3. Donut Charts (Sources & Mediums) */}
           <div className={`donuts-grid ${campaignLoading ? "data-refreshing" : ""}`}>
             <DonutChart
               title="Traffic Sources (utm_source)"
@@ -1052,12 +1442,17 @@ function App() {
   const [campaignAnalytics, setCampaignAnalytics] = useState(null);
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignError, setCampaignError] = useState("");
-  // CHANGE: Added campaign performance table and date-range filters — 2026-11-02
+  // CHANGE: Stage 5C — 2026-11-03
   const [campaignRange, setCampaignRange] = useState("all"); // "all" | "30d" | "7d"
+  const campaignAbortControllerRef = useRef(null);
+  const activeCampaignRangeRef = useRef("all");
 
   // Handle session expiration
   const handleSessionExpired = useCallback(
     (message = "Your login session expired. Please log in again.") => {
+      if (campaignAbortControllerRef.current) {
+        campaignAbortControllerRef.current.abort();
+      }
       localStorage.removeItem("token");
       setToken("");
       setUser(null);
@@ -1077,6 +1472,9 @@ function App() {
     } catch {
       // Ignore network error on logout
     } finally {
+      if (campaignAbortControllerRef.current) {
+        campaignAbortControllerRef.current.abort();
+      }
       localStorage.removeItem("token");
       setToken("");
       setUser(null);
@@ -1297,25 +1695,39 @@ function App() {
   }, [token, selectedLink, handleSessionExpired]);
 
   // Fetch campaign analytics on demand
-  // CHANGE: Added campaign performance table and date-range filters — 2026-11-02
+  // CHANGE: Stage 5C — 2026-11-03
   const fetchCampaignAnalytics = useCallback(
     async (selectedRange = campaignRange) => {
       if (!token) return;
+
+      // Abort any in-flight campaign request to prevent race conditions & stale data
+      if (campaignAbortControllerRef.current) {
+        campaignAbortControllerRef.current.abort();
+      }
+      campaignAbortControllerRef.current = new AbortController();
+      const currentSignal = campaignAbortControllerRef.current.signal;
+      activeCampaignRangeRef.current = selectedRange;
+
       setCampaignLoading(true);
       setCampaignError("");
+
       try {
         const res = await axios.get(
           `${API_URL}/user/analytics/campaigns?range=${encodeURIComponent(selectedRange)}`,
           {
             headers: { Authorization: `Bearer ${token}` },
+            signal: currentSignal,
           }
         );
-        if (res.data?.success && res.data?.data) {
+        // Ensure only the latest active filter range updates state
+        if (activeCampaignRangeRef.current === selectedRange && res.data?.success && res.data?.data) {
           setCampaignAnalytics(res.data.data);
-        } else {
-          setCampaignAnalytics(null);
         }
       } catch (err) {
+        // Silently ignore aborted requests from rapid filter clicks
+        if (axios.isCancel(err) || err.name === "CanceledError" || err.code === "ERR_CANCELED") {
+          return;
+        }
         if (err.response?.status === 401) {
           handleSessionExpired();
         } else {
@@ -1324,7 +1736,9 @@ function App() {
           );
         }
       } finally {
-        setCampaignLoading(false);
+        if (activeCampaignRangeRef.current === selectedRange) {
+          setCampaignLoading(false);
+        }
       }
     },
     [token, campaignRange, handleSessionExpired]

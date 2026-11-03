@@ -840,6 +840,7 @@ const getCampaignAnalytics = async (req, res) => {
           sources: [],
           mediums: [],
           performance: [],
+          dailyTrends: [],
         },
       });
     }
@@ -937,7 +938,7 @@ const getCampaignAnalytics = async (req, res) => {
             },
             { $sort: { count: -1 } },
           ],
-          // CHANGE: Added campaign performance table and date-range filters — 2026-11-02
+          // CHANGE: Stage 5C — 2026-11-03
           performance: [
             {
               $group: {
@@ -950,6 +951,25 @@ const getCampaignAnalytics = async (req, res) => {
               },
             },
             { $sort: { count: -1 } },
+          ],
+          // CHANGE: Added campaign clicks over time daily trends — 2026-11-03
+          dailyTrends: [
+            {
+              $match: { isAttributed: 1 },
+            },
+            {
+              $group: {
+                _id: {
+                  $dateToString: {
+                    format: "%Y-%m-%d",
+                    date: "$clickedAt",
+                    timezone: "+05:30",
+                  },
+                },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { _id: 1 } },
           ],
         },
       },
@@ -982,6 +1002,28 @@ const getCampaignAnalytics = async (req, res) => {
       medium: p._id?.medium || UNTRACKED_LABEL,
       count: p.count,
     }));
+
+    // Format daily campaign-attributed trends (IST)
+    const dailyTrends = (aggResult?.dailyTrends || []).map((t) => {
+      let displayDate = t._id;
+      try {
+        const d = new Date(t._id + "T12:00:00+05:30");
+        if (!isNaN(d.getTime())) {
+          displayDate = d.toLocaleDateString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            day: "numeric",
+            month: "short",
+          });
+        }
+      } catch {
+        // Keep ISO date string fallback
+      }
+      return {
+        isoDate: t._id,
+        date: displayDate,
+        count: t.count,
+      };
+    });
 
     // Define distinct non-empty campaign names only (excluding UNTRACKED_LABEL and empty/whitespace)
     const distinctNamedCampaigns = campaigns.filter(
@@ -1019,6 +1061,7 @@ const getCampaignAnalytics = async (req, res) => {
         sources,
         mediums,
         performance,
+        dailyTrends,
       },
     });
   } catch (error) {
