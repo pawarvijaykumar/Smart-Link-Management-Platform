@@ -1,5 +1,7 @@
 import Link from "../models/link.model.js";
 import Click from "../models/click.model.js";
+// CHANGE: Notifications Step 3A — 2026-11-04
+import Notification from "../models/notification.model.js";
 import crypto from "crypto";
 import mongoose from "mongoose";
 import { parseUserAgent } from "../utils/userAgentParser.js";
@@ -107,6 +109,20 @@ const createLink = async (req, res) => {
       utmContent: normalizedUtm.utmContent,
     });
 
+    // CHANGE: Notifications Step 3A — 2026-11-04
+    // Safely create an in-app notification for the user without breaking link creation if notification saving fails
+    try {
+      await Notification.create({
+        user: req.user.userId,
+        title: "New Link Created",
+        message: "Your short link was created successfully.",
+        type: "link",
+        isRead: false,
+      });
+    } catch (notifError) {
+      console.error("Non-blocking notification creation error:", notifError);
+    }
+
     return res.status(201).json({
       success: true,
       message: "Short link created successfully",
@@ -132,7 +148,7 @@ const redirectLink = async (req, res) => {
       { $inc: { clicks: 1 } },
       { new: true }
     )
-      .select("originalUrl _id utmSource utmMedium utmCampaign utmTerm utmContent")
+      .select("originalUrl _id shortCode user clicks utmSource utmMedium utmCampaign utmTerm utmContent notifiedMilestones")
       .lean();
 
     if (!link) {
@@ -177,11 +193,12 @@ const redirectLink = async (req, res) => {
     res.redirect(destinationUrl);
 
     // 2. Safely record visitor device type, browser, and UTM snapshot asynchronously in the background
+    let recordedClick = null;
     try {
       const userAgent = req.headers["user-agent"] || "";
       const { deviceType, browser } = parseUserAgent(userAgent);
 
-      Click.create({
+      recordedClick = await Click.create({
         link: link._id,
         clickedAt: new Date(),
         deviceType,
@@ -191,11 +208,120 @@ const redirectLink = async (req, res) => {
         utmCampaign: link.utmCampaign || null,
         utmTerm: link.utmTerm || null,
         utmContent: link.utmContent || null,
-      }).catch((clickError) => {
-        console.error("Non-blocking click record error:", clickError.message);
       });
     } catch (parseError) {
-      console.error("Failed to parse user-agent:", parseError.message);
+      console.error("Non-blocking click record or user-agent parse error:", parseError.message);
+    }
+
+    // 3. CHANGE: Notifications Step 3B — 2026-11-04
+    // Concurrency-safe, idempotent milestone detection with failure recovery
+    try {
+      const MILESTONES = [100, 500, 1000];
+      const currentClicks = link.clicks;
+
+      // Identify any achieved milestones that have not yet been successfully recorded
+      const pendingMilestones = MILESTONES.filter(
+        (m) => currentClicks >= m && !(link.notifiedMilestones || []).includes(m)
+      );
+
+      if (link.user && pendingMilestones.length > 0) {
+        for (const m of pendingMilestones) {
+          // Atomic claim on Link document: guarantees only one concurrent request proceeds per milestone
+          const claimed = await Link.findOneAndUpdate(
+            {
+              _id: link._id,
+              notifiedMilestones: { $ne: m },
+            },
+            {
+              $addToSet: { notifiedMilestones: m },
+            },
+            { new: true }
+          );
+
+          if (!claimed) {
+            // Another concurrent process already claimed this milestone
+            continue;
+          }
+
+          const displayCount = m === 1000 ? "1,000" : m;
+          const idempotencyKey = `milestone:${link._id}:${m}`;
+
+          try {
+            await Notification.create({
+              user: link.user,
+              title: "Click Milestone Reached",
+              message: `Your short link ${link.shortCode} has reached ${displayCount} clicks!`,
+              type: "milestone",
+              isRead: false,
+              idempotencyKey,
+            });
+          } catch (notifErr) {
+            if (notifErr.code === 11000) {
+              // Database-enforced uniqueness: notification already exists, treat as idempotent success
+            } else {
+              // Notification write failed due to a non-duplicate error: roll back claim so it can be retried safely
+              console.error(`Notification write failed for milestone ${m}, rolling back claim:`, notifErr.message);
+              await Link.updateOne(
+                { _id: link._id },
+                { $pull: { notifiedMilestones: m } }
+              ).catch((pullErr) => {
+                console.error("Rollback pull error:", pullErr.message);
+              });
+            }
+          }
+        }
+      }
+    } catch (milestoneError) {
+      console.error("Non-blocking milestone notification error:", milestoneError);
+    }
+
+    // 4. CHANGE: Notifications Step 3C — 2026-11-04
+    // Automatically notify the link owner when a UTM campaign receives its first attributed click
+    try {
+      // Use the UTM campaign snapshot recorded in the Click document (Requirement 2)
+      const recordedCampaign = recordedClick?.utmCampaign;
+
+      if (
+        link.user &&
+        recordedCampaign &&
+        typeof recordedCampaign === "string" &&
+        recordedCampaign.trim().length > 0
+      ) {
+        const campaignName = recordedCampaign.trim();
+        // Identify the campaign using the link owner's user ID and normalized UTM campaign name (Requirement 3)
+        const normalizedCampaignKey = campaignName.toLowerCase();
+        const idempotencyKey = `campaign_first_click:${link.user}:${normalizedCampaignKey}`;
+
+        // Fast check to skip subsequent clicks without write attempts (Requirement 7)
+        const existingNotification = await Notification.findOne({ idempotencyKey })
+          .select("_id")
+          .lean();
+
+        if (!existingNotification) {
+          try {
+            await Notification.create({
+              user: link.user,
+              title: "Campaign Received Traffic",
+              message: `Your campaign ${campaignName} has received its first click!`,
+              type: "campaign",
+              isRead: false,
+              idempotencyKey,
+            });
+          } catch (notifErr) {
+            if (notifErr.code === 11000) {
+              // Database-enforced uniqueness: concurrent click already created notification, treat as idempotent success
+            } else {
+              // Notification write failed due to a non-duplicate error: log safely without throwing so subsequent click can retry and recover
+              console.error(
+                `Non-blocking campaign notification write error for campaign "${campaignName}":`,
+                notifErr.message
+              );
+            }
+          }
+        }
+      }
+    } catch (campaignError) {
+      console.error("Non-blocking campaign activity notification error:", campaignError);
     }
   } catch (error) {
     console.error("Redirect link error:", error);

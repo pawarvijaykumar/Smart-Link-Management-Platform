@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const linkSchema = new mongoose.Schema(
@@ -75,6 +74,12 @@ Identifies the specific creative or element clicked, useful for A/B testing diff
       type: String,
       trim: true,
       default: null,
+    },
+    // CHANGE: Notifications Step 3B — 2026-11-04
+    // Tracks achieved click milestones to prevent duplicate notifications under concurrency
+    notifiedMilestones: {
+      type: [Number],
+      default: [],
     },
   },
   {

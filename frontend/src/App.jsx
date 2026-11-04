@@ -13,6 +13,8 @@ import "./App.css";
 const API_BASE_URL = "http://localhost:5000";
 const API_URL = `${API_BASE_URL}/api/links`;
 const USER_URL = `${API_BASE_URL}/api/v1/users`;
+// CHANGE: Notifications Step 4B — 2026-11-04
+const NOTIFICATION_URL = `${API_BASE_URL}/api/notifications`;
 
 // Default Donut Color Palette
 const DONUT_COLORS = [
@@ -1447,6 +1449,12 @@ function App() {
   const campaignAbortControllerRef = useRef(null);
   const activeCampaignRangeRef = useRef("all");
 
+  // CHANGE: Notifications Step 4B — 2026-11-04
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+
   // Handle session expiration
   const handleSessionExpired = useCallback(
     (message = "Your login session expired. Please log in again.") => {
@@ -1458,6 +1466,10 @@ function App() {
       setUser(null);
       setLinks([]);
       setCampaignAnalytics(null);
+      // CHANGE: Notifications Step 4B — 2026-11-04
+      setNotifications([]);
+      setUnreadCount(0);
+      setShowNotificationsDropdown(false);
       setActiveView("dashboard");
       setCampaignRange("all");
       setAuthError(message);
@@ -1480,6 +1492,10 @@ function App() {
       setUser(null);
       setLinks([]);
       setCampaignAnalytics(null);
+      // CHANGE: Notifications Step 4B — 2026-11-04
+      setNotifications([]);
+      setUnreadCount(0);
+      setShowNotificationsDropdown(false);
       setActiveView("dashboard");
       setCampaignRange("all");
       setError("");
@@ -1768,6 +1784,127 @@ function App() {
     };
   }, [activeView, token, campaignRange, fetchCampaignAnalytics]);
 
+  // CHANGE: Notifications Step 4B — 2026-11-04
+  // Fetch notifications belonging strictly to the authenticated user
+  const fetchNotifications = useCallback(async () => {
+    const activeToken = token || localStorage.getItem("token");
+    if (!activeToken) return;
+
+    setNotificationsLoading(true);
+    try {
+      const res = await axios.get(NOTIFICATION_URL, {
+        headers: { Authorization: `Bearer ${activeToken}` },
+      });
+
+      if (res.data?.success) {
+        setNotifications(res.data.data || []);
+        setUnreadCount(typeof res.data.unreadCount === "number" ? res.data.unreadCount : 0);
+      }
+    } catch (err) {
+      if (err.response?.status === 401) {
+        handleSessionExpired();
+      } else {
+        console.error("Failed to fetch notifications:", err.message);
+      }
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [token, handleSessionExpired]);
+
+  // Mark a single notification as read
+  const handleMarkAsRead = useCallback(
+    async (notificationId) => {
+      if (!notificationId) return;
+      const activeToken = token || localStorage.getItem("token");
+      if (!activeToken) return;
+
+      try {
+        const res = await axios.patch(
+          `${NOTIFICATION_URL}/${notificationId}/read`,
+          {},
+          { headers: { Authorization: `Bearer ${activeToken}` } }
+        );
+
+        if (res.data?.success) {
+          setNotifications((prev) =>
+            prev.map((n) => (n._id === notificationId ? { ...n, isRead: true } : n))
+          );
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        }
+      } catch (err) {
+        if (err.response?.status === 401) {
+          handleSessionExpired();
+        } else {
+          console.error("Failed to mark notification as read:", err.message);
+        }
+      }
+    },
+    [token, handleSessionExpired]
+  );
+
+  // Mark all unread notifications of the logged-in user as read
+  const handleMarkAllAsRead = useCallback(async () => {
+    const activeToken = token || localStorage.getItem("token");
+    if (!activeToken) return;
+
+    try {
+      const res = await axios.patch(
+        `${NOTIFICATION_URL}/read-all`,
+        {},
+        { headers: { Authorization: `Bearer ${activeToken}` } }
+      );
+
+      if (res.data?.success) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+        setUnreadCount(0);
+      }
+    } catch (err) {
+      if (err.response?.status === 401) {
+        handleSessionExpired();
+      } else {
+        console.error("Failed to mark all notifications as read:", err.message);
+      }
+    }
+  }, [token, handleSessionExpired]);
+
+  // Delete a single notification belonging to the logged-in user
+  const handleDeleteNotification = useCallback(
+    async (notificationId) => {
+      if (!notificationId) return;
+      const activeToken = token || localStorage.getItem("token");
+      if (!activeToken) return;
+
+      try {
+        const res = await axios.delete(`${NOTIFICATION_URL}/${notificationId}`, {
+          headers: { Authorization: `Bearer ${activeToken}` },
+        });
+
+        if (res.data?.success) {
+          setNotifications((prev) => {
+            const target = prev.find((n) => n._id === notificationId);
+            if (target && !target.isRead) {
+              setUnreadCount((count) => Math.max(0, count - 1));
+            }
+            return prev.filter((n) => n._id !== notificationId);
+          });
+        }
+      } catch (err) {
+        if (err.response?.status === 401) {
+          handleSessionExpired();
+        } else {
+          console.error("Failed to delete notification:", err.message);
+        }
+      }
+    },
+    [token, handleSessionExpired]
+  );
+
+  // Fetch notifications whenever the user is authenticated and token is available
+  useEffect(() => {
+    if (!token) return;
+    fetchNotifications();
+  }, [token, fetchNotifications]);
+
   // Top metric calculations
   const totalClicks = useMemo(() => {
     return links.reduce((acc, l) => acc + (l.clicks || 0), 0);
@@ -1827,6 +1964,9 @@ function App() {
         setNewUrlInput("");
         setUtmInputs(initialUtmState);
         setShowUtmSection(false);
+        // CHANGE: Notifications Step 4B — 2026-11-04
+        // Refresh notifications since new link creation generates a backend notification
+        fetchNotifications();
       }
     } catch (err) {
       if (err.response?.status === 401) {
@@ -1989,11 +2129,13 @@ function App() {
           </div>
 
           <div className="topbar-actions">
+            {/* CHANGE: Notifications Step 4B — 2026-11-04 */}
             <button
               type="button"
               className="topbar-icon-btn"
-              title="Notifications"
-              aria-label="Notifications"
+              title={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}
+              aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}
+              onClick={() => setShowNotificationsDropdown((prev) => !prev)}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
