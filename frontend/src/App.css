@@ -362,7 +362,7 @@ button {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 380px;
+  width: 400px;
   max-width: calc(100vw - 32px);
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -390,9 +390,10 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(15, 22, 38, 0.5);
+  background: rgba(15, 22, 38, 0.6);
+  gap: 12px;
 }
 
 .notifications-header-title {
@@ -414,8 +415,36 @@ button {
   border: 1px solid rgba(124, 58, 237, 0.3);
 }
 
+.notifications-all-read-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.btn-mark-all-read {
+  background: transparent;
+  border: none;
+  color: var(--accent-purple-light);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-mark-all-read:hover {
+  background: rgba(124, 58, 237, 0.15);
+  color: #ffffff;
+}
+
 .notifications-dropdown-body {
-  max-height: 380px;
+  max-height: 420px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -446,10 +475,14 @@ button {
   gap: 8px;
 }
 
+.notifications-empty-state.error {
+  color: var(--accent-rose);
+}
+
 .notifications-empty-icon {
   font-size: 28px;
   margin-bottom: 4px;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .notifications-empty-title {
@@ -464,7 +497,42 @@ button {
   color: var(--text-muted);
   margin: 0;
   line-height: 1.5;
-  max-width: 260px;
+  max-width: 270px;
+}
+
+.notifications-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--accent-purple);
+  border-radius: 50%;
+  animation: notifSpin 0.7s linear infinite;
+  margin-bottom: 4px;
+}
+
+@keyframes notifSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-retry-notifications {
+  margin-top: 6px;
+  padding: 5px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-retry-notifications:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-purple);
+  color: #ffffff;
 }
 
 .notifications-list {
@@ -473,20 +541,16 @@ button {
 }
 
 .notification-item {
-  padding: 12px 18px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-subtle);
   transition: background 0.15s ease;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  gap: 12px;
+  align-items: flex-start;
 }
 
 .notification-item:last-child {
   border-bottom: none;
-}
-
-.notification-item:hover {
-  background: var(--bg-card-hover);
 }
 
 .notification-item.unread {
@@ -498,17 +562,160 @@ button {
   background: rgba(124, 58, 237, 0.14);
 }
 
+.notification-item.read {
+  background: transparent;
+  border-left: 3px solid transparent;
+  opacity: 0.85;
+}
+
+.notification-item.read:hover {
+  background: var(--bg-card-hover);
+  opacity: 1;
+}
+
+.notification-item-left {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.notification-type-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+}
+
+.badge-link {
+  background: rgba(6, 182, 212, 0.15);
+  color: #06B6D4;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.badge-milestone {
+  background: rgba(245, 158, 11, 0.15);
+  color: #F59E0B;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-campaign {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8B5CF6;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.badge-system {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.notification-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.notification-item-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .notification-item-title {
   font-size: 13px;
   font-weight: 650;
   color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.notification-item.read .notification-item-title {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.notification-type-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 .notification-item-message {
   font-size: 12px;
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.45;
+  margin: 0;
   word-break: break-word;
+}
+
+.notification-item.read .notification-item-message {
+  color: var(--text-muted);
+}
+
+.notification-item-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  gap: 8px;
+}
+
+.notification-item-time {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.notification-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-action-read {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(124, 58, 237, 0.15);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  color: var(--accent-purple-light);
+  border-radius: var(--radius-sm);
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-action-read:hover {
+  background: var(--accent-purple);
+  color: #ffffff;
+  border-color: var(--accent-purple);
+}
+
+.btn-action-delete {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.btn-action-delete:hover {
+  background: rgba(244, 63, 94, 0.15);
+  color: var(--accent-rose);
+  border-color: rgba(244, 63, 94, 0.3);
 }
 
 .topbar-profile-pill {
@@ -2462,5 +2669,359 @@ button {
   gap: 12px;
   flex-wrap: wrap;
 }
+
+/* ==========================================================================
+   CHANGE: QR Code Feature Stage 2 — 2026-11-05
+   Reusable QR Code Component & Card Styles
+   ========================================================================== */
+
+.qr-card-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.qr-card-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.qr-card-subtitle {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 280px;
+}
+
+.qr-canvas-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.qr-canvas-frame {
+  background: #ffffff;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 12px rgba(124, 58, 237, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.qr-canvas-frame:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5), 0 0 16px rgba(124, 58, 237, 0.25);
+}
+
+.qr-canvas-frame canvas {
+  display: block;
+  border-radius: 4px;
+}
+
+.qr-url-readout {
+  margin-top: 10px;
+  width: 100%;
+  max-width: 280px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.qr-url-text {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  color: var(--accent-purple-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.qr-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.qr-btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.qr-btn-action:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-purple);
+  color: #ffffff;
+}
+
+.qr-btn-action.copied {
+  border-color: var(--accent-emerald);
+  color: var(--accent-emerald);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.qr-btn-action.qr-btn-primary {
+  background: linear-gradient(135deg, var(--accent-purple), #9333ea);
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 2px 10px var(--glow-purple);
+}
+
+.qr-btn-action.qr-btn-primary:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px var(--glow-purple);
+}
+
+.qr-btn-action.qr-btn-primary:active {
+  transform: translateY(0);
+}
+
+.qr-card-empty {
+  padding: 30px 20px;
+}
+
+.qr-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.qr-empty-icon {
+  opacity: 0.5;
+  color: var(--accent-amber);
+}
+
+.qr-empty-text {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 240px;
+}
+
+/* ==========================================================================
+   CHANGE: QR Code Feature Stage 3 — 2026-11-05
+   Link Creation Success Screen (Option 1: Short Link, Option 2: QR Code)
+   ========================================================================== */
+
+.create-success-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeIn 0.22s ease-out;
+}
+
+.create-success-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  color: var(--accent-emerald);
+}
+
+.create-success-alert-icon {
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.create-success-alert-text {
+  font-size: 14px;
+  font-weight: 650;
+  color: #ffffff;
+}
+
+.success-option-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.success-option-card:hover {
+  border-color: rgba(124, 58, 237, 0.35);
+  background: rgba(15, 23, 42, 0.75);
+}
+
+.success-option-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.success-option-badge {
+  font-size: 10.5px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(124, 58, 237, 0.22);
+  color: var(--accent-purple-light);
+  border: 1px solid rgba(124, 58, 237, 0.38);
+}
+
+.success-option-title {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.success-option-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.success-url-box {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.success-clickable-url {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 44px;
+  padding: 0 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--accent-purple-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12.5px;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+
+.success-clickable-url:hover {
+  border-color: var(--accent-purple);
+  background: rgba(124, 58, 237, 0.1);
+  color: #ffffff;
+}
+
+.success-url-prefix {
+  opacity: 0.7;
+}
+
+.success-url-code {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.success-url-icon {
+  margin-left: auto;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.success-copy-btn {
+  height: 44px;
+  padding: 0 16px;
+  font-size: 12.5px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.success-copy-btn.copied {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--accent-emerald);
+  color: var(--accent-emerald);
+}
+
+.success-destination-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  overflow: hidden;
+  padding-top: 2px;
+}
+
+.success-destination-label {
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+
+.success-destination-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.success-qr-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.create-success-qr-card {
+  padding: 8px 12px 12px;
+  background: transparent;
+  border: none;
+}
+
+
 
 

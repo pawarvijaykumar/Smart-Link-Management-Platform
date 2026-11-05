@@ -109,7 +109,7 @@ const createLink = async (req, res) => {
       utmContent: normalizedUtm.utmContent,
     });
 
-    // CHANGE: Notifications Step 3A — 2026-11-04
+    // CHANGE: Notifications Step 3A/4E — 2026-11-05
     // Safely create an in-app notification for the user without breaking link creation if notification saving fails
     try {
       await Notification.create({
@@ -118,6 +118,7 @@ const createLink = async (req, res) => {
         message: "Your short link was created successfully.",
         type: "link",
         isRead: false,
+        idempotencyKey: `link_created:${link._id}`,
       });
     } catch (notifError) {
       console.error("Non-blocking notification creation error:", notifError);

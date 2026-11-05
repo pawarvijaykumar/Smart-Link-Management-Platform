@@ -26,11 +26,10 @@ const notificationSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  // CHANGE: Notifications Step 3B — 2026-11-04
-  // Unique idempotency key for database-enforced duplicate prevention
+  // CHANGE: Notifications Step 3B/4E — 2026-11-05
+  // Unique idempotency key for database-enforced duplicate prevention (omitted by default for sparse indexing)
   idempotencyKey: {
     type: String,
-    default: null,
   },
   createdAt: {
     type: Date,

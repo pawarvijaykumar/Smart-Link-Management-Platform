@@ -8,10 +8,18 @@ import ClicksOverviewChart, {
   formatDisplayDate,
   calculateNiceYAxis,
 } from "./ClicksOverviewChart";
+// CHANGE: QR Code Feature Stage 2 — 2026-11-05
+// Import reusable QR Code component and URL helper
+import QRCodeCard, { buildShortUrl } from "./QRCodeCard";
 import "./App.css";
 
-const API_BASE_URL = "http://localhost:5000";
-const API_URL = `${API_BASE_URL}/api/links`;
+// CHANGE: QR Code Feature Stage 2 — 2026-11-05
+// Support environment-configured public base URL for short link redirection and QR code generation
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5000";
+export const API_URL = `${API_BASE_URL}/api/links`;
 const USER_URL = `${API_BASE_URL}/api/v1/users`;
 // CHANGE: Notifications Step 4B — 2026-11-04
 const NOTIFICATION_URL = `${API_BASE_URL}/api/notifications`;
@@ -26,6 +34,71 @@ const DONUT_COLORS = [
   "#6366F1", // Indigo
   "#64748B", // Slate
 ];
+
+// CHANGE: Notifications Step 4D — 2026-11-05
+// Safe helper to format notification createdAt timestamp to Indian Standard Time (IST)
+const formatNotificationIST = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  try {
+    return d.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return d.toLocaleString();
+  }
+};
+
+// Configuration for supported notification types: icons, labels, and badge classes
+const NOTIFICATION_TYPE_CONFIG = {
+  link: {
+    label: "Link",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
+    ),
+    badgeClass: "badge-link",
+  },
+  milestone: {
+    label: "Milestone",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+        <circle cx="12" cy="8" r="7" />
+        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+      </svg>
+    ),
+    badgeClass: "badge-milestone",
+  },
+  campaign: {
+    label: "Campaign",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+      </svg>
+    ),
+    badgeClass: "badge-campaign",
+  },
+  system: {
+    label: "System",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    ),
+    badgeClass: "badge-system",
+  },
+};
 
 // -----------------------------------------------------------------------------
 // Component: MetricCards (Top 4 Statistics)
@@ -1433,6 +1506,16 @@ function App() {
     setCreateSuccessLink(null);
   }, []);
 
+  // CHANGE: QR Code Feature Stage 3 — 2026-11-05
+  // Reset form inputs to create another short link while keeping modal open
+  const handleCreateAnother = useCallback(() => {
+    setNewUrlInput("");
+    setUtmInputs(initialUtmState);
+    setShowUtmSection(false);
+    setCreateError("");
+    setCreateSuccessLink(null);
+  }, []);
+
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailLink, setDetailLink] = useState(null);
   const [detailAnalytics, setDetailAnalytics] = useState(null);
@@ -1449,10 +1532,11 @@ function App() {
   const campaignAbortControllerRef = useRef(null);
   const activeCampaignRangeRef = useRef("all");
 
-  // CHANGE: Notifications Step 4B — 2026-11-04
+  // CHANGE: Notifications Step 4B/4D — 2026-11-05
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const notificationsRef = useRef(null);
 
@@ -1467,9 +1551,10 @@ function App() {
       setUser(null);
       setLinks([]);
       setCampaignAnalytics(null);
-      // CHANGE: Notifications Step 4B — 2026-11-04
+      // CHANGE: Notifications Step 4B/4D — 2026-11-05
       setNotifications([]);
       setUnreadCount(0);
+      setNotificationsError("");
       setShowNotificationsDropdown(false);
       setActiveView("dashboard");
       setCampaignRange("all");
@@ -1493,9 +1578,10 @@ function App() {
       setUser(null);
       setLinks([]);
       setCampaignAnalytics(null);
-      // CHANGE: Notifications Step 4B — 2026-11-04
+      // CHANGE: Notifications Step 4B/4D — 2026-11-05
       setNotifications([]);
       setUnreadCount(0);
+      setNotificationsError("");
       setShowNotificationsDropdown(false);
       setActiveView("dashboard");
       setCampaignRange("all");
@@ -1785,13 +1871,14 @@ function App() {
     };
   }, [activeView, token, campaignRange, fetchCampaignAnalytics]);
 
-  // CHANGE: Notifications Step 4B — 2026-11-04
+  // CHANGE: Notifications Step 4B/4D — 2026-11-05
   // Fetch notifications belonging strictly to the authenticated user
   const fetchNotifications = useCallback(async () => {
     const activeToken = token || localStorage.getItem("token");
     if (!activeToken) return;
 
     setNotificationsLoading(true);
+    setNotificationsError("");
     try {
       const res = await axios.get(NOTIFICATION_URL, {
         headers: { Authorization: `Bearer ${activeToken}` },
@@ -1805,6 +1892,8 @@ function App() {
       if (err.response?.status === 401) {
         handleSessionExpired();
       } else {
+        const msg = err.response?.data?.message || "Failed to load notifications.";
+        setNotificationsError(msg);
         console.error("Failed to fetch notifications:", err.message);
       }
     } finally {
@@ -1827,10 +1916,13 @@ function App() {
         );
 
         if (res.data?.success) {
-          setNotifications((prev) =>
-            prev.map((n) => (n._id === notificationId ? { ...n, isRead: true } : n))
-          );
-          setUnreadCount((prev) => Math.max(0, prev - 1));
+          setNotifications((prev) => {
+            const target = prev.find((n) => n._id === notificationId);
+            if (target && !target.isRead) {
+              setUnreadCount((count) => Math.max(0, count - 1));
+            }
+            return prev.map((n) => (n._id === notificationId ? { ...n, isRead: true } : n));
+          });
         }
       } catch (err) {
         if (err.response?.status === 401) {
@@ -2190,35 +2282,137 @@ function App() {
                   <div className="notifications-dropdown-header">
                     <div className="notifications-header-title">
                       <span>Notifications</span>
-                      {unreadCount > 0 && (
+                      {unreadCount > 0 ? (
                         <span className="notifications-unread-pill">{unreadCount} new</span>
+                      ) : (
+                        <span className="notifications-all-read-pill">All caught up</span>
                       )}
                     </div>
+                    {/* CHANGE: Notifications Step 4D — 2026-11-05 */}
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        className="btn-mark-all-read"
+                        onClick={handleMarkAllAsRead}
+                        title="Mark all notifications as read"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
                   </div>
+
                   <div className="notifications-dropdown-body">
                     {notificationsLoading ? (
                       <div className="notifications-empty-state">
-                        <p>Loading notifications...</p>
+                        <div className="notifications-spinner" aria-hidden="true"></div>
+                        <p className="notifications-empty-title">Loading notifications...</p>
+                        <p className="notifications-empty-desc">Fetching your latest activity.</p>
+                      </div>
+                    ) : notificationsError ? (
+                      <div className="notifications-empty-state error">
+                        <span className="notifications-empty-icon">⚠️</span>
+                        <p className="notifications-empty-title">Unable to load</p>
+                        <p className="notifications-empty-desc">{notificationsError}</p>
+                        <button
+                          type="button"
+                          className="btn-retry-notifications"
+                          onClick={fetchNotifications}
+                        >
+                          Retry
+                        </button>
                       </div>
                     ) : notifications.length === 0 ? (
                       <div className="notifications-empty-state">
                         <span className="notifications-empty-icon">🔔</span>
                         <p className="notifications-empty-title">No notifications yet</p>
                         <p className="notifications-empty-desc">
-                          You will see alerts here when your links receive traffic.
+                          We&apos;ll notify you when your links get clicks or reach milestones.
                         </p>
                       </div>
                     ) : (
                       <div className="notifications-list">
-                        {notifications.map((n) => (
-                          <div
-                            key={n._id}
-                            className={`notification-item ${!n.isRead ? "unread" : ""}`}
-                          >
-                            <div className="notification-item-title">{n.title}</div>
-                            <div className="notification-item-message">{n.message}</div>
-                          </div>
-                        ))}
+                        {notifications.map((n) => {
+                          const typeConfig =
+                            NOTIFICATION_TYPE_CONFIG[n.type] || NOTIFICATION_TYPE_CONFIG.system;
+                          const formattedDate = formatNotificationIST(n.createdAt);
+
+                          return (
+                            <div
+                              key={n._id}
+                              className={`notification-item ${!n.isRead ? "unread" : "read"}`}
+                            >
+                              <div className="notification-item-left">
+                                <div
+                                  className={`notification-type-icon ${typeConfig.badgeClass}`}
+                                  title={typeConfig.label}
+                                >
+                                  {typeConfig.icon}
+                                </div>
+                              </div>
+
+                              <div className="notification-item-main">
+                                <div className="notification-item-header-row">
+                                  <span className="notification-item-title">{n.title}</span>
+                                  <span className={`notification-type-pill ${typeConfig.badgeClass}`}>
+                                    {typeConfig.label}
+                                  </span>
+                                </div>
+
+                                <p className="notification-item-message">{n.message}</p>
+
+                                <div className="notification-item-footer">
+                                  <span className="notification-item-time" title="Indian Standard Time">
+                                    {formattedDate ? `${formattedDate} (IST)` : ""}
+                                  </span>
+
+                                  <div className="notification-item-actions">
+                                    {!n.isRead && (
+                                      <button
+                                        type="button"
+                                        className="btn-action-read"
+                                        onClick={() => handleMarkAsRead(n._id)}
+                                        title="Mark as read"
+                                        aria-label="Mark as read"
+                                      >
+                                        <svg
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2.5"
+                                          width="12"
+                                          height="12"
+                                        >
+                                          <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        <span>Mark read</span>
+                                      </button>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      className="btn-action-delete"
+                                      onClick={() => handleDeleteNotification(n._id)}
+                                      title="Delete notification"
+                                      aria-label="Delete notification"
+                                    >
+                                      <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        width="13"
+                                        height="13"
+                                      >
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -2332,7 +2526,7 @@ function App() {
         <div className="modal-backdrop" onClick={resetCreateModal}>
           <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Create a Short Link</h3>
+              <h3>{createSuccessLink ? "Link Created" : "Create a Short Link"}</h3>
               <button
                 type="button"
                 className="modal-close-btn"
@@ -2351,27 +2545,90 @@ function App() {
                   </div>
                 )}
 
+                {/* CHANGE: QR Code Feature Stage 3 — 2026-11-05 */}
+                {/* Automatic QR code and short URL display upon successful link creation */}
                 {createSuccessLink ? (
-                  <div>
-                    <div className="auth-alert success" style={{ marginBottom: "16px" }}>
-                      <span>Short link created successfully!</span>
+                  <div className="create-success-container">
+                    <div className="create-success-alert">
+                      <span className="create-success-alert-icon">✓</span>
+                      <span className="create-success-alert-text">
+                        Smart Link Created Successfully!
+                      </span>
                     </div>
-                    <label className="modal-input-label">Your Short URL</label>
-                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                      <input
-                        type="text"
-                        readOnly
-                        className="modal-text-input"
-                        value={`${API_URL}/${createSuccessLink.shortCode}`}
-                      />
-                      <button
-                        type="button"
-                        className="btn-create-primary"
-                        style={{ height: "46px" }}
-                        onClick={() => handleCopy(createSuccessLink)}
-                      >
-                        {copiedLinkId === createSuccessLink._id ? "✓ Copied" : "Copy"}
-                      </button>
+
+                    {/* Option 1: Click the short link */}
+                    <div className="success-option-card">
+                      <div className="success-option-header">
+                        <span className="success-option-badge">Option 1</span>
+                        <span className="success-option-title">Click the short link</span>
+                      </div>
+                      <p className="success-option-desc">
+                        Click the short link to test the redirect, or copy it to share anywhere.
+                      </p>
+
+                      <div className="success-url-box">
+                        <a
+                          href={`${API_URL}/${createSuccessLink.shortCode}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="success-clickable-url"
+                          title="Click to visit short link"
+                        >
+                          <span className="success-url-prefix">{API_URL}/</span>
+                          <span className="success-url-code">
+                            {createSuccessLink.shortCode}
+                          </span>
+                          <span className="success-url-icon" aria-hidden="true">
+                            ↗
+                          </span>
+                        </a>
+
+                        <button
+                          type="button"
+                          className={`btn-create-primary success-copy-btn ${
+                            copiedLinkId === createSuccessLink._id ? "copied" : ""
+                          }`}
+                          onClick={() => handleCopy(createSuccessLink)}
+                          title="Copy short link"
+                        >
+                          {copiedLinkId === createSuccessLink._id ? "✓ Copied" : "Copy"}
+                        </button>
+                      </div>
+
+                      {createSuccessLink.originalUrl && (
+                        <div className="success-destination-row">
+                          <span className="success-destination-label">Redirects to:</span>
+                          <span
+                            className="success-destination-text"
+                            title={createSuccessLink.originalUrl}
+                          >
+                            {createSuccessLink.originalUrl}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Option 2: Scan the QR code */}
+                    <div className="success-option-card">
+                      <div className="success-option-header">
+                        <span className="success-option-badge">Option 2</span>
+                        <span className="success-option-title">Scan the QR code</span>
+                      </div>
+                      <p className="success-option-desc">
+                        Scan this QR code with any smartphone camera to visit the short link and track visits.
+                      </p>
+
+                      <div className="success-qr-wrapper">
+                        <QRCodeCard
+                          shortUrl={`${API_URL}/${createSuccessLink.shortCode}`}
+                          shortCode={createSuccessLink.shortCode}
+                          size={160}
+                          showUrl={false}
+                          showDownload={false}
+                          showCopy={false}
+                          className="create-success-qr-card"
+                        />
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -2503,22 +2760,43 @@ function App() {
                 )}
               </div>
 
+              {/* CHANGE: QR Code Feature Stage 3 — 2026-11-05 */}
+              {/* Modal footer providing clear actions to finish or create another link */}
               <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={resetCreateModal}
-                >
-                  {createSuccessLink ? "Done" : "Cancel"}
-                </button>
-                {!createSuccessLink && (
-                  <button
-                    type="submit"
-                    className="btn-create-primary"
-                    disabled={createLoading}
-                  >
-                    {createLoading ? "Creating..." : "Create Short Link →"}
-                  </button>
+                {createSuccessLink ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={handleCreateAnother}
+                    >
+                      + Create Another Link
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-create-primary"
+                      onClick={resetCreateModal}
+                    >
+                      Done
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={resetCreateModal}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-create-primary"
+                      disabled={createLoading}
+                    >
+                      {createLoading ? "Creating..." : "Create Short Link →"}
+                    </button>
+                  </>
                 )}
               </div>
             </form>
