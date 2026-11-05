@@ -1454,6 +1454,7 @@ function App() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const notificationsRef = useRef(null);
 
   // Handle session expiration
   const handleSessionExpired = useCallback(
@@ -1905,6 +1906,35 @@ function App() {
     fetchNotifications();
   }, [token, fetchNotifications]);
 
+  // CHANGE: Notifications Step 4C / Bell Click Fix — 2026-11-05
+  // Dismiss notification dropdown on outside click or Escape key press
+  useEffect(() => {
+    if (!showNotificationsDropdown) return;
+
+    const handleClickOutside = (e) => {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(e.target)
+      ) {
+        setShowNotificationsDropdown(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setShowNotificationsDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showNotificationsDropdown]);
+
   // Top metric calculations
   const totalClicks = useMemo(() => {
     return links.reduce((acc, l) => acc + (l.clicks || 0), 0);
@@ -2129,19 +2159,72 @@ function App() {
           </div>
 
           <div className="topbar-actions">
-            {/* CHANGE: Notifications Step 4B — 2026-11-04 */}
-            <button
-              type="button"
-              className="topbar-icon-btn"
-              title={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}
-              aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}
-              onClick={() => setShowNotificationsDropdown((prev) => !prev)}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-            </button>
+            {/* CHANGE: Notifications Step 4C / Bell Click Fix — 2026-11-05 */}
+            <div className="topbar-notifications-wrapper" ref={notificationsRef}>
+              <button
+                type="button"
+                className={`topbar-icon-btn ${showNotificationsDropdown ? "active" : ""}`}
+                title={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}
+                aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}
+                aria-expanded={showNotificationsDropdown}
+                aria-haspopup="true"
+                onClick={() => setShowNotificationsDropdown((prev) => !prev)}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="topbar-notification-badge">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotificationsDropdown && (
+                <div
+                  className="notifications-dropdown"
+                  role="region"
+                  aria-label="Notifications panel"
+                >
+                  <div className="notifications-dropdown-header">
+                    <div className="notifications-header-title">
+                      <span>Notifications</span>
+                      {unreadCount > 0 && (
+                        <span className="notifications-unread-pill">{unreadCount} new</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="notifications-dropdown-body">
+                    {notificationsLoading ? (
+                      <div className="notifications-empty-state">
+                        <p>Loading notifications...</p>
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="notifications-empty-state">
+                        <span className="notifications-empty-icon">🔔</span>
+                        <p className="notifications-empty-title">No notifications yet</p>
+                        <p className="notifications-empty-desc">
+                          You will see alerts here when your links receive traffic.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="notifications-list">
+                        {notifications.map((n) => (
+                          <div
+                            key={n._id}
+                            className={`notification-item ${!n.isRead ? "unread" : ""}`}
+                          >
+                            <div className="notification-item-title">{n.title}</div>
+                            <div className="notification-item-message">{n.message}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="topbar-profile-pill">
               <div className="user-avatar" style={{ width: "28px", height: "28px", fontSize: "12px" }}>

@@ -323,6 +323,194 @@ button {
   border-color: var(--border-hover);
 }
 
+/* CHANGE: Notifications Step 4C / Bell Click Fix — 2026-11-05 */
+.topbar-notifications-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.topbar-icon-btn.active {
+  background: var(--bg-card-hover);
+  color: #ffffff;
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 2px var(--glow-purple);
+}
+
+.topbar-notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, #EF4444, #F43F5E);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-page);
+  pointer-events: none;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(244, 63, 94, 0.4);
+}
+
+.notifications-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.notifications-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(15, 22, 38, 0.5);
+}
+
+.notifications-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.notifications-unread-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--accent-purple-light);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+.notifications-dropdown-body {
+  max-height: 380px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.notifications-dropdown-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notifications-dropdown-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notifications-dropdown-body::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 4px;
+}
+
+.notifications-dropdown-body::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+.notifications-empty-state {
+  padding: 36px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.notifications-empty-icon {
+  font-size: 28px;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.notifications-empty-title {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.notifications-empty-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 260px;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-item {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background: var(--bg-card-hover);
+}
+
+.notification-item.unread {
+  background: rgba(124, 58, 237, 0.08);
+  border-left: 3px solid var(--accent-purple);
+}
+
+.notification-item.unread:hover {
+  background: rgba(124, 58, 237, 0.14);
+}
+
+.notification-item-title {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.notification-item-message {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
 .topbar-profile-pill {
   display: flex;
   align-items: center;
