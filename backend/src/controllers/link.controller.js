@@ -5,6 +5,8 @@ import Notification from "../models/notification.model.js";
 import crypto from "crypto";
 import mongoose from "mongoose";
 import { parseUserAgent } from "../utils/userAgentParser.js";
+// CHANGE: Stage 8 — Geo-Location Analytics — 2026-11-08
+import { getVisitorIP, resolveGeoLocation } from "../utils/geo.util.js";
 
 // Helper to validate whether a URL string has a valid HTTP/HTTPS web scheme
 const isValidHttpUrl = (urlString) => {
@@ -94,6 +96,39 @@ const createLink = async (req, res) => {
       }
     }
 
+    // CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
+    let validatedExpiresAt = null;
+    if (req.body.expiresAt) {
+      const expDate = new Date(req.body.expiresAt);
+      if (isNaN(expDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Please provide a valid expiration date and time",
+        });
+      }
+      if (expDate <= new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: "Expiration date must be in the future",
+        });
+      }
+      validatedExpiresAt = expDate;
+    }
+
+    let validatedMaxClicks = null;
+    if (req.body.maxClicks !== undefined && req.body.maxClicks !== null && req.body.maxClicks !== "") {
+      const parsedMax = Number(req.body.maxClicks);
+      if (!Number.isInteger(parsedMax) || parsedMax < 1) {
+        return res.status(400).json({
+          success: false,
+          message: "Maximum clicks must be a positive whole number (at least 1)",
+        });
+      }
+      validatedMaxClicks = parsedMax;
+    }
+
+    const validatedIsPaused = Boolean(req.body.isPaused);
+
     // Generate a unique short code
     const shortCode = crypto.randomBytes(4).toString("hex");
 
@@ -107,6 +142,9 @@ const createLink = async (req, res) => {
       utmCampaign: normalizedUtm.utmCampaign,
       utmTerm: normalizedUtm.utmTerm,
       utmContent: normalizedUtm.utmContent,
+      expiresAt: validatedExpiresAt,
+      maxClicks: validatedMaxClicks,
+      isPaused: validatedIsPaused,
     });
 
     // CHANGE: Notifications Step 3A/4E — 2026-11-05
@@ -140,22 +178,97 @@ const createLink = async (req, res) => {
 };
 
 // CHANGE: Added UTM campaign parameters to redirects and click snapshots — 2026-11-01
+// CHANGE: QR visit tracking — 2026-11-06
+// CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
 const redirectLink = async (req, res) => {
   try {
     const { shortCode } = req.params;
 
+    // Detect whether visit originated from QR code scan
+    const isQR = req.query.qr === "1";
+
+    const now = new Date();
+
+    // 1. Concurrency-safe atomic check and click increment
+    // Only matches if:
+    // - Link exists with matching shortCode
+    // - isPaused is NOT true
+    // - expiresAt is null, undefined, or in the future (> now)
+    // - maxClicks is null, undefined, or clicks < maxClicks
     const link = await Link.findOneAndUpdate(
-      { shortCode },
+      {
+        shortCode,
+        isPaused: { $ne: true },
+        $and: [
+          {
+            $or: [
+              { expiresAt: null },
+              { expiresAt: { $exists: false } },
+              { expiresAt: { $gt: now } },
+            ],
+          },
+          {
+            $or: [
+              { maxClicks: null },
+              { maxClicks: { $exists: false } },
+              { $expr: { $lt: ["$clicks", "$maxClicks"] } },
+            ],
+          },
+        ],
+      },
       { $inc: { clicks: 1 } },
       { new: true }
     )
-      .select("originalUrl _id shortCode user clicks utmSource utmMedium utmCampaign utmTerm utmContent notifiedMilestones")
+      .select("originalUrl _id shortCode user clicks utmSource utmMedium utmCampaign utmTerm utmContent notifiedMilestones expiresAt maxClicks isPaused")
       .lean();
 
+    // 2. If atomic update did not succeed, inspect reason without recording clicks or notifications
     if (!link) {
-      return res.status(404).json({
+      const inspectLink = await Link.findOne({ shortCode })
+        .select("shortCode originalUrl isPaused expiresAt maxClicks clicks")
+        .lean();
+
+      if (!inspectLink) {
+        return res.status(404).json({
+          success: false,
+          code: "LINK_NOT_FOUND",
+          message: "Short link not found",
+        });
+      }
+
+      // Check whether owner has paused the link
+      if (inspectLink.isPaused) {
+        return res.status(403).json({
+          success: false,
+          code: "LINK_PAUSED",
+          message: "This link has been paused by the owner",
+        });
+      }
+
+      // Check whether current time is past expiresAt
+      if (inspectLink.expiresAt && now > new Date(inspectLink.expiresAt)) {
+        return res.status(410).json({
+          success: false,
+          code: "LINK_EXPIRED",
+          message: "This link has expired",
+          expiredAt: inspectLink.expiresAt,
+        });
+      }
+
+      // Check whether click limit has been reached
+      if (inspectLink.maxClicks && inspectLink.clicks >= inspectLink.maxClicks) {
+        return res.status(410).json({
+          success: false,
+          code: "CLICK_LIMIT_REACHED",
+          message: "This link has reached its maximum click limit",
+          maxClicks: inspectLink.maxClicks,
+          clicks: inspectLink.clicks,
+        });
+      }
+
+      return res.status(400).json({
         success: false,
-        message: "Short link not found",
+        message: "Link is unavailable",
       });
     }
 
@@ -193,25 +306,33 @@ const redirectLink = async (req, res) => {
     // 1. Immediately send HTTP 302 redirect to visitor for minimum latency
     res.redirect(destinationUrl);
 
-    // 2. Safely record visitor device type, browser, and UTM snapshot asynchronously in the background
+    // 2. Safely record visitor device type, browser, isQR, UTM snapshot, and approximate geolocation in the background
     let recordedClick = null;
     try {
       const userAgent = req.headers["user-agent"] || "";
       const { deviceType, browser } = parseUserAgent(userAgent);
+      // CHANGE: Stage 8 — Extract visitor IP and resolve approximate geolocation (raw IP is not stored)
+      const visitorIP = getVisitorIP(req);
+      const { country, countryCode, region, city } = resolveGeoLocation(visitorIP);
 
       recordedClick = await Click.create({
         link: link._id,
         clickedAt: new Date(),
         deviceType,
         browser,
+        isQR,
         utmSource: link.utmSource || null,
         utmMedium: link.utmMedium || null,
         utmCampaign: link.utmCampaign || null,
         utmTerm: link.utmTerm || null,
         utmContent: link.utmContent || null,
+        country,
+        countryCode,
+        region,
+        city,
       });
     } catch (parseError) {
-      console.error("Non-blocking click record or user-agent parse error:", parseError.message);
+      console.error("Non-blocking click record or geo parse error:", parseError.message);
     }
 
     // 3. CHANGE: Notifications Step 3B — 2026-11-04
@@ -618,11 +739,19 @@ const getAggregatedAnalytics = async (linkId, totalClicks) => {
           { $sort: { _id: 1 } },
         ],
         totalCount: [{ $count: "count" }],
+        // CHANGE: QR visit tracking — 2026-11-06
+        qrCount: [
+          { $match: { isQR: true } },
+          { $count: "count" },
+        ],
       },
     },
   ]);
 
   const totalRecorded = aggResult?.totalCount?.[0]?.count || 0;
+  // CHANGE: QR visit tracking — 2026-11-06
+  const qrScans = aggResult?.qrCount?.[0]?.count || 0;
+  const directClicks = Math.max(0, totalRecorded - qrScans);
   const deviceCounts = {
     desktop: 0,
     mobile: 0,
@@ -701,6 +830,9 @@ const getAggregatedAnalytics = async (linkId, totalClicks) => {
   return {
     totalClicks,
     totalRecordedClicks: totalRecorded,
+    // CHANGE: QR visit tracking — 2026-11-06
+    qrScans,
+    directClicks,
     devices,
     browsers,
     dailyTrends,
@@ -737,7 +869,7 @@ const getClickHistory = async (req, res) => {
     // Concurrently fetch database-paginated clicks and database-aggregated analytics
     const [paginatedClicks, analytics] = await Promise.all([
       Click.find({ link: link._id })
-        .select("clickedAt deviceType browser")
+        .select("clickedAt deviceType browser isQR")
         .sort({ clickedAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -751,6 +883,7 @@ const getClickHistory = async (req, res) => {
       clickedAtIST: safeFormatIST(click.clickedAt),
       deviceType: click.deviceType || "unknown",
       browser: click.browser || "Unknown",
+      isQR: Boolean(click.isQR),
     }));
 
     return res.status(200).json({
@@ -808,7 +941,7 @@ const getLinkAnalytics = async (req, res) => {
     // Concurrently fetch database-paginated clicks and database-aggregated analytics
     const [paginatedClicks, analytics] = await Promise.all([
       Click.find({ link: link._id })
-        .select("clickedAt deviceType browser")
+        .select("clickedAt deviceType browser isQR")
         .sort({ clickedAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -822,6 +955,7 @@ const getLinkAnalytics = async (req, res) => {
       clickedAtIST: safeFormatIST(click.clickedAt),
       deviceType: click.deviceType || "unknown",
       browser: click.browser || "Unknown",
+      isQR: Boolean(click.isQR),
     }));
 
     return res.status(200).json({
@@ -894,7 +1028,7 @@ const getAllLinksAnalytics = async (req, res) => {
     // Concurrently fetch clicks across all user's links and aggregated analytics
     const [paginatedClicks, analytics] = await Promise.all([
       Click.find({ link: { $in: linkIds } })
-        .select("link clickedAt deviceType browser")
+        .select("link clickedAt deviceType browser isQR")
         .sort({ clickedAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -909,6 +1043,7 @@ const getAllLinksAnalytics = async (req, res) => {
       clickedAtIST: safeFormatIST(click.clickedAt),
       deviceType: click.deviceType || "unknown",
       browser: click.browser || "Unknown",
+      isQR: Boolean(click.isQR),
     }));
 
     return res.status(200).json({
@@ -1216,7 +1351,7 @@ const getMyLinks = async (req, res) => {
     const skip = (page - 1) * limit;
 
     let linksQuery = Link.find({ user: userId })
-      .select("shortCode originalUrl clicks createdAt updatedAt user")
+      .select("shortCode originalUrl clicks createdAt updatedAt user expiresAt maxClicks isPaused utmSource utmMedium utmCampaign")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -1260,6 +1395,583 @@ const getMyLinks = async (req, res) => {
   }
 };
 
+// CHANGE: QR analytics API — 2026-11-06
+const getQRAnalytics = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const rawRange = (req.query.range || "all").toString().toLowerCase().trim();
+    const range = rawRange === "7d" || rawRange === "30d" ? rawRange : "all";
+
+    // 1. User Isolation: Find only links owned by the authenticated user
+    const userLinks = await Link.find({ user: userId })
+      .select("_id shortCode originalUrl createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // If user has no links, return empty data structure immediately
+    if (userLinks.length === 0) {
+      return res.status(200).json({
+        success: true,
+        range,
+        summary: {
+          totalClicks: 0,
+          qrClicks: 0,
+          directClicks: 0,
+          qrPercentage: 0,
+        },
+        links: [],
+      });
+    }
+
+    const linkIds = userLinks.map((l) => l._id);
+
+    // 2. Date Filtering in IST
+    const matchCondition = {
+      link: { $in: linkIds },
+    };
+
+    if (range === "7d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(7) };
+    } else if (range === "30d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(30) };
+    }
+
+    // 3. Facet Aggregation
+    const [aggResult] = await Click.aggregate([
+      { $match: matchCondition },
+      {
+        $facet: {
+          summary: [
+            {
+              $group: {
+                _id: null,
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: {
+                    $cond: [{ $eq: ["$isQR", true] }, 1, 0],
+                  },
+                },
+                directClicks: {
+                  $sum: {
+                    $cond: [{ $eq: ["$isQR", true] }, 0, 1],
+                  },
+                },
+              },
+            },
+          ],
+          perLink: [
+            {
+              $group: {
+                _id: "$link",
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: {
+                    $cond: [{ $eq: ["$isQR", true] }, 1, 0],
+                  },
+                },
+                directClicks: {
+                  $sum: {
+                    $cond: [{ $eq: ["$isQR", true] }, 0, 1],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const summaryData = aggResult?.summary?.[0] || {
+      totalClicks: 0,
+      qrClicks: 0,
+      directClicks: 0,
+    };
+
+    const totalClicks = summaryData.totalClicks || 0;
+    const qrClicks = summaryData.qrClicks || 0;
+    const directClicks = summaryData.directClicks || 0;
+    const qrPercentage =
+      totalClicks > 0
+        ? Number(((qrClicks / totalClicks) * 100).toFixed(1))
+        : 0;
+
+    // Build per-link lookup map
+    const linkStatsMap = new Map();
+    if (aggResult?.perLink) {
+      for (const item of aggResult.perLink) {
+        linkStatsMap.set(item._id.toString(), {
+          totalClicks: item.totalClicks || 0,
+          qrClicks: item.qrClicks || 0,
+          directClicks: item.directClicks || 0,
+        });
+      }
+    }
+
+    // Map each link owned by user to its stats (including zero-click links)
+    const links = userLinks.map((link) => {
+      const stats = linkStatsMap.get(link._id.toString()) || {
+        totalClicks: 0,
+        qrClicks: 0,
+        directClicks: 0,
+      };
+
+      const linkTotalClicks = stats.totalClicks;
+      const linkQrClicks = stats.qrClicks;
+      const linkDirectClicks = stats.directClicks;
+      const linkQrPercentage =
+        linkTotalClicks > 0
+          ? Number(((linkQrClicks / linkTotalClicks) * 100).toFixed(1))
+          : 0;
+
+      return {
+        linkId: link._id,
+        shortCode: link.shortCode,
+        originalUrl: link.originalUrl,
+        totalClicks: linkTotalClicks,
+        qrClicks: linkQrClicks,
+        directClicks: linkDirectClicks,
+        qrPercentage: linkQrPercentage,
+      };
+    });
+
+    // Sort links: highest qrClicks first, then totalClicks, then original order
+    links.sort((a, b) => b.qrClicks - a.qrClicks || b.totalClicks - a.totalClicks);
+
+    return res.status(200).json({
+      success: true,
+      range,
+      summary: {
+        totalClicks,
+        qrClicks,
+        directClicks,
+        qrPercentage,
+      },
+      links,
+    });
+  } catch (error) {
+    console.error("Get QR analytics error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch QR analytics",
+    });
+  }
+};
+
+// CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
+/**
+ * Sets or updates expiry date, maximum clicks, and pause state for an owned link.
+ */
+const updateLinkAccess = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { _id: id, user: userId }
+      : { shortCode: id, user: userId };
+
+    const link = await Link.findOne(query);
+
+    if (!link) {
+      return res.status(404).json({
+        success: false,
+        message: "Link not found or unauthorized",
+      });
+    }
+
+    const updates = {};
+
+    // 1. Expiry Date
+    if (req.body.expiresAt !== undefined) {
+      if (req.body.expiresAt === null || req.body.expiresAt === "") {
+        updates.expiresAt = null;
+      } else {
+        const expDate = new Date(req.body.expiresAt);
+        if (isNaN(expDate.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid expiration date format",
+          });
+        }
+        if (expDate <= new Date()) {
+          return res.status(400).json({
+            success: false,
+            message: "Expiration date must be in the future",
+          });
+        }
+        updates.expiresAt = expDate;
+      }
+    }
+
+    // 2. Maximum Clicks
+    if (req.body.maxClicks !== undefined) {
+      if (req.body.maxClicks === null || req.body.maxClicks === "") {
+        updates.maxClicks = null;
+      } else {
+        const parsedMax = Number(req.body.maxClicks);
+        if (!Number.isInteger(parsedMax) || parsedMax < 1) {
+          return res.status(400).json({
+            success: false,
+            message: "Maximum clicks must be a positive integer (at least 1)",
+          });
+        }
+        updates.maxClicks = parsedMax;
+      }
+    }
+
+    // 3. Pause Status
+    if (req.body.isPaused !== undefined) {
+      updates.isPaused = Boolean(req.body.isPaused);
+    }
+
+    Object.assign(link, updates);
+    await link.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Link access settings updated successfully",
+      data: link,
+    });
+  } catch (error) {
+    console.error("Update link access error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update link access settings",
+    });
+  }
+};
+
+// CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
+/**
+ * Toggles or sets the pause status for an owned link.
+ */
+const togglePauseLink = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { _id: id, user: userId }
+      : { shortCode: id, user: userId };
+
+    const link = await Link.findOne(query);
+
+    if (!link) {
+      return res.status(404).json({
+        success: false,
+        message: "Link not found or unauthorized",
+      });
+    }
+
+    if (req.body && req.body.isPaused !== undefined) {
+      link.isPaused = Boolean(req.body.isPaused);
+    } else {
+      link.isPaused = !link.isPaused;
+    }
+
+    await link.save();
+
+    const actionText = link.isPaused ? "paused" : "reactivated";
+
+    return res.status(200).json({
+      success: true,
+      message: `Link ${actionText} successfully`,
+      isPaused: link.isPaused,
+      data: link,
+    });
+  } catch (error) {
+    console.error("Toggle pause link error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update link pause status",
+    });
+  }
+};
+
+// CHANGE: Stage 8 — Geo-Location Analytics API — 2026-11-08
+/**
+ * Returns user-scoped geolocation analytics with date filtering (7d, 30d, all).
+ * Computes:
+ * - summary: totalClicks, geoIdentifiedClicks, unknownClicks, countriesCount, citiesCount, qrGeoClicks, directGeoClicks, geoIdentifiedPercentage
+ * - topCountries: ranked country breakdown with totalClicks, qrClicks, directClicks, percentage, qrPercentage
+ * - topCities: ranked city breakdown with totalClicks, qrClicks, directClicks, percentage
+ * - qrVsDirectByCountry: comparative distribution across top countries
+ */
+const getGeoAnalytics = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const rawRange = (req.query.range || "all").toString().toLowerCase().trim();
+    const range = rawRange === "7d" || rawRange === "30d" ? rawRange : "all";
+
+    // 1. User Isolation: Find only links owned by the authenticated user
+    const userLinks = await Link.find({ user: userId })
+      .select("_id")
+      .lean();
+
+    if (userLinks.length === 0) {
+      return res.status(200).json({
+        success: true,
+        range,
+        summary: {
+          totalClicks: 0,
+          geoIdentifiedClicks: 0,
+          unknownClicks: 0,
+          countriesCount: 0,
+          citiesCount: 0,
+          qrGeoClicks: 0,
+          directGeoClicks: 0,
+          geoIdentifiedPercentage: 0,
+        },
+        topCountries: [],
+        topCities: [],
+        qrVsDirectByCountry: [],
+      });
+    }
+
+    const linkIds = userLinks.map((l) => l._id);
+
+    // 2. Date Filtering in IST boundaries
+    const matchCondition = {
+      link: { $in: linkIds },
+    };
+
+    if (range === "7d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(7) };
+    } else if (range === "30d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(30) };
+    }
+
+    // 3. Faceted Aggregation for Country, City, and Overall Summary
+    const [aggResult] = await Click.aggregate([
+      { $match: matchCondition },
+      {
+        $facet: {
+          summary: [
+            {
+              $group: {
+                _id: null,
+                totalClicks: { $sum: 1 },
+                geoIdentifiedClicks: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $ne: ["$countryCode", null] },
+                          { $ne: ["$country", "Unknown"] },
+                          { $ne: ["$country", ""] },
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+                unknownClicks: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $or: [
+                          { $eq: ["$countryCode", null] },
+                          { $eq: ["$country", "Unknown"] },
+                          { $not: ["$country"] },
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+                qrGeoClicks: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $eq: ["$isQR", true] },
+                          { $ne: ["$countryCode", null] },
+                          { $ne: ["$country", "Unknown"] },
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+                directGeoClicks: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $ne: ["$isQR", true] },
+                          { $ne: ["$countryCode", null] },
+                          { $ne: ["$country", "Unknown"] },
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+          countries: [
+            {
+              $match: {
+                countryCode: { $ne: null },
+                country: { $ne: "Unknown" },
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  countryCode: "$countryCode",
+                  country: "$country",
+                },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { totalClicks: -1, "_id.country": 1 } },
+          ],
+          cities: [
+            {
+              $match: {
+                city: { $ne: null, $nin: ["Unknown", ""] },
+                country: { $ne: "Unknown" },
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  city: "$city",
+                  country: "$country",
+                  countryCode: "$countryCode",
+                },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { totalClicks: -1, "_id.city": 1 } },
+            { $limit: 15 },
+          ],
+        },
+      },
+    ]);
+
+    const summaryRaw = aggResult?.summary?.[0] || {
+      totalClicks: 0,
+      geoIdentifiedClicks: 0,
+      unknownClicks: 0,
+      qrGeoClicks: 0,
+      directGeoClicks: 0,
+    };
+
+    const totalClicks = summaryRaw.totalClicks || 0;
+    const geoIdentifiedClicks = summaryRaw.geoIdentifiedClicks || 0;
+    const unknownClicks = summaryRaw.unknownClicks || 0;
+    const qrGeoClicks = summaryRaw.qrGeoClicks || 0;
+    const directGeoClicks = summaryRaw.directGeoClicks || 0;
+    const geoIdentifiedPercentage =
+      totalClicks > 0 ? Number(((geoIdentifiedClicks / totalClicks) * 100).toFixed(1)) : 0;
+
+    const countriesRaw = aggResult?.countries || [];
+    const citiesRaw = aggResult?.cities || [];
+
+    // Format Top Countries
+    const topCountries = countriesRaw.map((c, index) => {
+      const clicks = c.totalClicks || 0;
+      const qr = c.qrClicks || 0;
+      const direct = c.directClicks || 0;
+      const percentage =
+        geoIdentifiedClicks > 0
+          ? Number(((clicks / geoIdentifiedClicks) * 100).toFixed(1))
+          : 0;
+      const qrPercentage = clicks > 0 ? Number(((qr / clicks) * 100).toFixed(1)) : 0;
+
+      return {
+        rank: index + 1,
+        country: c._id.country || "Unknown",
+        countryCode: c._id.countryCode || null,
+        totalClicks: clicks,
+        qrClicks: qr,
+        directClicks: direct,
+        percentage,
+        qrPercentage,
+      };
+    });
+
+    // Format Top Cities
+    const totalCityIdentifiedClicks = citiesRaw.reduce(
+      (sum, item) => sum + (item.totalClicks || 0),
+      0
+    );
+    const topCities = citiesRaw.map((c, index) => {
+      const clicks = c.totalClicks || 0;
+      const qr = c.qrClicks || 0;
+      const direct = c.directClicks || 0;
+      const percentage =
+        totalCityIdentifiedClicks > 0
+          ? Number(((clicks / totalCityIdentifiedClicks) * 100).toFixed(1))
+          : 0;
+
+      return {
+        rank: index + 1,
+        city: c._id.city || "Unknown",
+        country: c._id.country || "Unknown",
+        countryCode: c._id.countryCode || null,
+        totalClicks: clicks,
+        qrClicks: qr,
+        directClicks: direct,
+        percentage,
+      };
+    });
+
+    // Format QR vs Direct geographic breakdown
+    const qrVsDirectByCountry = topCountries.slice(0, 10).map((c) => ({
+      country: c.country,
+      countryCode: c.countryCode,
+      qrClicks: c.qrClicks,
+      directClicks: c.directClicks,
+      totalClicks: c.totalClicks,
+      qrPercentage: c.qrPercentage,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      range,
+      summary: {
+        totalClicks,
+        geoIdentifiedClicks,
+        unknownClicks,
+        countriesCount: topCountries.length,
+        citiesCount: topCities.length,
+        qrGeoClicks,
+        directGeoClicks,
+        geoIdentifiedPercentage,
+      },
+      topCountries,
+      topCities,
+      qrVsDirectByCountry,
+    });
+  } catch (error) {
+    console.error("Get geo analytics error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch geolocation analytics",
+    });
+  }
+};
+
 export {
   createLink,
   redirectLink,
@@ -1268,4 +1980,8 @@ export {
   getAllLinksAnalytics,
   getMyLinks,
   getCampaignAnalytics,
+  getQRAnalytics,
+  updateLinkAccess,
+  togglePauseLink,
+  getGeoAnalytics,
 };

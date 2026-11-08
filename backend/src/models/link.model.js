@@ -81,6 +81,21 @@ Identifies the specific creative or element clicked, useful for A/B testing diff
       type: [Number],
       default: [],
     },
+
+    // CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
+    expiresAt: {
+      type: Date,
+      default: null,
+    },
+    maxClicks: {
+      type: Number,
+      default: null,
+      min: 1,
+    },
+    isPaused: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,//Automatically records createdAt and updatedAt

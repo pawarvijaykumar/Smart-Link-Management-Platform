@@ -8,6 +8,12 @@ import {
   getAllLinksAnalytics,
   getMyLinks,
   getCampaignAnalytics,
+  getQRAnalytics,
+  // CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
+  updateLinkAccess,
+  togglePauseLink,
+  // CHANGE: Stage 8 — Geo-Location Analytics — 2026-11-08
+  getGeoAnalytics,
 } from "../controllers/link.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 
@@ -24,6 +30,18 @@ router.get("/all/analytics", verifyJWT, getAllLinksAnalytics);
 
 // CHANGE: Added user-scoped campaign analytics aggregation — 2026-11-01
 router.get("/user/analytics/campaigns", verifyJWT, getCampaignAnalytics);
+
+// CHANGE: QR analytics API — 2026-11-06
+router.get("/user/analytics/qr", verifyJWT, getQRAnalytics);
+
+// CHANGE: Stage 8 — Geo-Location Analytics API — 2026-11-08
+router.get("/user/analytics/geo", verifyJWT, getGeoAnalytics);
+
+// CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
+router.patch("/:id/access", verifyJWT, updateLinkAccess);
+router.patch("/:id/pause", verifyJWT, togglePauseLink);
+router.patch("/:id/toggle-pause", verifyJWT, togglePauseLink);
+router.patch("/:id", verifyJWT, updateLinkAccess);
 
 // Get click analytics for a specific short link
 router.get("/:shortCode/analytics", verifyJWT, getLinkAnalytics);

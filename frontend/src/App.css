@@ -1736,30 +1736,94 @@ button {
   border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
+/* CHANGE: Stage 7 — Smart Link Status Pill Variants — 2026-11-07 */
+.status-pill.paused {
+  background: rgba(245, 158, 11, 0.15);
+  color: #F59E0B;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.status-pill.expired {
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+.status-pill.limit-reached {
+  background: rgba(139, 92, 246, 0.15);
+  color: #A78BFA;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+}
+
 .table-actions-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .btn-action-view {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
   background: var(--bg-input);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 650;
   transition: all 0.18s ease;
+  white-space: nowrap;
 }
 
 .btn-action-view:hover {
   background: var(--accent-purple);
   border-color: var(--accent-purple);
+  color: #ffffff;
+  box-shadow: 0 2px 10px var(--glow-purple);
+}
+
+/* CHANGE: Stage 7 — Action Button Styles — 2026-11-07 */
+.btn-action-resume {
+  color: #10B981;
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.btn-action-resume:hover {
+  background: #10B981;
+  border-color: #10B981;
+  color: #ffffff;
+  box-shadow: 0 2px 10px var(--glow-emerald);
+}
+
+.btn-action-pause {
+  color: #F59E0B;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.btn-action-pause:hover {
+  background: #F59E0B;
+  border-color: #F59E0B;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+}
+
+.btn-action-access {
+  color: #A78BFA;
+  border-color: rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.btn-action-access:hover {
+  background: #8B5CF6;
+  border-color: #8B5CF6;
   color: #ffffff;
   box-shadow: 0 2px 10px var(--glow-purple);
 }
@@ -2712,13 +2776,15 @@ button {
 
 .qr-canvas-frame {
   background: #ffffff;
-  padding: 12px;
+  padding: 14px;
   border-radius: var(--radius-md);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 12px rgba(124, 58, 237, 0.15);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   line-height: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -2730,6 +2796,9 @@ button {
 .qr-canvas-frame canvas {
   display: block;
   border-radius: 4px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 .qr-url-readout {
@@ -3022,6 +3091,1144 @@ button {
   border: none;
 }
 
+/* ==========================================================================
+   CHANGE: Final QR modal layout fix — entire QR visible without scrolling — 2026-11-07
+   QR Code Modal in My Links & Action Button Enhancements
+   ========================================================================== */
+
+.qr-modal-panel {
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.qr-modal-panel .modal-header {
+  flex-shrink: 0;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.qr-modal-panel .modal-footer {
+  flex-shrink: 0;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.qr-modal-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  max-width: calc(100% - 36px);
+}
+
+.qr-modal-header-info h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.qr-modal-dest-preview {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-modal-panel .qr-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  justify-content: safe center;
+  padding: 14px 20px;
+  box-sizing: border-box;
+}
+
+.qr-preview-card {
+  width: 100%;
+  max-width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-modal-panel .qr-canvas-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 0 10px 0;
+  max-width: 100%;
+  flex-shrink: 1;
+}
+
+.qr-modal-panel .qr-canvas-frame {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 12px rgba(124, 58, 237, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+}
+
+.qr-modal-panel .qr-canvas-frame canvas {
+  display: block;
+  border-radius: 4px;
+  max-width: 100% !important;
+  max-height: min(240px, calc(90vh - 250px)) !important;
+  width: auto !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.qr-modal-panel .qr-url-readout {
+  margin: 0 0 10px 0;
+  width: 100%;
+  max-width: 300px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  overflow: hidden;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.qr-modal-panel .qr-url-text {
+  font-size: 11.5px;
+  line-height: 1.3;
+}
+
+.qr-modal-panel .qr-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  width: 100%;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.qr-modal-panel .qr-btn-action {
+  height: 32px;
+  padding: 0 14px;
+  font-size: 12px;
+}
+
+@media (max-width: 480px) {
+  .qr-modal-panel {
+    max-width: calc(100vw - 24px);
+    max-height: 92vh;
+  }
+
+  .qr-modal-panel .modal-header {
+    padding: 12px 16px;
+  }
+
+  .qr-modal-panel .qr-modal-body {
+    padding: 10px 14px;
+  }
+
+  .qr-modal-panel .modal-footer {
+    padding: 10px 16px;
+  }
+
+  .qr-modal-panel .qr-canvas-frame canvas {
+    max-height: min(210px, calc(92vh - 225px)) !important;
+  }
+
+  .qr-modal-panel .qr-card-actions {
+    gap: 8px;
+  }
+
+  .qr-modal-panel .qr-btn-action {
+    height: 30px;
+    padding: 0 10px;
+    font-size: 11.5px;
+  }
+}
+
+/* ==========================================================================
+   QR Analytics Dashboard (Stage 5C: Step 3)
+   CHANGE: QR analytics dashboard — 2026-11-06
+   ========================================================================== */
+
+.qr-analytics-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.qr-summary-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.qr-insights-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  justify-content: center;
+}
+
+.qr-insight-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.qr-insight-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.qr-insight-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.qr-insight-stat-val {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.qr-insight-stat-pct {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.qr-insight-progress-bar {
+  display: flex;
+  height: 8px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin: 4px 0;
+}
+
+.qr-progress-fill-qr {
+  background: linear-gradient(90deg, #8B5CF6, #A855F7);
+  transition: width 0.4s ease;
+}
+
+.qr-progress-fill-direct {
+  background: linear-gradient(90deg, #06B6D4, #22D3EE);
+  transition: width 0.4s ease;
+}
+
+.qr-insight-description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: rgba(139, 92, 246, 0.06);
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+@media (max-width: 768px) {
+  .qr-insight-stat-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* ==========================================================================
+   Stage 6: QR Scan Insights (Top Performing QR Links & Best Performer)
+   CHANGE: Stage 6 — QR Scan Insights — 2026-11-07
+   ========================================================================== */
+
+.qr-scan-insights-section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+}
+
+.qr-best-performer-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(10, 15, 29, 0.95) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 18px 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), 0 0 15px rgba(139, 92, 246, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.qr-best-card-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.qr-trophy-badge {
+  background: rgba(245, 158, 11, 0.15);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qr-range-tag {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  text-transform: capitalize;
+  font-weight: 500;
+}
+
+.qr-best-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.qr-best-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.qr-best-code-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.qr-best-code-pill {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 750;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 4px 12px;
+  background: rgba(139, 92, 246, 0.25);
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.qr-best-code-pill:hover {
+  background: rgba(139, 92, 246, 0.4);
+  border-color: var(--accent-purple-light);
+  color: #ffffff;
+}
+
+.qr-best-url-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 500px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-best-metrics-cluster {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-md);
+  padding: 10px 18px;
+}
+
+.qr-best-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 70px;
+}
+
+.qr-best-stat-num {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.qr-best-stat-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.qr-best-stat-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.qr-best-zero-state {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 0;
+}
+
+.qr-zero-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.qr-zero-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.qr-zero-desc {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.qr-top-table-card {
+  border: 1px solid rgba(139, 92, 246, 0.22);
+}
+
+.qr-top-row-first {
+  background: rgba(139, 92, 246, 0.04);
+}
+
+.qr-rank-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 750;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  min-width: 46px;
+  text-align: center;
+}
+
+.qr-rank-pill.rank-1 {
+  background: rgba(245, 158, 11, 0.2);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+.qr-rank-pill.rank-2 {
+  background: rgba(148, 163, 184, 0.2);
+  color: #CBD5E1;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.qr-rank-pill.rank-3 {
+  background: rgba(217, 119, 6, 0.2);
+  color: #F59E0B;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+}
+
+.qr-rank-pill.rank-4,
+.qr-rank-pill.rank-5 {
+  background: rgba(139, 92, 246, 0.15);
+  color: #C084FC;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+@media (max-width: 768px) {
+  .qr-best-card-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .qr-best-metrics-cluster {
+    width: 100%;
+    justify-content: space-around;
+    box-sizing: border-box;
+  }
+}
+
+/* ==========================================================================
+   CHANGE: Stage 7 — Smart Link Expiration & Access Control Styles — 2026-11-07
+   ========================================================================== */
+
+.clicks-info-stack {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.clicks-limit-max {
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.clicks-limit-subtext {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.clicks-limit-subtext.text-danger {
+  color: #EF4444;
+}
+
+.expiry-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.expiry-badge-inline.expired {
+  background: rgba(239, 68, 68, 0.12);
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+}
+
+.expiry-badge-inline.scheduled {
+  background: rgba(139, 92, 246, 0.12);
+  color: #A78BFA;
+  border: 1px solid rgba(139, 92, 246, 0.28);
+}
+
+.expiry-icon {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.expiry-none-text {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* Access Settings Modal */
+.access-modal-panel {
+  max-width: 520px;
+  width: 92%;
+  box-sizing: border-box;
+}
+
+.access-status-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.access-status-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.access-status-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.access-status-metrics {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 8px;
+}
+
+.access-status-metrics strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.access-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.access-toggle-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: border-color 0.18s ease;
+}
+
+.access-toggle-container:hover {
+  border-color: var(--accent-purple);
+}
+
+.access-toggle-container input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: var(--accent-purple);
+}
+
+.access-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.access-toggle-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.access-toggle-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.access-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.access-clear-btn {
+  background: none;
+  border: none;
+  color: var(--accent-purple);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: opacity 0.18s ease;
+}
+
+.access-clear-btn:hover {
+  opacity: 0.8;
+}
+
+.access-field-desc {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
 
 
+/* ==========================================================================
+   Stage 8: Geo-Location Analytics Dashboard
+   CHANGE: Stage 8 — Geo-Location Analytics CSS — 2026-11-08
+   ========================================================================== */
 
+.geo-analytics-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.geo-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.geo-chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.geo-chart-card:hover {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-md);
+}
+
+.geo-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.geo-card-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.geo-card-header p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* World Map Card */
+.world-map-card {
+  padding: 20px 24px;
+}
+
+.world-map-svg-wrapper {
+  position: relative;
+  width: 100%;
+  background: radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.7) 0%, rgba(10, 15, 30, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  padding: 12px;
+}
+
+.world-map-svg {
+  width: 100%;
+  height: auto;
+  max-height: 440px;
+  display: block;
+}
+
+.world-map-country-path {
+  cursor: pointer;
+  transition: fill 0.25s ease, stroke 0.25s ease, stroke-width 0.25s ease, filter 0.25s ease;
+}
+
+.world-map-country-path.has-data:hover {
+  stroke: #ffffff;
+  stroke-width: 2px;
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.6));
+}
+
+.world-map-inspector {
+  display: flex;
+  align-items: center;
+}
+
+.inspector-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  animation: fadeIn 0.15s ease-in;
+}
+
+.inspector-flag {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.inspector-country {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.inspector-clicks {
+  color: #10B981;
+  font-weight: 650;
+}
+
+.inspector-qr {
+  color: #F59E0B;
+  font-size: 11.5px;
+}
+
+.inspector-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.world-map-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11.5px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.legend-title {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.legend-scale {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scale-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.scale-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* Geo QR vs Direct Comparative Breakdown */
+.geo-comparison-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-weight: 550;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.qr-dot {
+  background: #F59E0B;
+}
+
+.legend-dot.direct-dot {
+  background: #8B5CF6;
+}
+
+.geo-comparison-bars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.geo-bar-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 180px;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: background 0.15s ease;
+}
+
+.geo-bar-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.geo-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.geo-flag {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.geo-country-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.geo-total-pill {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+
+.geo-stacked-track {
+  height: 22px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  display: flex;
+  position: relative;
+}
+
+.geo-segment {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #ffffff;
+  transition: width 0.4s ease;
+  overflow: hidden;
+}
+
+.geo-segment.qr-segment {
+  background: linear-gradient(90deg, #D97706, #F59E0B);
+}
+
+.geo-segment.direct-segment {
+  background: linear-gradient(90deg, #6366F1, #8B5CF6);
+}
+
+.geo-bar-stats {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  font-size: 11.5px;
+}
+
+.geo-qr-stat {
+  color: #F59E0B;
+  font-weight: 600;
+}
+
+.geo-direct-stat {
+  color: #A78BFA;
+  font-weight: 600;
+}
+
+/* Dual Tables Grid: Top Countries & Top Cities */
+.geo-tables-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.geo-table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.geo-country-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.geo-table-flag {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.geo-country-names {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.geo-table-country-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.geo-table-iso-pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.geo-channel-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.geo-channel-pill.qr {
+  background: rgba(245, 158, 11, 0.15);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.geo-channel-pill.direct {
+  background: rgba(139, 92, 246, 0.15);
+  color: #C084FC;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.geo-progress-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.geo-progress-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.geo-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10B981, #34D399);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.geo-percentage-text {
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--text-secondary);
+  min-width: 40px;
+  text-align: right;
+}
+
+.qr-rank-pill.rank-other {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Responsive Adaptations for Geo Analytics */
+@media (max-width: 1024px) {
+  .geo-tables-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .geo-bar-row {
+    grid-template-columns: 160px 1fr 140px;
+  }
+}
+
+@media (max-width: 768px) {
+  .geo-bar-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .geo-bar-stats {
+    justify-content: flex-start;
+  }
+
+  .world-map-inspector {
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  .world-map-legend {
+    justify-content: flex-start;
+  }
+}

@@ -1,4 +1,5 @@
 // CHANGE: QR Code Feature Stage 2 — 2026-11-05
+// CHANGE: QR visit tracking — 2026-11-06
 // Reusable, responsive QR code component built with qrcode.react (QRCodeCanvas)
 import { useState, useRef } from "react";
 import { QRCodeCanvas } from "qrcode.react";
@@ -26,6 +27,38 @@ export const buildShortUrl = (shortCode, baseUrl = DEFAULT_API_URL) => {
   return `${cleanBase}/${shortCode}`;
 };
 
+// CHANGE: QR visit tracking — 2026-11-06
+// CHANGE: Fix QR tracking parameter in generated QR code and modal readout — 2026-11-07
+/**
+ * Attaches the qr=1 tracking query parameter to the short URL for QR canvas encoding and display,
+ * preserving any existing query parameters and preventing duplicate qr parameters.
+ *
+ * @param {string} url - Target short redirect URL
+ * @returns {string} Short redirect URL with qr=1 parameter attached
+ */
+export const buildQrCodeUrl = (url) => {
+  if (!url || typeof url !== "string") return url;
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed);
+    parsed.searchParams.set("qr", "1");
+    return parsed.toString();
+  } catch {
+    try {
+      const parsed = new URL(trimmed, "http://localhost");
+      parsed.searchParams.set("qr", "1");
+      const res = parsed.pathname + parsed.search + parsed.hash;
+      return trimmed.startsWith("/") ? res : res.replace(/^\//, "");
+    } catch {
+      if (/[?&]qr=[^&]*/.test(trimmed)) {
+        return trimmed.replace(/[?&]qr=[^&]*/, (m) => (m.startsWith("?") ? "?qr=1" : "&qr=1"));
+      }
+      const separator = trimmed.includes("?") ? "&" : "?";
+      return `${trimmed}${separator}qr=1`;
+    }
+  }
+};
+
 /**
  * Validates whether a given string is a plausible HTTP/HTTPS URL
  *
@@ -47,8 +80,9 @@ export const isValidShortUrl = (url) => {
  *
  * Features:
  * - Generates clear, high-contrast, scannable QR code (Level H error correction)
- * - Encodes existing short redirect URL (never the raw destination URL)
+ * - Encodes existing short redirect URL with ?qr=1 tracking tag for visit attribution
  * - Renders crisp canvas with clean white background and dark modules
+ * - Displays and copies the exact QR URL (with qr=1) encoded in the QR code
  * - Provides graceful fallback UI for missing or invalid URLs
  * - Built-in PNG download and clipboard copy actions
  *
@@ -79,19 +113,24 @@ export default function QRCodeCard({
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Derive target URL from prop or shortCode
+  // Derive target URL from prop or shortCode (canonical clean short URL)
   const targetUrl = (shortUrl || (shortCode ? buildShortUrl(shortCode) : "")).trim();
   const isValid = isValidShortUrl(targetUrl);
 
-  // Copy short URL to clipboard
+  // CHANGE: QR visit tracking — 2026-11-06
+  // Value encoded in QR canvas always includes qr=1 to distinguish QR visits in analytics
+  const qrEncodedValue = isValid ? buildQrCodeUrl(targetUrl) : "";
+
+  // CHANGE: Copy the exact QR encoded URL (with qr=1) displayed in the QR modal — 2026-11-07
   const handleCopyUrl = async () => {
-    if (!targetUrl) return;
+    const urlToCopy = qrEncodedValue || targetUrl;
+    if (!urlToCopy) return;
     try {
-      await navigator.clipboard.writeText(targetUrl);
+      await navigator.clipboard.writeText(urlToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy short URL:", err);
+      console.error("Failed to copy QR short URL:", err);
     }
   };
 
@@ -110,7 +149,7 @@ export default function QRCodeCard({
 
       const pngData = canvas.toDataURL("image/png");
       const link = document.createElement("a");
-      const filenameCode = shortCode || targetUrl.split("/").pop() || "link";
+      const filenameCode = shortCode || targetUrl.split("/").pop()?.split("?")[0] || "link";
       link.download = `smartlink-qr-${filenameCode}.png`;
       link.href = pngData;
       document.body.appendChild(link);
@@ -160,7 +199,7 @@ export default function QRCodeCard({
         <div className="qr-canvas-frame">
           <QRCodeCanvas
             ref={canvasRef}
-            value={targetUrl}
+            value={qrEncodedValue}
             size={size}
             bgColor="#FFFFFF"
             fgColor="#0A0F1D"
@@ -170,11 +209,11 @@ export default function QRCodeCard({
         </div>
       </div>
 
-      {/* Short URL readout */}
+      {/* CHANGE: QR Code Modal displays the exact QR encoded URL with qr=1 — 2026-11-07 */}
       {showUrl && (
         <div className="qr-url-readout">
-          <span className="qr-url-text" title={targetUrl}>
-            {targetUrl}
+          <span className="qr-url-text" title={qrEncodedValue || targetUrl}>
+            {qrEncodedValue || targetUrl}
           </span>
         </div>
       )}
