@@ -1838,6 +1838,31 @@ const getGeoAnalytics = async (req, res) => {
             },
             { $sort: { totalClicks: -1, "_id.country": 1 } },
           ],
+          regions: [
+            {
+              $match: {
+                countryCode: { $ne: null },
+                country: { $ne: "Unknown" },
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  countryCode: "$countryCode",
+                  country: "$country",
+                  region: { $ifNull: ["$region", "Unknown"] },
+                },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { totalClicks: -1, "_id.region": 1 } },
+          ],
           cities: [
             {
               $match: {
@@ -1849,6 +1874,7 @@ const getGeoAnalytics = async (req, res) => {
               $group: {
                 _id: {
                   city: "$city",
+                  region: { $ifNull: ["$region", "Unknown"] },
                   country: "$country",
                   countryCode: "$countryCode",
                 },
@@ -1862,7 +1888,7 @@ const getGeoAnalytics = async (req, res) => {
               },
             },
             { $sort: { totalClicks: -1, "_id.city": 1 } },
-            { $limit: 15 },
+            { $limit: 50 },
           ],
         },
       },
@@ -1885,6 +1911,7 @@ const getGeoAnalytics = async (req, res) => {
       totalClicks > 0 ? Number(((geoIdentifiedClicks / totalClicks) * 100).toFixed(1)) : 0;
 
     const countriesRaw = aggResult?.countries || [];
+    const regionsRaw = aggResult?.regions || [];
     const citiesRaw = aggResult?.cities || [];
 
     // Format Top Countries
@@ -1910,6 +1937,25 @@ const getGeoAnalytics = async (req, res) => {
       };
     });
 
+    // Format Regions / States for drill-down
+    const regions = regionsRaw.map((r, index) => {
+      const clicks = r.totalClicks || 0;
+      const qr = r.qrClicks || 0;
+      const direct = r.directClicks || 0;
+      const qrPercentage = clicks > 0 ? Number(((qr / clicks) * 100).toFixed(1)) : 0;
+
+      return {
+        rank: index + 1,
+        country: r._id.country || "Unknown",
+        countryCode: r._id.countryCode || null,
+        region: r._id.region || "Unknown",
+        totalClicks: clicks,
+        qrClicks: qr,
+        directClicks: direct,
+        qrPercentage,
+      };
+    });
+
     // Format Top Cities
     const totalCityIdentifiedClicks = citiesRaw.reduce(
       (sum, item) => sum + (item.totalClicks || 0),
@@ -1923,16 +1969,19 @@ const getGeoAnalytics = async (req, res) => {
         totalCityIdentifiedClicks > 0
           ? Number(((clicks / totalCityIdentifiedClicks) * 100).toFixed(1))
           : 0;
+      const qrPercentage = clicks > 0 ? Number(((qr / clicks) * 100).toFixed(1)) : 0;
 
       return {
         rank: index + 1,
         city: c._id.city || "Unknown",
+        region: c._id.region || "Unknown",
         country: c._id.country || "Unknown",
         countryCode: c._id.countryCode || null,
         totalClicks: clicks,
         qrClicks: qr,
         directClicks: direct,
         percentage,
+        qrPercentage,
       };
     });
 
@@ -1960,6 +2009,7 @@ const getGeoAnalytics = async (req, res) => {
         geoIdentifiedPercentage,
       },
       topCountries,
+      regions,
       topCities,
       qrVsDirectByCountry,
     });

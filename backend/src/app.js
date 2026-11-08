@@ -16,6 +16,20 @@ import notificationRoutes from "./routes/notification.routes.js";
 
 const app = express();
 
+// CHANGE: Safe environment-aware reverse proxy configuration — 2026-11-09
+// - In production behind reverse proxy (Render, AWS ALB, Heroku, Cloudflare): trust 1 upstream hop (or custom TRUST_PROXY)
+// - In development: trust 'loopback' (127.0.0.1, ::1) so local proxy headers and tunnels can be inspected safely without opening to external spoofing
+if (process.env.NODE_ENV === "production") {
+  const trustHops = process.env.TRUST_PROXY
+    ? isNaN(process.env.TRUST_PROXY)
+      ? process.env.TRUST_PROXY
+      : Number(process.env.TRUST_PROXY)
+    : 1;
+  app.set("trust proxy", trustHops);
+} else {
+  app.set("trust proxy", "loopback");
+}
+
 // Middleware
 // CHANGE: Added persistent session refresh tokens — 2026-10-21
 const allowedOrigins = [

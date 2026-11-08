@@ -11,6 +11,7 @@ import ClicksOverviewChart, {
 // CHANGE: QR Code Feature Stage 2 — 2026-11-05
 // Import reusable QR Code component and URL helper
 import QRCodeCard, { buildShortUrl } from "./QRCodeCard";
+import RotatingDottedGlobe from "./components/RotatingDottedGlobe";
 import "./App.css";
 
 // CHANGE: QR Code Feature Stage 2 — 2026-11-05
@@ -3318,6 +3319,7 @@ function GeoAnalyticsView({
 }) {
   const summary = geoAnalytics?.summary;
   const topCountries = geoAnalytics?.topCountries || [];
+  const regions = geoAnalytics?.regions || [];
   const topCities = geoAnalytics?.topCities || [];
   const qrVsDirect = geoAnalytics?.qrVsDirectByCountry || [];
   const isZeroState = summary && summary.geoIdentifiedClicks === 0 && summary.totalClicks === 0;
@@ -3420,8 +3422,13 @@ function GeoAnalyticsView({
             </div>
           ) : (
             <>
-              {/* 3. Interactive World Map */}
-              <WorldMapChart topCountries={topCountries} />
+              {/* 3. Realistic 3D Dotted Rotating Earth Globe with Multi-Level Drill-Down */}
+              <RotatingDottedGlobe
+                topCountries={topCountries}
+                regions={regions}
+                topCities={topCities}
+                summary={summary}
+              />
 
               {/* 4. QR vs Direct Channel Breakdown */}
               <GeoQRComparisonChart qrVsDirect={qrVsDirect} />

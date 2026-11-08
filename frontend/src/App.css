@@ -4232,3 +4232,635 @@ button {
     justify-content: flex-start;
   }
 }
+
+/* ==========================================================================
+   Rotating Dotted Earth Globe & Drill-Down Visualization (Stage 8 Improvement)
+   ========================================================================== */
+
+.globe-interactive-card {
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.globe-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.globe-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.globe-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.crumb-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.crumb-btn:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: var(--accent-purple);
+  color: #ffffff;
+}
+
+.crumb-btn.active {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: var(--accent-purple);
+  color: #ffffff;
+}
+
+.crumb-separator {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.crumb-current {
+  color: #38BDF8;
+  font-weight: 700;
+  font-size: 12.5px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.globe-level-heading {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.globe-level-desc {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.globe-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.globe-back-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.globe-back-btn:hover {
+  background: var(--accent-purple);
+  border-color: var(--accent-purple);
+  color: #ffffff;
+}
+
+.globe-spin-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.globe-tool-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.globe-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.globe-tool-btn.active {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #10B981;
+}
+
+/* Metrics Banner for current drill level */
+.globe-metrics-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.selection-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selection-flag {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.selection-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.selection-main-title {
+  font-size: 15px;
+  font-weight: 750;
+  color: var(--text-primary);
+}
+
+.selection-sub-title {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.selection-stats-grid {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.selection-stat-box {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  min-width: 95px;
+}
+
+.selection-stat-box .stat-label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.selection-stat-box .stat-num {
+  font-size: 15px;
+  font-weight: 750;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.selection-stat-box.qr .stat-num {
+  color: #10B981;
+}
+
+.selection-stat-box.direct .stat-num {
+  color: #8B5CF6;
+}
+
+.selection-stat-box.rate .stat-num {
+  color: #F59E0B;
+}
+
+/* Globe SVG canvas container */
+.globe-svg-wrapper {
+  position: relative;
+  width: 100%;
+  height: 540px;
+  background: radial-gradient(circle at 50% 50%, #0d1527 0%, #030712 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: grab;
+}
+
+.globe-svg-wrapper:active {
+  cursor: grabbing;
+}
+
+.globe-svg-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.globe-floating-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  min-width: 160px;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+
+.tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 6px;
+}
+
+.tooltip-flag {
+  font-size: 18px;
+}
+
+.tooltip-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.tooltip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+}
+
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+
+.tooltip-hint {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  font-size: 10.5px;
+  color: #38BDF8;
+  font-weight: 600;
+  text-align: center;
+}
+
+.globe-footer-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(10, 15, 30, 0.85);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11.5px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  backdrop-filter: blur(6px);
+}
+
+.legend-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot-sample {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-sample.green-dot {
+  background: #10B981;
+  box-shadow: 0 0 6px #10B981;
+}
+
+.dot-sample.purple-dot {
+  background: #8B5CF6;
+  box-shadow: 0 0 6px #8B5CF6;
+}
+
+.dot-sample.slate-dot {
+  background: #64748B;
+}
+
+.legend-hint {
+  margin-left: auto;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Drilldown Subpanel Styling */
+.globe-drilldown-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.drilldown-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drilldown-section-header h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.drilldown-section-header p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* US States Vector Map */
+.us-states-map-container {
+  background: radial-gradient(circle at 50% 50%, #0d1527 0%, #030712 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 8px;
+}
+
+.us-vector-wrapper {
+  width: 100%;
+  max-height: 420px;
+}
+
+.us-vector-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.us-state-path {
+  transition: fill 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+.us-state-path:hover {
+  stroke: #38BDF8 !important;
+  stroke-width: 2.2px !important;
+}
+
+/* Regional Grid Cards */
+.regions-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.region-card-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.region-card-btn:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: var(--accent-purple);
+  transform: translateY(-2px);
+}
+
+.region-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.region-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.region-clicks {
+  font-size: 12px;
+  font-weight: 700;
+  color: #10B981;
+}
+
+.region-card-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.region-card-metrics {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+/* Cities Grid */
+.cities-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.city-card-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.city-card-btn:hover {
+  background: rgba(56, 189, 248, 0.1);
+  border-color: #38BDF8;
+  transform: translateY(-2px);
+}
+
+.city-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.city-name {
+  font-size: 13.5px;
+  color: var(--text-primary);
+}
+
+.city-pill {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+}
+
+.city-card-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11.5px;
+}
+
+.city-qr {
+  color: #F59E0B;
+  font-weight: 600;
+}
+
+.city-direct {
+  color: #A78BFA;
+  font-weight: 600;
+}
+
+/* City Detail Box */
+.city-detail-box {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.city-detail-box h4 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.city-channel-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.channel-bar-wrapper {
+  width: 100%;
+}
+
+.channel-bar-track {
+  height: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  display: flex;
+}
+
+.channel-segment {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  transition: width 0.3s ease;
+}
+
+.channel-segment.qr {
+  background: linear-gradient(90deg, #D97706, #F59E0B);
+}
+
+.channel-segment.direct {
+  background: linear-gradient(90deg, #6366F1, #8B5CF6);
+}
+
+.city-channel-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.drilldown-empty-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .globe-svg-wrapper {
+    height: 420px;
+  }
+
+  .globe-metrics-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .selection-stats-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .globe-footer-legend {
+    position: static;
+    margin-top: 10px;
+    border-radius: var(--radius-md);
+  }
+}

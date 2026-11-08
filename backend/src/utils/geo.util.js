@@ -66,9 +66,41 @@ export const cleanIP = (rawIp) => {
 };
 
 /**
+ * Categorizes an IP address into loopback, private, or public.
+ * Never stores or exposes the raw IP address.
+ *
+ * @param {string} rawIp
+ * @returns {"loopback" | "private" | "public" | "none"}
+ */
+export const getIPCategory = (rawIp) => {
+  const ip = cleanIP(rawIp);
+  if (!ip) return "none";
+
+  // Loopback (RFC 1122: 127.0.0.0/8, ::1)
+  if (ip === "127.0.0.1" || ip === "::1" || ip.startsWith("127.") || ip.toLowerCase() === "localhost") {
+    return "loopback";
+  }
+
+  // Private Subnets (RFC 1918: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, link-local 169.254.0.0/16, IPv6 ULA/link-local)
+  if (
+    ip.startsWith("10.") ||
+    ip.startsWith("192.168.") ||
+    ip.startsWith("169.254.") ||
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip) ||
+    ip.toLowerCase().startsWith("fc") ||
+    ip.toLowerCase().startsWith("fd") ||
+    ip.toLowerCase().startsWith("fe80:")
+  ) {
+    return "private";
+  }
+
+  return "public";
+};
+
+/**
  * Resolves approximate geographical location from an IP address.
  * Runs 100% in-memory (< 0.1ms) using geoip-lite.
- * Raw IP address is NOT stored or returned.
+ * Raw IP address is NOT stored, logged, or returned.
  *
  * @param {string} rawIp
  * @returns {{ country: string, countryCode: string|null, region: string, city: string }}
@@ -87,13 +119,25 @@ export const resolveGeoLocation = (rawIp) => {
     const ip = cleanIP(rawIp);
     if (!ip) return defaultLocation;
 
-    // Detect loopback / local IPs
-    if (ip === "127.0.0.1" || ip === "::1" || ip === "localhost") {
+    const category = getIPCategory(ip);
+
+    // Loopback and private subnets cannot be resolved to any nation; return Unknown safely
+    if (category === "loopback" || category === "private") {
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          `[GeoIP Diagnostic] IP Category: ${category} | Provider Status: unmapped (${category} address) | Saved: country="Unknown", countryCode=null, city="Unknown"`
+        );
+      }
       return defaultLocation;
     }
 
     const geo = geoip.lookup(ip);
     if (!geo || !geo.country) {
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          `[GeoIP Diagnostic] IP Category: ${category} | Provider Status: unresolved (unassigned IP block) | Saved: country="Unknown", countryCode=null, city="Unknown"`
+        );
+      }
       return defaultLocation;
     }
 
@@ -102,12 +146,20 @@ export const resolveGeoLocation = (rawIp) => {
     const region = geo.region ? geo.region.trim() : "Unknown";
     const city = geo.city ? geo.city.trim() : "Unknown";
 
-    return {
+    const resolved = {
       country: country || "Unknown",
       countryCode: countryCode || null,
       region: region || "Unknown",
       city: city || "Unknown",
     };
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `[GeoIP Diagnostic] IP Category: ${category} | Provider Status: resolved | Saved: country="${resolved.country}", countryCode=${resolved.countryCode}, city="${resolved.city}"`
+      );
+    }
+
+    return resolved;
   } catch (err) {
     console.warn("Non-blocking geoip lookup error:", err.message);
     return defaultLocation;
