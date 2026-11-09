@@ -84,20 +84,20 @@ async function runTests() {
     // -------------------------------------------------------------------------
     console.log("[Test 1: Geolocation Utility & Header Extraction]");
     {
-      const usGeo = resolveGeoLocation("207.97.227.239");
+      const usGeo = await resolveGeoLocation("207.97.227.239");
       assert(usGeo.countryCode === "US", "Resolves US country code correctly");
       assert(usGeo.country === "United States", "Resolves full country name United States");
       assert(usGeo.city.length > 0, "Resolves US city");
 
-      const inGeo = resolveGeoLocation("49.36.0.1");
+      const inGeo = await resolveGeoLocation("49.36.0.1");
       assert(inGeo.countryCode === "IN", "Resolves IN country code correctly");
       assert(inGeo.country === "India", "Resolves full country name India");
 
-      const loopbackGeo = resolveGeoLocation("127.0.0.1");
+      const loopbackGeo = await resolveGeoLocation("127.0.0.1");
       assert(loopbackGeo.country === "Unknown", "Loopback 127.0.0.1 resolves to Unknown");
       assert(loopbackGeo.countryCode === null, "Loopback countryCode is null");
 
-      const ipv6Loopback = resolveGeoLocation("::1");
+      const ipv6Loopback = await resolveGeoLocation("::1");
       assert(ipv6Loopback.country === "Unknown", "IPv6 loopback ::1 resolves to Unknown");
 
       // Test header priority

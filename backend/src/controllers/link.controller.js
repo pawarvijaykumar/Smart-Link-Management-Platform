@@ -313,7 +313,7 @@ const redirectLink = async (req, res) => {
       const { deviceType, browser } = parseUserAgent(userAgent);
       // CHANGE: Stage 8 — Extract visitor IP and resolve approximate geolocation (raw IP is not stored)
       const visitorIP = getVisitorIP(req);
-      const { country, countryCode, region, city } = resolveGeoLocation(visitorIP);
+      const { country, countryCode, region, city } = await resolveGeoLocation(visitorIP);
 
       recordedClick = await Click.create({
         link: link._id,
@@ -331,8 +331,20 @@ const redirectLink = async (req, res) => {
         region,
         city,
       });
+
+      if (process.env.NODE_ENV !== "production" && recordedClick) {
+        const dbName = mongoose.connection?.name || "smartlink";
+        const collName = Click.collection?.name || "clicks";
+        console.log(
+          `[Click DB Inserted] ID: ${recordedClick._id} | Collection: ${collName} | Database: ${dbName} | Link: ${shortCode}`
+        );
+      }
     } catch (parseError) {
-      console.error("Non-blocking click record or geo parse error:", parseError.message);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[Click DB Error] Insertion failed:", parseError);
+      } else {
+        console.error("Non-blocking click record or geo parse error:", parseError.message);
+      }
     }
 
     // 3. CHANGE: Notifications Step 3B — 2026-11-04

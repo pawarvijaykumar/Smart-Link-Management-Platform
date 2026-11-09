@@ -188,13 +188,18 @@ const deleteUser = async (req, res) => {
 // CHANGE: Added persistent session refresh tokens — 2026-10-21
 const isProduction = process.env.NODE_ENV === "production";
 
-const getRefreshCookieOptions = () => ({
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? "none" : "lax",
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days persistent session
-  path: "/api/v1/users",
-});
+const getRefreshCookieOptions = (forClear = false) => {
+  const options = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/api/v1/users",
+  };
+  if (!forClear) {
+    options.maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days persistent session
+  }
+  return options;
+};
 
 const generateAccessToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
@@ -253,11 +258,23 @@ const loginUser = async (req, res) => {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    // Prune expired tokens and append new session token (keep max 5 active sessions)
-    const validTokens = (user.refreshTokens || []).filter((t) => t.expiresAt > now);
-    validTokens.push({ tokenHash, expiresAt, createdAt: now });
-    user.refreshTokens = validTokens.slice(-5);
-    await user.save();
+    // Atomically prune expired tokens and append new session token (keep max 5 active sessions)
+    // Using atomic operators avoids Mongoose OCC VersionErrors on concurrent logins
+    await User.updateOne(
+      { _id: user._id },
+      { $pull: { refreshTokens: { expiresAt: { $lte: now } } } }
+    );
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $push: {
+          refreshTokens: {
+            $each: [{ tokenHash, expiresAt, createdAt: now }],
+            $slice: -5,
+          },
+        },
+      }
+    );
 
     // Set secure HTTP-only refresh cookie
     res.cookie("refreshToken", rawRefreshToken, getRefreshCookieOptions());
@@ -284,6 +301,7 @@ const loginUser = async (req, res) => {
 };
 
 // CHANGE: Added persistent session refresh tokens — 2026-10-21
+// Concurrency-Safe Atomic Token Rotation via Positional Operator (No VersionError)
 const refreshToken = async (req, res) => {
   try {
     const rawToken = req.cookies?.refreshToken;
@@ -304,53 +322,65 @@ const refreshToken = async (req, res) => {
     const hashed = hashToken(rawToken);
     const now = new Date();
 
-    // Find user having this active refresh token
+    // 1. Verify that user has an active, unexpired session with this token
     const user = await User.findOne({
       "refreshTokens.tokenHash": hashed,
+      "refreshTokens.expiresAt": { $gt: now },
     });
 
     if (!user) {
-      res.clearCookie("refreshToken", getRefreshCookieOptions());
+      res.clearCookie("refreshToken", getRefreshCookieOptions(true));
       return res.status(401).json({
         success: false,
         message: "Session expired or invalid. Please sign in again.",
       });
     }
 
-    // Check if the specific token is expired
-    const tokenDoc = (user.refreshTokens || []).find((t) => t.tokenHash === hashed);
-    if (!tokenDoc || tokenDoc.expiresAt <= now) {
-      user.refreshTokens = (user.refreshTokens || []).filter((t) => t.expiresAt > now);
-      await user.save();
-      res.clearCookie("refreshToken", getRefreshCookieOptions());
+    // 2. Token rotation: replace used refresh token with a fresh one
+    const newRawRefreshToken = generateRefreshToken();
+    const newHashed = hashToken(newRawRefreshToken);
+    const newExpiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    // 3. Atomically update the matching token subdocument in-place
+    // Using MongoDB's positional operator ($) executes directly without Mongoose OCC VersionErrors
+    const updatedUser = await User.findOneAndUpdate(
+      {
+        _id: user._id,
+        "refreshTokens.tokenHash": hashed,
+        "refreshTokens.expiresAt": { $gt: now },
+      },
+      {
+        $set: {
+          "refreshTokens.$.tokenHash": newHashed,
+          "refreshTokens.$.expiresAt": newExpiresAt,
+          "refreshTokens.$.createdAt": now,
+        },
+      },
+      { returnDocument: "after" }
+    );
+
+    if (!updatedUser) {
+      // The token was already consumed or rotated concurrently
+      res.clearCookie("refreshToken", getRefreshCookieOptions(true));
       return res.status(401).json({
         success: false,
-        message: "Session expired. Please sign in again.",
+        message: "Session expired or invalid. Please sign in again.",
       });
     }
 
-    // Token rotation: replace used refresh token with a new one
-    const newRawRefreshToken = generateRefreshToken();
-    const newHashed = hashToken(newRawRefreshToken);
+    // 4. Non-blocking cleanup of any older expired tokens
+    User.updateOne(
+      { _id: user._id },
+      { $pull: { refreshTokens: { expiresAt: { $lte: now } } } }
+    ).catch(() => {});
 
-    const activeTokens = (user.refreshTokens || []).filter(
-      (t) => t.tokenHash !== hashed && t.expiresAt > now
-    );
-    activeTokens.push({
-      tokenHash: newHashed,
-      expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-      createdAt: now,
-    });
-    user.refreshTokens = activeTokens.slice(-5);
-    await user.save();
-
-    // Issue fresh access token (15m)
+    // 5. Issue fresh access token (15m)
     const newAccessToken = generateAccessToken(user._id);
 
-    // Set fresh rotated cookie
+    // 6. Set fresh rotated cookie
     res.cookie("refreshToken", newRawRefreshToken, getRefreshCookieOptions());
 
-    const userResponse = user.toObject();
+    const userResponse = updatedUser.toObject();
     delete userResponse.password;
     delete userResponse.refreshTokens;
     delete userResponse.resetPasswordToken;
@@ -383,7 +413,7 @@ const logoutUser = async (req, res) => {
       );
     }
 
-    res.clearCookie("refreshToken", getRefreshCookieOptions());
+    res.clearCookie("refreshToken", getRefreshCookieOptions(true));
 
     return res.status(200).json({
       success: true,
@@ -391,7 +421,7 @@ const logoutUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Logout user error:", error);
-    res.clearCookie("refreshToken", getRefreshCookieOptions());
+    res.clearCookie("refreshToken", getRefreshCookieOptions(true));
     return res.status(200).json({
       success: true,
       message: "Logged out successfully",

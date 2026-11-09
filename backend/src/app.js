@@ -11,6 +11,7 @@ import userRoutes from "./routes/user.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import uploadRoutes from "./routes/upload.routes.js";
 import linkRouter from "./routes/link.routes.js";
+import { redirectLink } from "./controllers/link.controller.js";
 // CHANGE: Notifications Step 2 — 2026-11-04
 import notificationRoutes from "./routes/notification.routes.js";
 
@@ -60,6 +61,9 @@ app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/links", linkRouter);
 // CHANGE: Notifications Step 2 — 2026-11-04
 app.use("/api/notifications", notificationRoutes);
+
+// Public short-code redirect at domain root (e.g. https://domain.com/:shortCode)
+app.get("/:shortCode", redirectLink);
 // Global error handler to catch JSON parsing issues and avoid exposing stack traces or file paths
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
