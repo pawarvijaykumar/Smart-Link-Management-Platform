@@ -1900,7 +1900,7 @@ const getGeoAnalytics = async (req, res) => {
               },
             },
             { $sort: { totalClicks: -1, "_id.city": 1 } },
-            { $limit: 50 },
+            { $limit: 250 },
           ],
         },
       },

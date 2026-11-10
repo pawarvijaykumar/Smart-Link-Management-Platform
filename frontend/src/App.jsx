@@ -2872,186 +2872,9 @@ function GeoMetricCards({ summary, topCountries = [] }) {
   );
 }
 
-// World Map with Interactive SVG paths and choropleth fill
-function WorldMapChart({ topCountries = [] }) {
-  const [hoveredCode, setHoveredCode] = useState(null);
-
-  const countryMap = useMemo(() => {
-    const map = new Map();
-    for (const c of topCountries) {
-      if (c.countryCode) {
-        map.set(c.countryCode.toUpperCase(), c);
-      }
-    }
-    return map;
-  }, [topCountries]);
-
-  const maxClicks = useMemo(() => {
-    return topCountries.reduce((max, c) => Math.max(max, c.totalClicks || 0), 1);
-  }, [topCountries]);
-
-  const getCountryFill = (code) => {
-    const data = countryMap.get(code);
-    if (!data || !data.totalClicks) {
-      return "var(--map-land-default, #1e293b)";
-    }
-    const ratio = data.totalClicks / maxClicks;
-    if (ratio > 0.6) return "#10B981"; // Emerald for high traffic
-    if (ratio > 0.3) return "#8B5CF6"; // Purple for medium traffic
-    if (ratio > 0.1) return "#A78BFA"; // Lavender
-    return "#6366F1"; // Indigo for lower traffic
-  };
-
-  const hoveredData = hoveredCode ? countryMap.get(hoveredCode) : null;
-  const displayInfo = hoveredData || topCountries[0] || null;
-
-  // Major country paths in equirectangular projection (viewBox 0 0 1000 500)
-  const mapRegions = [
-    // North America
-    { code: "CA", name: "Canada", d: "M 120 70 L 290 50 L 330 90 L 260 140 L 150 140 L 110 100 Z" },
-    { code: "US", name: "United States", d: "M 130 142 L 270 142 L 255 210 L 180 220 L 125 180 Z" },
-    { code: "US_AK", parent: "US", name: "United States (Alaska)", d: "M 60 65 L 120 55 L 110 95 L 60 85 Z" },
-    { code: "MX", name: "Mexico", d: "M 155 215 L 220 212 L 210 260 L 175 250 Z" },
-    // South America
-    { code: "CO", name: "Colombia", d: "M 235 270 L 275 265 L 270 305 L 240 305 Z" },
-    { code: "BR", name: "Brazil", d: "M 275 275 L 365 285 L 360 365 L 315 385 L 275 325 Z" },
-    { code: "AR", name: "Argentina", d: "M 285 370 L 325 370 L 310 465 L 285 465 Z" },
-    { code: "CL", name: "Chile", d: "M 275 370 L 285 370 L 285 465 L 275 465 Z" },
-    { code: "PE", name: "Peru", d: "M 240 305 L 275 305 L 270 365 L 245 345 Z" },
-    // Europe
-    { code: "GB", name: "United Kingdom", d: "M 450 120 L 472 115 L 468 152 L 448 150 Z" },
-    { code: "FR", name: "France", d: "M 465 155 L 498 152 L 495 185 L 460 185 Z" },
-    { code: "DE", name: "Germany", d: "M 498 138 L 528 135 L 525 168 L 498 168 Z" },
-    { code: "ES", name: "Spain", d: "M 445 185 L 485 185 L 480 220 L 440 220 Z" },
-    { code: "IT", name: "Italy", d: "M 505 175 L 525 175 L 535 220 L 520 220 Z" },
-    { code: "NL", name: "Netherlands", d: "M 490 135 L 500 135 L 498 145 L 488 145 Z" },
-    { code: "SE", name: "Sweden", d: "M 515 70 L 535 68 L 530 130 L 512 130 Z" },
-    { code: "NO", name: "Norway", d: "M 495 72 L 515 70 L 512 130 L 492 125 Z" },
-    { code: "FI", name: "Finland", d: "M 535 68 L 560 65 L 555 125 L 530 125 Z" },
-    { code: "PL", name: "Poland", d: "M 528 135 L 560 132 L 558 165 L 525 165 Z" },
-    { code: "UA", name: "Ukraine", d: "M 558 140 L 610 135 L 605 175 L 555 172 Z" },
-    // Russia & Asia
-    { code: "RU", name: "Russia", d: "M 550 65 L 850 50 L 880 115 L 610 125 L 550 110 Z" },
-    { code: "TR", name: "Turkey", d: "M 555 180 L 615 178 L 610 205 L 550 205 Z" },
-    { code: "SA", name: "Saudi Arabia", d: "M 585 210 L 640 210 L 635 265 L 580 260 Z" },
-    { code: "AE", name: "United Arab Emirates", d: "M 640 230 L 652 230 L 650 242 L 638 242 Z" },
-    { code: "IN", name: "India", d: "M 650 190 L 715 190 L 695 275 L 670 290 L 650 235 Z" },
-    { code: "CN", name: "China", d: "M 705 135 L 810 130 L 805 220 L 710 215 Z" },
-    { code: "JP", name: "Japan", d: "M 845 140 L 865 135 L 860 190 L 840 185 Z" },
-    { code: "KR", name: "South Korea", d: "M 812 170 L 825 170 L 823 188 L 810 188 Z" },
-    { code: "ID", name: "Indonesia", d: "M 740 280 L 830 280 L 820 310 L 730 310 Z" },
-    // Africa
-    { code: "EG", name: "Egypt", d: "M 535 210 L 575 210 L 570 245 L 530 245 Z" },
-    { code: "NG", name: "Nigeria", d: "M 480 265 L 520 265 L 515 300 L 475 300 Z" },
-    { code: "KE", name: "Kenya", d: "M 560 275 L 590 275 L 585 315 L 555 315 Z" },
-    { code: "ZA", name: "South Africa", d: "M 500 365 L 560 365 L 545 425 L 510 425 Z" },
-    { code: "MA", name: "Morocco", d: "M 435 200 L 470 200 L 465 235 L 430 235 Z" },
-    // Oceania
-    { code: "AU", name: "Australia", d: "M 770 335 L 880 330 L 865 420 L 780 415 Z" },
-    { code: "NZ", name: "New Zealand", d: "M 890 405 L 915 400 L 905 445 L 885 440 Z" },
-  ];
-
-  return (
-    <div className="geo-chart-card world-map-card">
-      <div className="geo-card-header">
-        <div>
-          <h3>Global Visitor Distribution</h3>
-          <p>Geographical density of short link visits and physical QR engagements across the world</p>
-        </div>
-
-        {/* Hover / Highlighted country inspector badge */}
-        <div className="world-map-inspector">
-          {displayInfo ? (
-            <div className="inspector-pill">
-              <span className="inspector-flag">{getCountryFlagEmoji(displayInfo.countryCode)}</span>
-              <span className="inspector-country">{displayInfo.country}</span>
-              <span className="inspector-clicks">{displayInfo.totalClicks} visits</span>
-              <span className="inspector-qr">({displayInfo.qrClicks} QR)</span>
-            </div>
-          ) : (
-            <span className="inspector-hint">Hover over any country</span>
-          )}
-        </div>
-      </div>
-
-      <div className="world-map-svg-wrapper">
-        <svg
-          viewBox="0 0 1000 500"
-          className="world-map-svg"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <defs>
-            <radialGradient id="oceanGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="rgba(15, 23, 42, 0.4)" />
-              <stop offset="100%" stopColor="rgba(10, 15, 30, 0.9)" />
-            </radialGradient>
-            <filter id="countryGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
-
-          {/* Ocean Background */}
-          <rect width="1000" height="500" rx="12" fill="url(#oceanGlow)" />
-
-          {/* Subtle Latitude/Longitude Graticules */}
-          <g className="map-graticules" opacity="0.12" stroke="#94A3B8" strokeWidth="0.5" strokeDasharray="4 4">
-            <line x1="50" y1="125" x2="950" y2="125" />
-            <line x1="50" y1="250" x2="950" y2="250" />
-            <line x1="50" y1="375" x2="950" y2="375" />
-            <line x1="250" y1="30" x2="250" y2="470" />
-            <line x1="500" y1="30" x2="500" y2="470" />
-            <line x1="750" y1="30" x2="750" y2="470" />
-          </g>
-
-          {/* Continents & Countries */}
-          <g className="map-countries-group">
-            {mapRegions.map((region) => {
-              const code = region.parent || region.code;
-              const hasData = countryMap.has(code);
-              const isHovered = hoveredCode === code;
-
-              return (
-                <path
-                  key={region.code}
-                  d={region.d}
-                  fill={getCountryFill(code)}
-                  stroke={isHovered ? "#ffffff" : hasData ? "rgba(255, 255, 255, 0.5)" : "rgba(255, 255, 255, 0.08)"}
-                  strokeWidth={isHovered ? 2 : hasData ? 1 : 0.6}
-                  filter={hasData && isHovered ? "url(#countryGlow)" : "none"}
-                  className={`world-map-country-path ${hasData ? "has-data" : ""} ${isHovered ? "hovered" : ""}`}
-                  onMouseEnter={() => setHoveredCode(code)}
-                  onMouseLeave={() => setHoveredCode(null)}
-                >
-                  <title>{`${region.name}: ${countryMap.get(code)?.totalClicks || 0} visits`}</title>
-                </path>
-              );
-            })}
-          </g>
-        </svg>
-
-        {/* Legend */}
-        <div className="world-map-legend">
-          <span className="legend-title">Visitor Density:</span>
-          <div className="legend-scale">
-            <span className="scale-item">
-              <span className="scale-box" style={{ background: "#1e293b" }} /> 0 visits
-            </span>
-            <span className="scale-item">
-              <span className="scale-box" style={{ background: "#6366F1" }} /> 1 - 5
-            </span>
-            <span className="scale-item">
-              <span className="scale-box" style={{ background: "#8B5CF6" }} /> 6 - 20
-            </span>
-            <span className="scale-item">
-              <span className="scale-box" style={{ background: "#10B981" }} /> 21+ visits
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// -----------------------------------------------------------------------------
+// Stage 8: Geo-Location Analytics Subcomponents & Visualizations
+// -----------------------------------------------------------------------------
 
 // QR vs Direct Comparative Breakdown
 function GeoQRComparisonChart({ qrVsDirect = [] }) {
@@ -3122,8 +2945,8 @@ function GeoQRComparisonChart({ qrVsDirect = [] }) {
   );
 }
 
-// Top Countries Table
-function TopCountriesTable({ countries = [] }) {
+// Top Countries Table (Interactive row selection triggers Map Drill-Down)
+function TopCountriesTable({ countries = [], onSelectCountry }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filtered = useMemo(() => {
@@ -3141,7 +2964,7 @@ function TopCountriesTable({ countries = [] }) {
       <div className="table-topbar">
         <div className="table-topbar-title">
           <h3>Top Countries</h3>
-          <p>Nations ranked by overall visitor engagement and physical QR adoption</p>
+          <p>Nations ranked by overall visitor engagement. Click any country to drill down into states.</p>
         </div>
         <div className="table-actions-group">
           <input
@@ -3171,7 +2994,12 @@ function TopCountriesTable({ countries = [] }) {
               filtered.map((c) => {
                 const flag = getCountryFlagEmoji(c.countryCode);
                 return (
-                  <tr key={c.countryCode || c.country}>
+                  <tr
+                    key={c.countryCode || c.country}
+                    className="clickable-row"
+                    onClick={() => onSelectCountry?.(c)}
+                    title={`Click to inspect states in ${c.country}`}
+                  >
                     <td>
                       <span className={`qr-rank-pill rank-${c.rank <= 3 ? c.rank : "other"}`}>
                         #{c.rank}
@@ -3181,7 +3009,10 @@ function TopCountriesTable({ countries = [] }) {
                       <div className="geo-country-cell">
                         <span className="geo-table-flag">{flag}</span>
                         <div className="geo-country-names">
-                          <span className="geo-table-country-name">{c.country}</span>
+                          <span className="geo-table-country-name">
+                            {c.country}
+                            <span className="drilldown-arrow-hint">Explore →</span>
+                          </span>
                           {c.countryCode && (
                             <span className="geo-table-iso-pill">{c.countryCode}</span>
                           )}
@@ -3229,8 +3060,8 @@ function TopCountriesTable({ countries = [] }) {
   );
 }
 
-// Top Cities Table
-function TopCitiesTable({ cities = [] }) {
+// Top Cities Table (Interactive row selection triggers City Drill-Down)
+function TopCitiesTable({ cities = [], onSelectCity }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filtered = useMemo(() => {
@@ -3248,7 +3079,7 @@ function TopCitiesTable({ cities = [] }) {
       <div className="table-topbar">
         <div className="table-topbar-title">
           <h3>Top Cities</h3>
-          <p>Metropolitan locations generating the highest volume of visits</p>
+          <p>Metropolitan locations generating the highest volume of visits. Click to view city analytics.</p>
         </div>
         <div className="table-actions-group">
           <input
@@ -3279,14 +3110,22 @@ function TopCitiesTable({ cities = [] }) {
               filtered.map((c) => {
                 const flag = getCountryFlagEmoji(c.countryCode);
                 return (
-                  <tr key={`${c.city}-${c.countryCode}-${c.rank}`}>
+                  <tr
+                    key={`${c.city}-${c.countryCode}-${c.rank}`}
+                    className="clickable-row"
+                    onClick={() => onSelectCity?.(c)}
+                    title={`Click to inspect analytics for ${c.city}`}
+                  >
                     <td>
                       <span className={`qr-rank-pill rank-${c.rank <= 3 ? c.rank : "other"}`}>
                         #{c.rank}
                       </span>
                     </td>
                     <td>
-                      <strong style={{ color: "var(--text-primary)" }}>{c.city}</strong>
+                      <strong style={{ color: "var(--text-primary)" }}>
+                        {c.city}
+                        <span className="drilldown-arrow-hint">View →</span>
+                      </strong>
                     </td>
                     <td>
                       <div className="geo-country-cell">
@@ -3342,6 +3181,27 @@ function GeoAnalyticsView({
   const topCities = geoAnalytics?.topCities || [];
   const qrVsDirect = geoAnalytics?.qrVsDirectByCountry || [];
   const isZeroState = summary && summary.geoIdentifiedClicks === 0 && summary.totalClicks === 0;
+
+  // Selected drill-down state across map & tables
+  const [selectedCountryForMap, setSelectedCountryForMap] = useState(null);
+  const [selectedCityForMap, setSelectedCityForMap] = useState(null);
+
+  const handleCountryRowSelect = useCallback((countryItem) => {
+    setSelectedCountryForMap(countryItem);
+    setSelectedCityForMap(null);
+    const mapCard = document.querySelector(".globe-interactive-card");
+    if (mapCard) {
+      mapCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
+
+  const handleCityRowSelect = useCallback((cityItem) => {
+    setSelectedCityForMap(cityItem);
+    const mapCard = document.querySelector(".globe-interactive-card");
+    if (mapCard) {
+      mapCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   return (
     <div className="campaign-view-container geo-analytics-view-container">
@@ -3441,21 +3301,30 @@ function GeoAnalyticsView({
             </div>
           ) : (
             <>
-              {/* 3. Realistic 3D Dotted Rotating Earth Globe with Multi-Level Drill-Down */}
+              {/* 3. Interactive 2D World Map & 3D Rotating Dotted Earth Globe with Multi-Level Drill-Down */}
               <RotatingDottedGlobe
                 topCountries={topCountries}
                 regions={regions}
                 topCities={topCities}
                 summary={summary}
+                selectedCountryProp={selectedCountryForMap}
+                onCountrySelect={setSelectedCountryForMap}
+                selectedCityProp={selectedCityForMap}
               />
 
               {/* 4. QR vs Direct Channel Breakdown */}
               <GeoQRComparisonChart qrVsDirect={qrVsDirect} />
 
-              {/* 5. Dual Tables: Top Countries & Top Cities */}
+              {/* 5. Dual Tables: Top Countries & Top Cities with Interactive Drill-Down Selection */}
               <div className="geo-tables-grid">
-                <TopCountriesTable countries={topCountries} />
-                <TopCitiesTable cities={topCities} />
+                <TopCountriesTable
+                  countries={topCountries}
+                  onSelectCountry={handleCountryRowSelect}
+                />
+                <TopCitiesTable
+                  cities={topCities}
+                  onSelectCity={handleCityRowSelect}
+                />
               </div>
             </>
           )}
