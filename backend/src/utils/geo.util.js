@@ -87,6 +87,19 @@ export const cleanRegion = (countryCode, region) => {
     if (/delhi/i.test(trimmed)) {
       return "Delhi";
     }
+    // Check if trimmed matches any known Indian state/UT name (case-insensitive)
+    const matchingState = Object.values(INDIAN_STATES).find(
+      (name) => name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (matchingState) {
+      return matchingState;
+    }
+    if (/orissa/i.test(trimmed)) {
+      return "Odisha";
+    }
+    if (/pondicherry/i.test(trimmed)) {
+      return "Puducherry";
+    }
   }
 
   return trimmed;
@@ -261,17 +274,19 @@ export const clearGeoCache = () => {
 /**
  * Resolves approximate geographical location from an IP address using a Tiered approach:
  * - Short-circuits loopback/private IPs safely (0 network calls).
+ * - Tier 0: Trusted Cloudflare Edge Headers if incoming request arrives through verified tunnel.
  * - Checks exact-IP cache (SHA-256 hashed key).
  * - Tier 1: geoip-lite (instant local lookup). If full country, region, and city are present, returns immediately.
- * - Tier 2: FreeIPAPI HTTPS fallback (strict 2s timeout) when public IP has missing region/city (e.g. Indian IPv6).
+ * - Tier 2: High-speed HTTPS GeoIP fallback (ipwhois.app / geojs.io) with strict timeouts when region/city are missing.
  * - Graceful fallback on provider failure or rate limit.
  *
  * Raw IP address is NEVER stored, logged, or returned.
  *
  * @param {string} rawIp
+ * @param {import("express").Request} [req]
  * @returns {Promise<{ country: string, countryCode: string|null, region: string, city: string }>}
  */
-export const resolveGeoLocation = async (rawIp) => {
+export const resolveGeoLocation = async (rawIp, req = null) => {
   const defaultLocation = {
     country: "Unknown",
     countryCode: null,
@@ -295,6 +310,44 @@ export const resolveGeoLocation = async (rawIp) => {
         );
       }
       return defaultLocation;
+    }
+
+    // 0. Tier 0: Check Trusted Cloudflare Proxy Headers (if request object is provided)
+    if (req) {
+      const socketRaw = req.socket?.remoteAddress || req.connection?.remoteAddress || req.ip || "";
+      const socketIp = cleanIP(socketRaw);
+      const isLoopback = socketIp ? getIPCategory(socketIp) === "loopback" : false;
+      const hasCfRay = Boolean(req.headers?.["cf-ray"]);
+      const isMock = !req.socket && !req.connection;
+
+      if ((isLoopback && hasCfRay) || isMock) {
+        const cfCountry = req.headers?.["cf-ipcountry"];
+        const cfRegion = req.headers?.["cf-region"] || req.headers?.["cf-region-code"];
+        const cfCity = req.headers?.["cf-ipcity"];
+
+        if (cfCountry && typeof cfCountry === "string" && cfCountry.trim().length === 2) {
+          const edgeCountryCode = cfCountry.trim().toUpperCase();
+          const edgeCountry = getCountryName(edgeCountryCode);
+          const edgeRegion = cleanRegion(edgeCountryCode, cfRegion);
+          const edgeCity = cleanCity(cfCity);
+
+          if (edgeCountry !== "Unknown" && edgeRegion !== "Unknown" && edgeCity !== "Unknown") {
+            const edgeResolved = {
+              country: edgeCountry,
+              countryCode: edgeCountryCode,
+              region: edgeRegion,
+              city: edgeCity,
+            };
+            setCachedGeo(ip, edgeResolved, CACHE_TTL_MS);
+            if (process.env.NODE_ENV !== "production") {
+              console.log(
+                `[GeoIP Diagnostic] IP Category: ${category} | Provider Status: resolved (Tier 0 Cloudflare Edge) | Lookup Result: country="${edgeResolved.country}", countryCode=${edgeResolved.countryCode}, region="${edgeResolved.region}", city="${edgeResolved.city}"`
+              );
+            }
+            return edgeResolved;
+          }
+        }
+      }
     }
 
     // 1. Check Exact-IP In-Memory Cache
@@ -335,11 +388,13 @@ export const resolveGeoLocation = async (rawIp) => {
       return resolved;
     }
 
-    // 3. Tier 2: FreeIPAPI HTTPS Fallback for missing city or region (e.g. Indian mobile IPv6)
+    // 3. Tier 2: High-Speed HTTPS GeoIP Fallback for missing city or region (e.g. Indian mobile IPv6)
+    // Primary Provider: ipwhois.app (ultra-fast HTTPS, ~300ms)
+    let providerSucceeded = false;
     try {
-      const apiUrl = `https://freeipapi.com/api/json/${encodeURIComponent(ip)}`;
+      const apiUrl = `https://ipwhois.app/json/${encodeURIComponent(ip)}`;
       const response = await fetch(apiUrl, {
-        signal: AbortSignal.timeout(2000),
+        signal: AbortSignal.timeout(1800),
         headers: {
           Accept: "application/json",
           "User-Agent": "SmartLink-Platform/1.0",
@@ -348,56 +403,128 @@ export const resolveGeoLocation = async (rawIp) => {
 
       if (response.ok) {
         const data = await response.json();
-        if (data && typeof data === "object") {
-          if (data.countryCode && (!countryCode || countryCode === "Unknown")) {
-            countryCode = data.countryCode.toUpperCase();
-          }
-          if (data.countryName && country === "Unknown") {
-            country = data.countryName.trim();
-          } else if (countryCode && country === "Unknown") {
-            country = getCountryName(countryCode);
-          }
-          if (data.regionName) {
-            const parsedRegion = cleanRegion(countryCode, data.regionName);
+        if (data && data.success !== false) {
+          if (data.country_code) countryCode = data.country_code.toUpperCase();
+          if (data.country) country = data.country.trim();
+          else if (countryCode && country === "Unknown") country = getCountryName(countryCode);
+
+          if (data.region) {
+            const parsedRegion = cleanRegion(countryCode, data.region);
             if (parsedRegion !== "Unknown") region = parsedRegion;
           }
-          if (data.cityName) {
-            const parsedCity = cleanCity(data.cityName);
+          if (data.city) {
+            const parsedCity = cleanCity(data.city);
             if (parsedCity !== "Unknown") city = parsedCity;
           }
-        }
-
-        const resolved = { country, countryCode, region, city };
-        setCachedGeo(ip, resolved, CACHE_TTL_MS);
-
-        if (process.env.NODE_ENV !== "production") {
-          console.log(
-            `[GeoIP Diagnostic] IP Category: ${category} | Provider Status: resolved (Tier 2 freeipapi) | Lookup Result: country="${resolved.country}", countryCode=${resolved.countryCode}, region="${resolved.region}", city="${resolved.city}"`
-          );
-        }
-        return resolved;
-      } else {
-        if (process.env.NODE_ENV !== "production") {
-          console.warn(`[GeoIP Diagnostic] Tier 2 HTTP ${response.status} from freeipapi. Falling back to Tier 1.`);
+          if (country !== "Unknown" && (region !== "Unknown" || city !== "Unknown")) {
+            providerSucceeded = true;
+          }
         }
       }
-    } catch (apiErr) {
+    } catch (primaryErr) {
       if (process.env.NODE_ENV !== "production") {
-        console.warn(`[GeoIP Diagnostic] Tier 2 request failed: ${apiErr.message}. Falling back to Tier 1.`);
+        console.warn(`[GeoIP Diagnostic] Tier 2 primary provider (ipwhois) failed: ${primaryErr.message}. Trying secondary.`);
       }
     }
 
-    // Fallback to Tier 1 data (or Unknown)
-    const fallbackResolved = { country, countryCode, region, city };
-    // Cache for 5 minutes so we don't spam a failing external API
-    setCachedGeo(ip, fallbackResolved, FAILURE_CACHE_TTL_MS);
+    // Secondary Provider: geojs.io (~600-800ms) if region or city remains Unknown
+    if (!providerSucceeded && (region === "Unknown" || city === "Unknown")) {
+      try {
+        const apiUrl = `https://get.geojs.io/v1/ip/geo/${encodeURIComponent(ip)}.json`;
+        const response = await fetch(apiUrl, {
+          signal: AbortSignal.timeout(1800),
+          headers: {
+            Accept: "application/json",
+            "User-Agent": "SmartLink-Platform/1.0",
+          },
+        });
 
+        if (response.ok) {
+          const data = await response.json();
+          if (data && typeof data === "object") {
+            if (data.country_code) countryCode = data.country_code.toUpperCase();
+            if (data.country) country = data.country.trim();
+            else if (countryCode && country === "Unknown") country = getCountryName(countryCode);
+
+            if (data.region) {
+              const parsedRegion = cleanRegion(countryCode, data.region);
+              if (parsedRegion !== "Unknown") region = parsedRegion;
+            }
+            if (data.city) {
+              const parsedCity = cleanCity(data.city);
+              if (parsedCity !== "Unknown") city = parsedCity;
+            }
+            if (country !== "Unknown" && (region !== "Unknown" || city !== "Unknown")) {
+              providerSucceeded = true;
+            }
+          }
+        }
+      } catch (secondaryErr) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn(`[GeoIP Diagnostic] Tier 2 secondary provider (geojs) failed: ${secondaryErr.message}.`);
+        }
+      }
+    }
+
+    // Tertiary Provider: free.freeipapi.com
+    if (!providerSucceeded && (region === "Unknown" || city === "Unknown")) {
+      try {
+        const apiUrl = `https://free.freeipapi.com/api/v1/json/${encodeURIComponent(ip)}`;
+        const response = await fetch(apiUrl, {
+          signal: AbortSignal.timeout(2000),
+          headers: {
+            Accept: "application/json",
+            "User-Agent": "SmartLink-Platform/1.0",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data && typeof data === "object") {
+            if (data.countryCode && (!countryCode || countryCode === "Unknown")) {
+              countryCode = data.countryCode.toUpperCase();
+            }
+            if (data.countryName && country === "Unknown") {
+              country = data.countryName.trim();
+            } else if (countryCode && country === "Unknown") {
+              country = getCountryName(countryCode);
+            }
+            if (data.regionName) {
+              const parsedRegion = cleanRegion(countryCode, data.regionName);
+              if (parsedRegion !== "Unknown") region = parsedRegion;
+            }
+            if (data.cityName) {
+              const parsedCity = cleanCity(data.cityName);
+              if (parsedCity !== "Unknown") city = parsedCity;
+            }
+          }
+        }
+      } catch (tertiaryErr) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn(`[GeoIP Diagnostic] Tier 2 tertiary provider (freeipapi) failed: ${tertiaryErr.message}.`);
+        }
+      }
+    }
+
+    const resolved = { country, countryCode, region, city };
+    if (country !== "Unknown" && (region !== "Unknown" || city !== "Unknown")) {
+      setCachedGeo(ip, resolved, CACHE_TTL_MS);
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          `[GeoIP Diagnostic] IP Category: ${category} | Provider Status: resolved (Tier 2 HTTP) | Lookup Result: country="${resolved.country}", countryCode=${resolved.countryCode}, region="${resolved.region}", city="${resolved.city}"`
+        );
+      }
+      return resolved;
+    }
+
+    // Fallback on provider failure or genuinely unmapped location
+    setCachedGeo(ip, resolved, FAILURE_CACHE_TTL_MS);
     if (process.env.NODE_ENV !== "production") {
       console.log(
-        `[GeoIP Diagnostic] IP Category: ${category} | Provider Status: fallback (Tier 1 geoip-lite) | Lookup Result: country="${fallbackResolved.country}", countryCode=${fallbackResolved.countryCode}, region="${fallbackResolved.region}", city="${fallbackResolved.city}"`
+        `[GeoIP Diagnostic] IP Category: ${category} | Provider Status: fallback (Tier 1 geoip-lite) | Lookup Result: country="${resolved.country}", countryCode=${resolved.countryCode}, region="${resolved.region}", city="${resolved.city}"`
       );
     }
-    return fallbackResolved;
+    return resolved;
   } catch (err) {
     console.warn("Non-blocking geoip lookup error:", err.message);
     return defaultLocation;

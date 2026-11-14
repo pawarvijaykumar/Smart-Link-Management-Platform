@@ -313,7 +313,7 @@ const redirectLink = async (req, res) => {
       const { deviceType, browser } = parseUserAgent(userAgent);
       // CHANGE: Stage 8 — Extract visitor IP and resolve approximate geolocation (raw IP is not stored)
       const visitorIP = getVisitorIP(req);
-      const { country, countryCode, region, city } = await resolveGeoLocation(visitorIP);
+      const { country, countryCode, region, city } = await resolveGeoLocation(visitorIP, req);
 
       recordedClick = await Click.create({
         link: link._id,

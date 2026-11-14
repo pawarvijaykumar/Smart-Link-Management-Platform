@@ -181,15 +181,41 @@ export function getStateDisplayName(countryCode, regionCode) {
   const c = (countryCode || "").toUpperCase();
   const r = (regionCode || "").toUpperCase();
 
-  if (c === "US" && US_STATES[r]) {
-    return US_STATES[r].name;
-  }
-  if (c === "IN" && INDIA_STATES[r]) {
-    return INDIA_STATES[r];
+  if (c === "US") {
+    if (US_STATES[r]) {
+      return US_STATES[r].name;
+    }
+    const matchingUs = Object.values(US_STATES).find(
+      (s) => s.name.toLowerCase() === regionCode.toLowerCase()
+    );
+    if (matchingUs) {
+      return matchingUs.name;
+    }
   }
 
-  // If regionCode is already full name (e.g., "California" or "Bavaria"), return it
-  if (regionCode.length > 3) {
+  if (c === "IN") {
+    if (INDIA_STATES[r]) {
+      return INDIA_STATES[r];
+    }
+    const matchingIn = Object.values(INDIA_STATES).find(
+      (name) => name.toLowerCase() === regionCode.toLowerCase()
+    );
+    if (matchingIn) {
+      return matchingIn;
+    }
+    if (/delhi/i.test(regionCode)) {
+      return "Delhi";
+    }
+    if (/orissa/i.test(regionCode)) {
+      return "Odisha";
+    }
+    if (/pondicherry/i.test(regionCode)) {
+      return "Puducherry";
+    }
+  }
+
+  // If regionCode is already a recognized full name (e.g. "Goa", "California", "Bavaria"), return it
+  if (regionCode.length >= 3) {
     return regionCode;
   }
 

@@ -1009,6 +1009,7 @@ export default function RotatingDottedGlobe({
                 <div className="regions-cards-grid">
                   {countryRegions.map((r, idx) => {
                     const displayName = getStateDisplayName(r.countryCode, r.region);
+                    const isShortCode = r.region && r.region.length <= 3 && r.region !== "Unknown";
                     return (
                       <div
                         key={`${r.region}-${idx}`}
@@ -1017,7 +1018,9 @@ export default function RotatingDottedGlobe({
                         title={`Click to inspect cities in ${displayName}`}
                       >
                         <div className="region-card-top">
-                          <span className="region-badge">#{r.rank || idx + 1} {r.region}</span>
+                          <span className="region-badge">
+                            #{r.rank || idx + 1}{isShortCode ? ` ${r.region}` : ""}
+                          </span>
                           <span className="region-clicks">{r.totalClicks} {r.totalClicks === 1 ? "visit" : "visits"}</span>
                         </div>
                         <div className="region-card-name">{displayName}</div>
