@@ -4976,3 +4976,46 @@ button {
   opacity: 1;
   transform: translateX(3px);
 }
+
+/* ==========================================================================
+   CHANGE: Stage 9 Device & Browser Intelligence Dashboard — 2026-11-15
+   ========================================================================== */
+.device-analytics-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.donut-center-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+  width: 90px;
+}
+
+.donut-center-pct {
+  font-size: 18px;
+  font-weight: 750;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.donut-center-text {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  max-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+

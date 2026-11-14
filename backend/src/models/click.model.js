@@ -78,6 +78,34 @@ const clickSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+    // CHANGE: Stage 9 Device & Browser Intelligence — 2026-11-14
+    browserVersion: {
+      type: String,
+      default: "Unknown",
+      trim: true,
+    },
+    operatingSystem: {
+      type: String,
+      default: "Unknown",
+      trim: true,
+      index: true,
+    },
+    osVersion: {
+      type: String,
+      default: "Unknown",
+      trim: true,
+    },
+    deviceVendor: {
+      type: String,
+      default: "Unknown",
+      trim: true,
+      index: true,
+    },
+    deviceModel: {
+      type: String,
+      default: "Unknown",
+      trim: true,
+    },
   },
   { timestamps: true }
 );
@@ -86,6 +114,9 @@ const clickSchema = new mongoose.Schema(
 clickSchema.index({ link: 1, clickedAt: -1 });
 // Compound index to optimize country-level aggregation queries
 clickSchema.index({ link: 1, countryCode: 1, clickedAt: -1 });
+// CHANGE: Stage 9 Device & Browser Intelligence — 2026-11-14
+clickSchema.index({ link: 1, operatingSystem: 1, clickedAt: -1 });
+clickSchema.index({ link: 1, deviceVendor: 1, clickedAt: -1 });
 
 const Click = mongoose.model("Click", clickSchema);
 

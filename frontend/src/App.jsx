@@ -12,6 +12,8 @@ import ClicksOverviewChart, {
 // Import reusable QR Code component and URL helper
 import QRCodeCard, { buildShortUrl } from "./QRCodeCard";
 import RotatingDottedGlobe from "./components/RotatingDottedGlobe";
+// CHANGE: Stage 9 Device & Browser Intelligence Dashboard — 2026-11-15
+import DeviceAnalyticsView from "./components/DeviceAnalyticsView";
 import "./App.css";
 
 // CHANGE: QR Code Feature Stage 2 — 2026-11-05
@@ -3455,6 +3457,14 @@ function App() {
   const geoAbortControllerRef = useRef(null);
   const activeGeoRangeRef = useRef("all");
 
+  // CHANGE: Stage 9 Device & Browser Intelligence Dashboard — 2026-11-15
+  const [deviceAnalytics, setDeviceAnalytics] = useState(null);
+  const [deviceLoading, setDeviceLoading] = useState(false);
+  const [deviceError, setDeviceError] = useState("");
+  const [deviceRange, setDeviceRange] = useState("all"); // "7d" | "30d" | "all"
+  const deviceAbortControllerRef = useRef(null);
+  const activeDeviceRangeRef = useRef("all");
+
   // CHANGE: Notifications Step 4B/4D — 2026-11-05
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -3490,6 +3500,14 @@ function App() {
       setGeoRange("all");
       setGeoError("");
       setGeoLoading(false);
+      // CHANGE: Stage 9 Device & Browser Intelligence Reset — 2026-11-15
+      if (deviceAbortControllerRef.current) {
+        deviceAbortControllerRef.current.abort();
+      }
+      setDeviceAnalytics(null);
+      setDeviceRange("all");
+      setDeviceError("");
+      setDeviceLoading(false);
       // CHANGE: Notifications Step 4B/4D — 2026-11-05
       setNotifications([]);
       setUnreadCount(0);
@@ -3593,6 +3611,14 @@ function App() {
       setGeoRange("all");
       setGeoError("");
       setGeoLoading(false);
+      // CHANGE: Stage 9 Device & Browser Intelligence Reset — 2026-11-15
+      if (deviceAbortControllerRef.current) {
+        deviceAbortControllerRef.current.abort();
+      }
+      setDeviceAnalytics(null);
+      setDeviceRange("all");
+      setDeviceError("");
+      setDeviceLoading(false);
       // CHANGE: Notifications Step 4B/4D — 2026-11-05
       setNotifications([]);
       setUnreadCount(0);
@@ -4124,6 +4150,79 @@ function App() {
     };
   }, [activeView, token, geoRange, fetchGeoAnalytics]);
 
+  // CHANGE: Stage 9 Device & Browser Intelligence Dashboard — 2026-11-15
+  // Fetch device, browser, OS, hardware, and channel analytics on demand
+  const fetchDeviceAnalytics = useCallback(
+    async (selectedRange = deviceRange) => {
+      const activeToken = token || localStorage.getItem("token");
+      if (!activeToken) return;
+
+      // Abort any in-flight Device request to prevent race conditions & stale data
+      if (deviceAbortControllerRef.current) {
+        deviceAbortControllerRef.current.abort();
+      }
+      deviceAbortControllerRef.current = new AbortController();
+      const currentSignal = deviceAbortControllerRef.current.signal;
+      activeDeviceRangeRef.current = selectedRange;
+
+      setDeviceLoading(true);
+      setDeviceError("");
+
+      try {
+        const res = await axios.get(
+          `${API_URL}/user/analytics/devices?range=${encodeURIComponent(selectedRange)}`,
+          {
+            headers: { Authorization: `Bearer ${activeToken}` },
+            signal: currentSignal,
+          }
+        );
+        if (activeDeviceRangeRef.current === selectedRange && res.data?.success) {
+          setDeviceAnalytics(res.data);
+        }
+      } catch (err) {
+        if (axios.isCancel?.(err) || err.name === "CanceledError") {
+          return;
+        }
+        if (err.response?.status === 401) {
+          handleSessionExpired();
+          return;
+        }
+        const msg = err.response?.data?.message || "Failed to load device & browser analytics.";
+        setDeviceError(msg);
+        console.error("Failed to fetch device analytics:", err.message);
+      } finally {
+        if (activeDeviceRangeRef.current === selectedRange) {
+          setDeviceLoading(false);
+        }
+      }
+    },
+    [token, deviceRange, handleSessionExpired]
+  );
+
+  const handleDeviceRangeChange = useCallback(
+    (newRange) => {
+      setDeviceRange(newRange);
+      fetchDeviceAnalytics(newRange);
+    },
+    [fetchDeviceAnalytics]
+  );
+
+  useEffect(() => {
+    if (activeView !== "device-analytics" || !token) return;
+    let isMounted = true;
+
+    const timer = setTimeout(() => {
+      if (isMounted) {
+        fetchDeviceAnalytics(deviceRange);
+      }
+    }, 0);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [activeView, token, deviceRange, fetchDeviceAnalytics]);
+
   // CHANGE: Notifications Step 4B/4D — 2026-11-05
   // Fetch notifications belonging strictly to the authenticated user
   const fetchNotifications = useCallback(async () => {
@@ -4499,6 +4598,29 @@ function App() {
                 </svg>
               </span>
               <span>Geo Analytics</span>
+            </button>
+            {/* CHANGE: Stage 9 Device & Browser Intelligence Sidebar Item — 2026-11-15 */}
+            <button
+              type="button"
+              className={`nav-item ${activeView === "device-analytics" ? "active" : ""}`}
+              onClick={() => setActiveView("device-analytics")}
+              title="Devices & OS"
+              aria-label="Devices & OS"
+            >
+              <span className="nav-item-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  width="16"
+                  height="16"
+                >
+                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                  <line x1="12" y1="18" x2="12.01" y2="18" />
+                </svg>
+              </span>
+              <span>Devices & OS</span>
             </button>
             <button
               type="button"
@@ -4880,6 +5002,15 @@ function App() {
             geoRange={geoRange}
             onRangeChange={handleGeoRangeChange}
             onRefresh={() => fetchGeoAnalytics(geoRange)}
+          />
+        ) : activeView === "device-analytics" ? (
+          <DeviceAnalyticsView
+            deviceAnalytics={deviceAnalytics}
+            deviceLoading={deviceLoading}
+            deviceError={deviceError}
+            deviceRange={deviceRange}
+            onRangeChange={handleDeviceRangeChange}
+            onRefresh={() => fetchDeviceAnalytics(deviceRange)}
           />
         ) : null}
       </main>

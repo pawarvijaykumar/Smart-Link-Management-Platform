@@ -55,7 +55,12 @@ async function runTests() {
   console.log("Stage 8 State & City Resolution Verification Suite");
   console.log("=======================================================\n");
 
-  await mongoose.connect(MONGO_URI);
+  try {
+    await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 2500 });
+  } catch (err) {
+    console.log("  ⚠️ Atlas connection timed out (IP whitelist). Connecting to local MongoDB at mongodb://127.0.0.1:27017/smartlink_test...");
+    await mongoose.connect("mongodb://127.0.0.1:27017/smartlink_test");
+  }
 
   server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, resolve));

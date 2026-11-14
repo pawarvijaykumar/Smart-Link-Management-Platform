@@ -14,6 +14,8 @@ import {
   togglePauseLink,
   // CHANGE: Stage 8 — Geo-Location Analytics — 2026-11-08
   getGeoAnalytics,
+  // CHANGE: Stage 9 Device & Browser Intelligence — 2026-11-14
+  getDeviceAnalytics,
 } from "../controllers/link.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 
@@ -36,6 +38,9 @@ router.get("/user/analytics/qr", verifyJWT, getQRAnalytics);
 
 // CHANGE: Stage 8 — Geo-Location Analytics API — 2026-11-08
 router.get("/user/analytics/geo", verifyJWT, getGeoAnalytics);
+
+// CHANGE: Stage 9 Device & Browser Intelligence — 2026-11-14
+router.get("/user/analytics/devices", verifyJWT, getDeviceAnalytics);
 
 // CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
 router.patch("/:id/access", verifyJWT, updateLinkAccess);

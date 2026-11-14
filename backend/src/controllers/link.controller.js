@@ -304,13 +304,30 @@ const redirectLink = async (req, res) => {
     }
 
     // 1. Immediately send HTTP 302 redirect to visitor for minimum latency
+    // CHANGE: Stage 9 Step 4 — Request Client Hints for hardware model detection — 2026-11-15
+    res.set("Accept-CH", "Sec-CH-UA-Model, Sec-CH-UA-Platform-Version");
     res.redirect(destinationUrl);
 
     // 2. Safely record visitor device type, browser, isQR, UTM snapshot, and approximate geolocation in the background
     let recordedClick = null;
     try {
       const userAgent = req.headers["user-agent"] || "";
-      const { deviceType, browser } = parseUserAgent(userAgent);
+      // CHANGE: Stage 9 Step 4 Device Intelligence Improvements — 2026-11-15
+      // Extract client hints if available from modern Chromium browsers
+      const clientHints = {
+        model: req.headers["sec-ch-ua-model"],
+        platform: req.headers["sec-ch-ua-platform"],
+        platformVersion: req.headers["sec-ch-ua-platform-version"],
+      };
+      const {
+        deviceType,
+        browser,
+        browserVersion,
+        operatingSystem,
+        osVersion,
+        deviceVendor,
+        deviceModel,
+      } = parseUserAgent(userAgent, clientHints);
       // CHANGE: Stage 8 — Extract visitor IP and resolve approximate geolocation (raw IP is not stored)
       const visitorIP = getVisitorIP(req);
       const { country, countryCode, region, city } = await resolveGeoLocation(visitorIP, req);
@@ -320,6 +337,11 @@ const redirectLink = async (req, res) => {
         clickedAt: new Date(),
         deviceType,
         browser,
+        browserVersion,
+        operatingSystem,
+        osVersion,
+        deviceVendor,
+        deviceModel,
         isQR,
         utmSource: link.utmSource || null,
         utmMedium: link.utmMedium || null,
@@ -2034,6 +2056,425 @@ const getGeoAnalytics = async (req, res) => {
   }
 };
 
+// =========================================================================
+// CHANGE: Stage 9 Device & Browser Intelligence — 2026-11-14
+// High-performance authenticated aggregation for device categories,
+// operating systems, browsers, hardware vendors, models, and QR vs Direct traffic.
+// =========================================================================
+const getDeviceAnalytics = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.userId || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized request",
+      });
+    }
+
+    const rawRange = (req.query.range || "all").toString().toLowerCase().trim();
+    const range = rawRange === "7d" || rawRange === "30d" ? rawRange : "all";
+
+    // 1. User Isolation: Find only links owned by the authenticated user
+    const userLinks = await Link.find({ user: userId })
+      .select("_id")
+      .lean();
+
+    if (userLinks.length === 0) {
+      return res.status(200).json({
+        success: true,
+        range,
+        summary: {
+          totalClicks: 0,
+          mobileClicks: 0,
+          desktopClicks: 0,
+          tabletClicks: 0,
+          unknownClicks: 0,
+          mobilePercentage: 0,
+          desktopPercentage: 0,
+          tabletPercentage: 0,
+          qrClicks: 0,
+          directClicks: 0,
+          primaryOs: "Unknown",
+          primaryBrowser: "Unknown",
+        },
+        deviceTypes: [],
+        operatingSystems: [],
+        browsers: [],
+        vendors: [],
+        models: [],
+        qrVsDirectByDevice: [],
+      });
+    }
+
+    const linkIds = userLinks.map((l) => l._id);
+
+    // 2. Date Filtering in IST boundaries
+    const matchCondition = {
+      link: { $in: linkIds },
+    };
+
+    if (range === "7d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(7) };
+    } else if (range === "30d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(30) };
+    }
+
+    // 3. Faceted Aggregation for Devices, OS, Browsers, Vendors, Models
+    const [aggResult] = await Click.aggregate([
+      { $match: matchCondition },
+      {
+        $facet: {
+          summary: [
+            {
+              $group: {
+                _id: null,
+                totalClicks: { $sum: 1 },
+                mobileClicks: {
+                  $sum: { $cond: [{ $eq: ["$deviceType", "mobile"] }, 1, 0] },
+                },
+                desktopClicks: {
+                  $sum: { $cond: [{ $eq: ["$deviceType", "desktop"] }, 1, 0] },
+                },
+                tabletClicks: {
+                  $sum: { $cond: [{ $eq: ["$deviceType", "tablet"] }, 1, 0] },
+                },
+                unknownClicks: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $or: [
+                          { $eq: ["$deviceType", "unknown"] },
+                          { $eq: ["$deviceType", null] },
+                          { $not: ["$deviceType"] },
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+          ],
+          deviceTypes: [
+            {
+              $group: {
+                _id: { $ifNull: ["$deviceType", "unknown"] },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { totalClicks: -1 } },
+          ],
+          operatingSystems: [
+            {
+              $group: {
+                _id: {
+                  os: { $ifNull: ["$operatingSystem", "Unknown"] },
+                  version: { $ifNull: ["$osVersion", "Unknown"] },
+                },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { totalClicks: -1 } },
+          ],
+          browsers: [
+            {
+              $group: {
+                _id: {
+                  browser: { $ifNull: ["$browser", "Unknown"] },
+                  version: { $ifNull: ["$browserVersion", "Unknown"] },
+                },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { totalClicks: -1 } },
+          ],
+          vendors: [
+            {
+              $group: {
+                _id: { $ifNull: ["$deviceVendor", "Unknown"] },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { totalClicks: -1 } },
+          ],
+          models: [
+            {
+              $match: {
+                deviceModel: { $ne: null, $nin: ["Unknown", ""] },
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  model: "$deviceModel",
+                  vendor: { $ifNull: ["$deviceVendor", "Unknown"] },
+                },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { totalClicks: -1 } },
+            { $limit: 30 },
+          ],
+        },
+      },
+    ]);
+
+    const summaryRaw = aggResult?.summary?.[0] || {
+      totalClicks: 0,
+      mobileClicks: 0,
+      desktopClicks: 0,
+      tabletClicks: 0,
+      unknownClicks: 0,
+      qrClicks: 0,
+      directClicks: 0,
+    };
+
+    const totalClicks = summaryRaw.totalClicks || 0;
+    const mobileClicks = summaryRaw.mobileClicks || 0;
+    const desktopClicks = summaryRaw.desktopClicks || 0;
+    const tabletClicks = summaryRaw.tabletClicks || 0;
+    const unknownClicks = summaryRaw.unknownClicks || 0;
+    const qrClicks = summaryRaw.qrClicks || 0;
+    const directClicks = summaryRaw.directClicks || 0;
+
+    const mobilePercentage = totalClicks > 0 ? Number(((mobileClicks / totalClicks) * 100).toFixed(1)) : 0;
+    const desktopPercentage = totalClicks > 0 ? Number(((desktopClicks / totalClicks) * 100).toFixed(1)) : 0;
+    const tabletPercentage = totalClicks > 0 ? Number(((tabletClicks / totalClicks) * 100).toFixed(1)) : 0;
+
+    // Format Device Types
+    const deviceTypes = (aggResult?.deviceTypes || []).map((d) => {
+      const clicks = d.totalClicks || 0;
+      const qr = d.qrClicks || 0;
+      const direct = d.directClicks || 0;
+      const percentage = totalClicks > 0 ? Number(((clicks / totalClicks) * 100).toFixed(1)) : 0;
+      const qrPercentage = clicks > 0 ? Number(((qr / clicks) * 100).toFixed(1)) : 0;
+      return {
+        type: d._id || "unknown",
+        totalClicks: clicks,
+        qrClicks: qr,
+        directClicks: direct,
+        percentage,
+        qrPercentage,
+      };
+    });
+
+    // Format Operating Systems (Roll up versions by OS name)
+    const osMap = new Map();
+    for (const item of (aggResult?.operatingSystems || [])) {
+      const osName = item._id?.os || "Unknown";
+      const osVersion = item._id?.version || "Unknown";
+      const clicks = item.totalClicks || 0;
+      const qr = item.qrClicks || 0;
+      const direct = item.directClicks || 0;
+
+      if (!osMap.has(osName)) {
+        osMap.set(osName, {
+          name: osName,
+          totalClicks: 0,
+          qrClicks: 0,
+          directClicks: 0,
+          versions: [],
+        });
+      }
+      const entry = osMap.get(osName);
+      entry.totalClicks += clicks;
+      entry.qrClicks += qr;
+      entry.directClicks += direct;
+      if (osVersion && osVersion !== "Unknown") {
+        entry.versions.push({
+          version: osVersion,
+          clicks,
+        });
+      }
+    }
+
+    const operatingSystems = Array.from(osMap.values())
+      .map((os) => {
+        const percentage = totalClicks > 0 ? Number(((os.totalClicks / totalClicks) * 100).toFixed(1)) : 0;
+        const qrPercentage = os.totalClicks > 0 ? Number(((os.qrClicks / os.totalClicks) * 100).toFixed(1)) : 0;
+        os.versions.sort((a, b) => b.clicks - a.clicks);
+        return {
+          rank: 1,
+          name: os.name,
+          totalClicks: os.totalClicks,
+          qrClicks: os.qrClicks,
+          directClicks: os.directClicks,
+          percentage,
+          qrPercentage,
+          versions: os.versions,
+        };
+      })
+      .sort((a, b) => b.totalClicks - a.totalClicks)
+      .map((os, index) => ({ ...os, rank: index + 1 }));
+
+    // Format Browsers (Roll up versions by Browser name)
+    const browserMap = new Map();
+    for (const item of (aggResult?.browsers || [])) {
+      const bName = item._id?.browser || "Unknown";
+      const bVersion = item._id?.version || "Unknown";
+      const clicks = item.totalClicks || 0;
+      const qr = item.qrClicks || 0;
+      const direct = item.directClicks || 0;
+
+      if (!browserMap.has(bName)) {
+        browserMap.set(bName, {
+          name: bName,
+          totalClicks: 0,
+          qrClicks: 0,
+          directClicks: 0,
+          versions: [],
+        });
+      }
+      const entry = browserMap.get(bName);
+      entry.totalClicks += clicks;
+      entry.qrClicks += qr;
+      entry.directClicks += direct;
+      if (bVersion && bVersion !== "Unknown") {
+        entry.versions.push({
+          version: bVersion,
+          clicks,
+        });
+      }
+    }
+
+    const browsers = Array.from(browserMap.values())
+      .map((b) => {
+        const percentage = totalClicks > 0 ? Number(((b.totalClicks / totalClicks) * 100).toFixed(1)) : 0;
+        const qrPercentage = b.totalClicks > 0 ? Number(((b.qrClicks / b.totalClicks) * 100).toFixed(1)) : 0;
+        b.versions.sort((a, b) => b.clicks - a.clicks);
+        return {
+          rank: 1,
+          name: b.name,
+          totalClicks: b.totalClicks,
+          qrClicks: b.qrClicks,
+          directClicks: b.directClicks,
+          percentage,
+          qrPercentage,
+          versions: b.versions,
+        };
+      })
+      .sort((a, b) => b.totalClicks - a.totalClicks)
+      .map((b, index) => ({ ...b, rank: index + 1 }));
+
+    // Format Vendors
+    const vendors = (aggResult?.vendors || []).map((v, index) => {
+      const clicks = v.totalClicks || 0;
+      const qr = v.qrClicks || 0;
+      const direct = v.directClicks || 0;
+      const percentage = totalClicks > 0 ? Number(((clicks / totalClicks) * 100).toFixed(1)) : 0;
+      const qrPercentage = clicks > 0 ? Number(((qr / clicks) * 100).toFixed(1)) : 0;
+      return {
+        rank: index + 1,
+        vendor: v._id || "Unknown",
+        totalClicks: clicks,
+        qrClicks: qr,
+        directClicks: direct,
+        percentage,
+        qrPercentage,
+      };
+    });
+
+    // Format Models
+    const models = (aggResult?.models || []).map((m, index) => {
+      const clicks = m.totalClicks || 0;
+      const qr = m.qrClicks || 0;
+      const direct = m.directClicks || 0;
+      const percentage = totalClicks > 0 ? Number(((clicks / totalClicks) * 100).toFixed(1)) : 0;
+      const qrPercentage = clicks > 0 ? Number(((qr / clicks) * 100).toFixed(1)) : 0;
+      return {
+        rank: index + 1,
+        model: m._id?.model || "Unknown",
+        vendor: m._id?.vendor || "Unknown",
+        totalClicks: clicks,
+        qrClicks: qr,
+        directClicks: direct,
+        percentage,
+        qrPercentage,
+      };
+    });
+
+    // QR vs Direct by Device
+    const qrVsDirectByDevice = deviceTypes.map((d) => ({
+      deviceType: d.type,
+      totalClicks: d.totalClicks,
+      qrClicks: d.qrClicks,
+      directClicks: d.directClicks,
+      qrPercentage: d.qrPercentage,
+    }));
+
+    const primaryOs = operatingSystems.length > 0 ? operatingSystems[0].name : "Unknown";
+    const primaryBrowser = browsers.length > 0 ? browsers[0].name : "Unknown";
+
+    return res.status(200).json({
+      success: true,
+      range,
+      summary: {
+        totalClicks,
+        mobileClicks,
+        desktopClicks,
+        tabletClicks,
+        unknownClicks,
+        mobilePercentage,
+        desktopPercentage,
+        tabletPercentage,
+        qrClicks,
+        directClicks,
+        primaryOs,
+        primaryBrowser,
+      },
+      deviceTypes,
+      operatingSystems,
+      browsers,
+      vendors,
+      models,
+      qrVsDirectByDevice,
+    });
+  } catch (error) {
+    console.error("Get device analytics error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch device analytics",
+    });
+  }
+};
+
 export {
   createLink,
   redirectLink,
@@ -2046,4 +2487,5 @@ export {
   updateLinkAccess,
   togglePauseLink,
   getGeoAnalytics,
+  getDeviceAnalytics,
 };
