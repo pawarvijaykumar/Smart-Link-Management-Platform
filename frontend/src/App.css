@@ -5019,3 +5019,194 @@ button {
   text-overflow: ellipsis;
 }
 
+/* ==========================================================================
+   CHANGE: Stage 10 Advanced Traffic Visualization Dashboard — 2026-11-16
+   Polished, responsive layout & styles for Traffic Analytics dashboard:
+   - 4-column desktop / 2-column tablet / 1-column mobile metrics grid
+   - High-contrast date filter pills & refresh button alignment
+   - Responsive 2-column chart grid & full-width charts
+   - Mobile-scrollable traffic density heatmap
+   - Glassmorphic floating chart tooltips
+   ========================================================================== */
+.traffic-analytics-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.traffic-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.traffic-filter-pills {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 4px;
+}
+
+.traffic-pill-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.traffic-pill-btn:hover:not(:disabled) {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.traffic-pill-btn.active {
+  background: var(--accent-purple);
+  color: #ffffff;
+  border-color: rgba(168, 85, 247, 0.4);
+  box-shadow: 0 2px 8px var(--glow-purple);
+  font-weight: 700;
+}
+
+.traffic-pill-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.traffic-chart-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.traffic-chart-card:hover {
+  border-color: var(--border-hover);
+}
+
+.traffic-chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.traffic-chart-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.traffic-chart-subtitle {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.traffic-charts-grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 960px) {
+  .traffic-charts-grid-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.traffic-heatmap-scroll {
+  overflow-x: auto;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+}
+
+.traffic-heatmap-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.traffic-heatmap-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 3px;
+}
+
+.traffic-heatmap-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
+}
+
+.traffic-heatmap-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.traffic-heatmap-inner {
+  min-width: 680px;
+}
+
+.chart-tooltip-bubble {
+  position: absolute;
+  background: rgba(13, 21, 39, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 14px rgba(16, 185, 129, 0.2);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: fadeIn 0.12s ease-out;
+}
+
+.chart-tooltip-title {
+  font-weight: 700;
+  color: #ffffff;
+  font-size: 12.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 4px;
+  margin-bottom: 2px;
+}
+
+.chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+}
+
+.tooltip-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+

@@ -304,15 +304,16 @@ const redirectLink = async (req, res) => {
     }
 
     // 1. Immediately send HTTP 302 redirect to visitor for minimum latency
-    // CHANGE: Stage 9 Step 4 — Request Client Hints for hardware model detection — 2026-11-15
+    // CHANGE: Stage 9 Step 4/5 — Request Client Hints for hardware model detection with Vary header — 2026-11-15
     res.set("Accept-CH", "Sec-CH-UA-Model, Sec-CH-UA-Platform-Version");
+    res.set("Vary", "Sec-CH-UA-Model, Sec-CH-UA-Platform-Version");
     res.redirect(destinationUrl);
 
     // 2. Safely record visitor device type, browser, isQR, UTM snapshot, and approximate geolocation in the background
     let recordedClick = null;
     try {
       const userAgent = req.headers["user-agent"] || "";
-      // CHANGE: Stage 9 Step 4 Device Intelligence Improvements — 2026-11-15
+      // CHANGE: Stage 9 Step 4/5 Device Intelligence Improvements & Client Hints Inspection — 2026-11-15
       // Extract client hints if available from modern Chromium browsers
       const clientHints = {
         model: req.headers["sec-ch-ua-model"],
@@ -328,6 +329,17 @@ const redirectLink = async (req, res) => {
         deviceVendor,
         deviceModel,
       } = parseUserAgent(userAgent, clientHints);
+
+      // CHANGE: Stage 9 Step 5 — Diagnostic log for incoming Client Hint headers (no IP/PII logged) — 2026-11-15
+      console.log(
+        `[Device Diagnostic] UA="${userAgent.slice(0, 90)}..." | ` +
+        `Sec-CH-UA="${req.headers["sec-ch-ua"] || "none"}" | ` +
+        `Sec-CH-UA-Mobile="${req.headers["sec-ch-ua-mobile"] || "none"}" | ` +
+        `Sec-CH-UA-Platform="${req.headers["sec-ch-ua-platform"] || "none"}" | ` +
+        `Sec-CH-UA-Model="${req.headers["sec-ch-ua-model"] || "none"}" | ` +
+        `Sec-CH-UA-Platform-Version="${req.headers["sec-ch-ua-platform-version"] || "none"}" | ` +
+        `Result: Vendor="${deviceVendor}", Model="${deviceModel}", OS="${operatingSystem} ${osVersion}"`
+      );
       // CHANGE: Stage 8 — Extract visitor IP and resolve approximate geolocation (raw IP is not stored)
       const visitorIP = getVisitorIP(req);
       const { country, countryCode, region, city } = await resolveGeoLocation(visitorIP, req);
@@ -2475,6 +2487,579 @@ const getDeviceAnalytics = async (req, res) => {
   }
 };
 
+// =========================================================================
+// CHANGE: Stage 10 Advanced Traffic Visualization — 2026-11-16
+// High-performance authenticated aggregation for traffic analytics:
+// Daily traffic trends, hourly distribution, QR vs direct trends over time,
+// device distribution, campaign trends, and day-of-week x hour heatmap in IST.
+// =========================================================================
+
+const DAY_INFO = [
+  { dayOfWeek: 1, name: "Sunday", short: "Sun" },
+  { dayOfWeek: 2, name: "Monday", short: "Mon" },
+  { dayOfWeek: 3, name: "Tuesday", short: "Tue" },
+  { dayOfWeek: 4, name: "Wednesday", short: "Wed" },
+  { dayOfWeek: 5, name: "Thursday", short: "Thu" },
+  { dayOfWeek: 6, name: "Friday", short: "Fri" },
+  { dayOfWeek: 7, name: "Saturday", short: "Sat" },
+];
+
+const getISTDateStr = (date = new Date()) => {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(date);
+};
+
+const generateISTDateList = (count, endDateStr = getISTDateStr()) => {
+  const [y, m, d] = endDateStr.split("-").map(Number);
+  const result = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const dt = new Date(Date.UTC(y, m - 1, d - i, 12, 0, 0));
+    const year = dt.getUTCFullYear();
+    const month = String(dt.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(dt.getUTCDate()).padStart(2, "0");
+    result.push(`${year}-${month}-${day}`);
+  }
+  return result;
+};
+
+const getDaysDiff = (startStr, endStr) => {
+  if (!startStr || !endStr) return 7;
+  const [y1, m1, d1] = startStr.split("-").map(Number);
+  const [y2, m2, d2] = endStr.split("-").map(Number);
+  const t1 = Date.UTC(y1, m1 - 1, d1, 12, 0, 0);
+  const t2 = Date.UTC(y2, m2 - 1, d2, 12, 0, 0);
+  return Math.max(1, Math.round((t2 - t1) / 86400000) + 1);
+};
+
+const formatHourLabel = (h) => {
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  const ampm = h < 12 ? "AM" : "PM";
+  return `${hour12} ${ampm} (${String(h).padStart(2, "0")}:00 IST)`;
+};
+
+const buildEmptyTrafficData = (range) => {
+  const daysCount = range === "30d" ? 30 : 7;
+  const dates = generateISTDateList(daysCount);
+
+  const dailyTrends = dates.map((d) => ({
+    date: d,
+    totalClicks: 0,
+    qrClicks: 0,
+    directClicks: 0,
+  }));
+
+  const qrVsDirectOverTime = dates.map((d) => ({
+    date: d,
+    qr: 0,
+    direct: 0,
+    total: 0,
+  }));
+
+  const hourlyDistribution = Array.from({ length: 24 }, (_, h) => ({
+    hour: h,
+    label: `${String(h).padStart(2, "0")}:00`,
+    count: 0,
+    qrClicks: 0,
+    directClicks: 0,
+  }));
+
+  const heatmapGrid = [];
+  const heatmapDays = DAY_INFO.map((d) => {
+    const hours = new Array(24).fill(0);
+    for (let h = 0; h < 24; h++) {
+      heatmapGrid.push({
+        dayOfWeek: d.dayOfWeek,
+        dayName: d.short,
+        hour: h,
+        label: `${String(h).padStart(2, "0")}:00`,
+        count: 0,
+      });
+    }
+    return {
+      dayOfWeek: d.dayOfWeek,
+      dayName: d.name,
+      shortName: d.short,
+      totalClicks: 0,
+      hours,
+    };
+  });
+
+  const deviceDistribution = [
+    { deviceType: "mobile", label: "Mobile", count: 0, percentage: 0, qrClicks: 0, directClicks: 0 },
+    { deviceType: "desktop", label: "Desktop", count: 0, percentage: 0, qrClicks: 0, directClicks: 0 },
+    { deviceType: "tablet", label: "Tablet", count: 0, percentage: 0, qrClicks: 0, directClicks: 0 },
+    { deviceType: "unknown", label: "Unknown", count: 0, percentage: 0, qrClicks: 0, directClicks: 0 },
+  ];
+
+  return {
+    summary: {
+      totalClicks: 0,
+      qrClicks: 0,
+      directClicks: 0,
+      qrPercentage: 0,
+      directPercentage: 0,
+      peakHour: null,
+      peakHourLabel: "N/A",
+      peakHourClicks: 0,
+      topDayOfWeek: "N/A",
+      topDayClicks: 0,
+      topDevice: "N/A",
+      topCampaign: "None",
+    },
+    dailyTrends,
+    hourlyDistribution,
+    qrVsDirectOverTime,
+    deviceDistribution,
+    campaignTrends: {
+      topCampaigns: [],
+      dailySeries: [],
+    },
+    heatmap: {
+      grid: heatmapGrid,
+      days: heatmapDays,
+    },
+  };
+};
+
+const getTrafficAnalytics = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.userId || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized request",
+      });
+    }
+
+    const rawRange = (req.query.range || "7d").toString().toLowerCase().trim();
+    const range = rawRange === "30d" || rawRange === "all" ? rawRange : "7d";
+
+    // 1. User Isolation: Find only links owned by the authenticated user
+    const userLinks = await Link.find({ user: userId })
+      .select("_id")
+      .lean();
+
+    if (userLinks.length === 0) {
+      return res.status(200).json({
+        success: true,
+        range,
+        data: buildEmptyTrafficData(range),
+      });
+    }
+
+    const linkIds = userLinks.map((l) => l._id);
+
+    // 2. Date Filtering in IST boundaries
+    const matchCondition = {
+      link: { $in: linkIds },
+    };
+
+    if (range === "7d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(7) };
+    } else if (range === "30d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(30) };
+    }
+
+    // 3. Faceted Aggregation in IST Timezone (+05:30)
+    const [aggResult] = await Click.aggregate([
+      { $match: matchCondition },
+      {
+        $facet: {
+          // Overall totals
+          summary: [
+            {
+              $group: {
+                _id: null,
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+          ],
+
+          // Daily trends (grouped by IST date: YYYY-MM-DD)
+          dailyTrends: [
+            {
+              $group: {
+                _id: {
+                  $dateToString: {
+                    format: "%Y-%m-%d",
+                    date: "$clickedAt",
+                    timezone: "+05:30",
+                  },
+                },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ],
+
+          // Hourly distribution (grouped by IST hour: 0 to 23)
+          hourlyDistribution: [
+            {
+              $group: {
+                _id: {
+                  $hour: {
+                    date: "$clickedAt",
+                    timezone: "+05:30",
+                  },
+                },
+                count: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ],
+
+          // Heatmap: Day of Week (1=Sun, 7=Sat) x Hour (0 to 23) in IST
+          heatmap: [
+            {
+              $group: {
+                _id: {
+                  dayOfWeek: {
+                    $dayOfWeek: {
+                      date: "$clickedAt",
+                      timezone: "+05:30",
+                    },
+                  },
+                  hour: {
+                    $hour: {
+                      date: "$clickedAt",
+                      timezone: "+05:30",
+                    },
+                  },
+                },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { "_id.dayOfWeek": 1, "_id.hour": 1 } },
+          ],
+
+          // Device distribution (mobile, desktop, tablet, unknown)
+          deviceDistribution: [
+            {
+              $group: {
+                _id: { $ifNull: ["$deviceType", "unknown"] },
+                count: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { count: -1 } },
+          ],
+
+          // Campaign daily clicks
+          campaignDaily: [
+            {
+              $match: {
+                utmCampaign: {
+                  $exists: true,
+                  $ne: null,
+                  $nin: ["", "none", "null"],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  campaign: "$utmCampaign",
+                  date: {
+                    $dateToString: {
+                      format: "%Y-%m-%d",
+                      date: "$clickedAt",
+                      timezone: "+05:30",
+                    },
+                  },
+                },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { "_id.date": 1 } },
+          ],
+
+          // Top 5 campaigns by volume
+          topCampaigns: [
+            {
+              $match: {
+                utmCampaign: {
+                  $exists: true,
+                  $ne: null,
+                  $nin: ["", "none", "null"],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: "$utmCampaign",
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { count: -1 } },
+            { $limit: 5 },
+          ],
+        },
+      },
+    ]);
+
+    const summaryData = aggResult?.summary?.[0] || {
+      totalClicks: 0,
+      qrClicks: 0,
+      directClicks: 0,
+    };
+    const totalClicks = summaryData.totalClicks || 0;
+    const qrClicks = summaryData.qrClicks || 0;
+    const directClicks = summaryData.directClicks || 0;
+
+    const rawDaily = aggResult?.dailyTrends || [];
+    const rawHourly = aggResult?.hourlyDistribution || [];
+    const rawHeatmap = aggResult?.heatmap || [];
+    const rawDevices = aggResult?.deviceDistribution || [];
+    const rawCampaignDaily = aggResult?.campaignDaily || [];
+    const rawTopCampaigns = aggResult?.topCampaigns || [];
+
+    // Construct contiguous date range for daily trends
+    const todayStr = getISTDateStr();
+    let dates = [];
+    if (range === "7d") {
+      dates = generateISTDateList(7, todayStr);
+    } else if (range === "30d") {
+      dates = generateISTDateList(30, todayStr);
+    } else {
+      // "all"
+      if (rawDaily.length > 0) {
+        const earliest = rawDaily[0]._id;
+        const span = getDaysDiff(earliest, todayStr);
+        dates = generateISTDateList(Math.max(7, span), todayStr);
+      } else {
+        dates = generateISTDateList(7, todayStr);
+      }
+    }
+
+    const dailyMap = new Map();
+    rawDaily.forEach((item) => {
+      if (item._id) {
+        dailyMap.set(item._id, item);
+      }
+    });
+
+    const dailyTrends = dates.map((d) => {
+      const item = dailyMap.get(d);
+      return {
+        date: d,
+        totalClicks: item?.totalClicks || 0,
+        qrClicks: item?.qrClicks || 0,
+        directClicks: item?.directClicks || 0,
+      };
+    });
+
+    const qrVsDirectOverTime = dates.map((d) => {
+      const item = dailyMap.get(d);
+      const qr = item?.qrClicks || 0;
+      const direct = item?.directClicks || 0;
+      return {
+        date: d,
+        qr,
+        direct,
+        total: qr + direct,
+      };
+    });
+
+    // Hourly distribution zero-filled for all 24 hours
+    const hourlyMap = new Map();
+    let peakHour = null;
+    let peakHourClicks = 0;
+
+    rawHourly.forEach((item) => {
+      if (item._id !== null && item._id !== undefined) {
+        hourlyMap.set(item._id, item);
+        if ((item.count || 0) > peakHourClicks) {
+          peakHourClicks = item.count;
+          peakHour = item._id;
+        }
+      }
+    });
+
+    const hourlyDistribution = Array.from({ length: 24 }, (_, h) => {
+      const item = hourlyMap.get(h);
+      return {
+        hour: h,
+        label: `${String(h).padStart(2, "0")}:00`,
+        count: item?.count || 0,
+        qrClicks: item?.qrClicks || 0,
+        directClicks: item?.directClicks || 0,
+      };
+    });
+
+    // Heatmap zero-filled for 7 days x 24 hours
+    const heatmapMap = new Map();
+    const dayTotals = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
+
+    rawHeatmap.forEach((item) => {
+      const dow = item._id?.dayOfWeek;
+      const h = item._id?.hour;
+      if (dow && h !== undefined) {
+        heatmapMap.set(`${dow}_${h}`, item.count || 0);
+        dayTotals[dow] = (dayTotals[dow] || 0) + (item.count || 0);
+      }
+    });
+
+    let topDayOfWeek = "N/A";
+    let topDayClicks = 0;
+    Object.entries(dayTotals).forEach(([dowStr, count]) => {
+      if (count > topDayClicks) {
+        topDayClicks = count;
+        topDayOfWeek = DAY_INFO.find((d) => d.dayOfWeek === Number(dowStr))?.name || "N/A";
+      }
+    });
+
+    const heatmapGrid = [];
+    const heatmapDays = DAY_INFO.map((d) => {
+      const hours = [];
+      for (let h = 0; h < 24; h++) {
+        const count = heatmapMap.get(`${d.dayOfWeek}_${h}`) || 0;
+        hours.push(count);
+        heatmapGrid.push({
+          dayOfWeek: d.dayOfWeek,
+          dayName: d.short,
+          hour: h,
+          label: `${String(h).padStart(2, "0")}:00`,
+          count,
+        });
+      }
+      return {
+        dayOfWeek: d.dayOfWeek,
+        dayName: d.name,
+        shortName: d.short,
+        totalClicks: dayTotals[d.dayOfWeek] || 0,
+        hours,
+      };
+    });
+
+    // Device distribution
+    const devMap = new Map();
+    rawDevices.forEach((item) => {
+      if (item._id) {
+        devMap.set(item._id.toLowerCase(), item);
+      }
+    });
+
+    const KNOWN_DEV_TYPES = ["mobile", "desktop", "tablet", "unknown"];
+    let topDevice = "N/A";
+    let maxDevCount = 0;
+
+    const deviceDistribution = KNOWN_DEV_TYPES.map((type) => {
+      const item = devMap.get(type);
+      const count = item?.count || 0;
+      if (count > maxDevCount) {
+        maxDevCount = count;
+        topDevice = type.charAt(0).toUpperCase() + type.slice(1);
+      }
+      const percentage = totalClicks > 0 ? Math.round((count / totalClicks) * 100) : 0;
+      return {
+        deviceType: type,
+        label: type.charAt(0).toUpperCase() + type.slice(1),
+        count,
+        percentage,
+        qrClicks: item?.qrClicks || 0,
+        directClicks: item?.directClicks || 0,
+      };
+    });
+
+    // Campaign Trends
+    const topCampaignsList = rawTopCampaigns.map((tc) => ({
+      campaign: tc._id,
+      count: tc.count,
+      percentage: totalClicks > 0 ? Math.round((tc.count / totalClicks) * 100) : 0,
+    }));
+
+    const campaignDateMap = new Map();
+    rawCampaignDaily.forEach((entry) => {
+      const camp = entry._id?.campaign;
+      const dateStr = entry._id?.date;
+      if (camp && dateStr) {
+        const key = `${camp}_${dateStr}`;
+        campaignDateMap.set(key, entry.count || 0);
+      }
+    });
+
+    const campaignDailySeries = topCampaignsList.map((tc) => {
+      const data = dates.map((d) => ({
+        date: d,
+        count: campaignDateMap.get(`${tc.campaign}_${d}`) || 0,
+      }));
+      return {
+        campaign: tc.campaign,
+        totalClicks: tc.count,
+        data,
+      };
+    });
+
+    const topCampaignName = topCampaignsList.length > 0 ? topCampaignsList[0].campaign : "None";
+
+    const qrPercentage = totalClicks > 0 ? Math.round((qrClicks / totalClicks) * 100) : 0;
+    const directPercentage = totalClicks > 0 ? Math.round((directClicks / totalClicks) * 100) : 0;
+
+    const summary = {
+      totalClicks,
+      qrClicks,
+      directClicks,
+      qrPercentage,
+      directPercentage,
+      peakHour,
+      peakHourLabel: peakHour !== null ? formatHourLabel(peakHour) : "N/A",
+      peakHourClicks,
+      topDayOfWeek,
+      topDayClicks,
+      topDevice,
+      topCampaign: topCampaignName,
+    };
+
+    return res.status(200).json({
+      success: true,
+      range,
+      data: {
+        summary,
+        dailyTrends,
+        hourlyDistribution,
+        qrVsDirectOverTime,
+        deviceDistribution,
+        campaignTrends: {
+          topCampaigns: topCampaignsList,
+          dailySeries: campaignDailySeries,
+        },
+        heatmap: {
+          grid: heatmapGrid,
+          days: heatmapDays,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Get traffic analytics error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch traffic analytics",
+    });
+  }
+};
+
 export {
   createLink,
   redirectLink,
@@ -2488,4 +3073,5 @@ export {
   togglePauseLink,
   getGeoAnalytics,
   getDeviceAnalytics,
+  getTrafficAnalytics,
 };

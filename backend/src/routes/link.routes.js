@@ -16,6 +16,8 @@ import {
   getGeoAnalytics,
   // CHANGE: Stage 9 Device & Browser Intelligence — 2026-11-14
   getDeviceAnalytics,
+  // CHANGE: Stage 10 Advanced Traffic Visualization — 2026-11-16
+  getTrafficAnalytics,
 } from "../controllers/link.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 
@@ -41,6 +43,9 @@ router.get("/user/analytics/geo", verifyJWT, getGeoAnalytics);
 
 // CHANGE: Stage 9 Device & Browser Intelligence — 2026-11-14
 router.get("/user/analytics/devices", verifyJWT, getDeviceAnalytics);
+
+// CHANGE: Stage 10 Advanced Traffic Visualization — 2026-11-16
+router.get("/user/analytics/traffic", verifyJWT, getTrafficAnalytics);
 
 // CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
 router.patch("/:id/access", verifyJWT, updateLinkAccess);

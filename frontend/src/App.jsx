@@ -14,6 +14,8 @@ import QRCodeCard, { buildShortUrl } from "./QRCodeCard";
 import RotatingDottedGlobe from "./components/RotatingDottedGlobe";
 // CHANGE: Stage 9 Device & Browser Intelligence Dashboard — 2026-11-15
 import DeviceAnalyticsView from "./components/DeviceAnalyticsView";
+// CHANGE: Stage 10 Advanced Traffic Visualization Dashboard — 2026-11-16
+import TrafficAnalyticsView from "./components/TrafficAnalyticsView";
 import "./App.css";
 
 // CHANGE: QR Code Feature Stage 2 — 2026-11-05
@@ -3465,6 +3467,14 @@ function App() {
   const deviceAbortControllerRef = useRef(null);
   const activeDeviceRangeRef = useRef("all");
 
+  // CHANGE: Stage 10 Advanced Traffic Visualization Dashboard — 2026-11-16
+  const [trafficAnalytics, setTrafficAnalytics] = useState(null);
+  const [trafficLoading, setTrafficLoading] = useState(false);
+  const [trafficError, setTrafficError] = useState("");
+  const [trafficRange, setTrafficRange] = useState("7d"); // "7d" | "30d" | "all"
+  const trafficAbortControllerRef = useRef(null);
+  const activeTrafficRangeRef = useRef("7d");
+
   // CHANGE: Notifications Step 4B/4D — 2026-11-05
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -4223,6 +4233,78 @@ function App() {
     };
   }, [activeView, token, deviceRange, fetchDeviceAnalytics]);
 
+  // CHANGE: Stage 10 Advanced Traffic Visualization Dashboard — 2026-11-16
+  // Fetch daily, hourly, QR vs direct, device, campaign, and heatmap analytics
+  const fetchTrafficAnalytics = useCallback(
+    async (selectedRange = trafficRange) => {
+      const activeToken = token || localStorage.getItem("token");
+      if (!activeToken) return;
+
+      if (trafficAbortControllerRef.current) {
+        trafficAbortControllerRef.current.abort();
+      }
+      trafficAbortControllerRef.current = new AbortController();
+      const currentSignal = trafficAbortControllerRef.current.signal;
+      activeTrafficRangeRef.current = selectedRange;
+
+      setTrafficLoading(true);
+      setTrafficError("");
+
+      try {
+        const res = await axios.get(
+          `${API_URL}/user/analytics/traffic?range=${encodeURIComponent(selectedRange)}`,
+          {
+            headers: { Authorization: `Bearer ${activeToken}` },
+            signal: currentSignal,
+          }
+        );
+        if (activeTrafficRangeRef.current === selectedRange && res.data?.success) {
+          setTrafficAnalytics(res.data);
+        }
+      } catch (err) {
+        if (axios.isCancel?.(err) || err.name === "CanceledError") {
+          return;
+        }
+        if (err.response?.status === 401) {
+          handleSessionExpired();
+          return;
+        }
+        const msg = err.response?.data?.message || "Failed to load traffic analytics.";
+        setTrafficError(msg);
+        console.error("Failed to fetch traffic analytics:", err.message);
+      } finally {
+        if (activeTrafficRangeRef.current === selectedRange) {
+          setTrafficLoading(false);
+        }
+      }
+    },
+    [token, trafficRange, handleSessionExpired]
+  );
+
+  const handleTrafficRangeChange = useCallback(
+    (newRange) => {
+      setTrafficRange(newRange);
+      fetchTrafficAnalytics(newRange);
+    },
+    [fetchTrafficAnalytics]
+  );
+
+  useEffect(() => {
+    if (activeView !== "traffic-analytics" || !token) return;
+    let isMounted = true;
+
+    const timer = setTimeout(() => {
+      if (isMounted) {
+        fetchTrafficAnalytics(trafficRange);
+      }
+    }, 0);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [activeView, token, trafficRange, fetchTrafficAnalytics]);
+
   // CHANGE: Notifications Step 4B/4D — 2026-11-05
   // Fetch notifications belonging strictly to the authenticated user
   const fetchNotifications = useCallback(async () => {
@@ -4622,6 +4704,29 @@ function App() {
               </span>
               <span>Devices & OS</span>
             </button>
+            {/* CHANGE: Stage 10 Advanced Traffic Visualization Sidebar Item — 2026-11-16 */}
+            <button
+              type="button"
+              className={`nav-item ${activeView === "traffic-analytics" ? "active" : ""}`}
+              onClick={() => setActiveView("traffic-analytics")}
+              title="Traffic Analytics"
+              aria-label="Traffic Analytics"
+            >
+              <span className="nav-item-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  width="16"
+                  height="16"
+                >
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                  <polyline points="17 6 23 6 23 12" />
+                </svg>
+              </span>
+              <span>Traffic Analytics</span>
+            </button>
             <button
               type="button"
               className="nav-item"
@@ -5011,6 +5116,16 @@ function App() {
             deviceRange={deviceRange}
             onRangeChange={handleDeviceRangeChange}
             onRefresh={() => fetchDeviceAnalytics(deviceRange)}
+          />
+        ) : activeView === "traffic-analytics" ? (
+          /* CHANGE: Stage 10 Advanced Traffic Visualization Dashboard — 2026-11-16 */
+          <TrafficAnalyticsView
+            trafficAnalytics={trafficAnalytics}
+            trafficLoading={trafficLoading}
+            trafficError={trafficError}
+            trafficRange={trafficRange}
+            onRangeChange={handleTrafficRangeChange}
+            onRefresh={() => fetchTrafficAnalytics(trafficRange)}
           />
         ) : null}
       </main>
