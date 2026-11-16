@@ -96,6 +96,18 @@ Identifies the specific creative or element clicked, useful for A/B testing diff
       type: Boolean,
       default: false,
     },
+
+    // CHANGE: Stage 13 A/B Testing — 2026-11-17
+    isExperiment: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    experiment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Experiment",
+      default: null,
+    },
   },
   {
     timestamps: true,//Automatically records createdAt and updatedAt

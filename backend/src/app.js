@@ -14,6 +14,8 @@ import linkRouter from "./routes/link.routes.js";
 import { redirectLink } from "./controllers/link.controller.js";
 // CHANGE: Notifications Step 2 — 2026-11-04
 import notificationRoutes from "./routes/notification.routes.js";
+// CHANGE: Stage 13 A/B Testing Routes — 2026-11-17
+import experimentRoutes from "./routes/experiment.routes.js";
 
 const app = express();
 
@@ -51,7 +53,9 @@ app.use(
     credentials: true,
   })
 );
-app.use(cookieParser());
+// CHANGE: Stage 13 A/B Testing signed cookie parser — 2026-11-17
+const cookieSecret = process.env.COOKIE_SECRET || process.env.JWT_SECRET || "smartlink_ab_cookie_secret_key_2026";
+app.use(cookieParser(cookieSecret));
 app.use(express.json());
 
 // Routes-->"When someone sends a GET request to this URL, what should I do?"
@@ -61,6 +65,8 @@ app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/links", linkRouter);
 // CHANGE: Notifications Step 2 — 2026-11-04
 app.use("/api/notifications", notificationRoutes);
+// CHANGE: Stage 13 A/B Testing — 2026-11-17
+app.use("/api/experiments", experimentRoutes);
 
 // Public short-code redirect at domain root (e.g. https://domain.com/:shortCode)
 app.get("/:shortCode", redirectLink);

@@ -24,7 +24,12 @@ let server, baseUrl;
 let userA, userB, tokenA, tokenB;
 
 async function setup() {
-  await mongoose.connect(process.env.MONGO_URI);
+  try {
+    await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 2500 });
+  } catch (err) {
+    console.log("  ⚠️ Atlas connection timed out. Connecting to local MongoDB at mongodb://127.0.0.1:27017/smartlink_test...");
+    await mongoose.connect("mongodb://127.0.0.1:27017/smartlink_test");
+  }
 
   // Clean old test records
   await User.deleteMany({ email: { $in: ["stage7_userA@test.com", "stage7_userB@test.com"] } });
@@ -57,8 +62,9 @@ async function teardown() {
   if (server) {
     await new Promise((resolve) => server.close(resolve));
   }
+  const testLinkIds = await Link.find({ user: { $in: [userA._id, userB._id] } }).distinct("_id");
+  await Click.deleteMany({ link: { $in: testLinkIds } });
   await Link.deleteMany({ user: { $in: [userA._id, userB._id] } });
-  await Click.deleteMany({});
   await User.deleteMany({ _id: { $in: [userA._id, userB._id] } });
   await mongoose.disconnect();
 }

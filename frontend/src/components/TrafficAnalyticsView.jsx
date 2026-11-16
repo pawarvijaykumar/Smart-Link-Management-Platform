@@ -800,10 +800,13 @@ function QRvsDirectComparisonChart({ data = [] }) {
 }
 
 // -----------------------------------------------------------------------------
-// 5. Device Traffic Distribution Chart (Donut & Split Breakdown)
+// 5. Device Traffic Distribution Chart (Interactive Donut & Split Breakdown)
+// CHANGE: Interactive device category selection — 2026-11-16
 // -----------------------------------------------------------------------------
 function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
-  const [hoveredIdx, setHoveredIdx] = useState(null);
+  // CHANGE: Interactive device category selection — 2026-11-16
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [hoveredCategory, setHoveredCategory] = useState(null);
 
   const colors = {
     mobile: "#8B5CF6",
@@ -824,8 +827,9 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
       ...d,
       color: colors[d.deviceType] || "#94A3B8",
       icon: icons[d.deviceType] || "📱",
+      percentage: d.percentage !== undefined ? d.percentage : (totalClicks > 0 ? Math.round((d.count / totalClicks) * 100) : 0),
     }));
-  }, [deviceDistribution]);
+  }, [deviceDistribution, totalClicks]);
 
   const activeSlices = useMemo(() => items.filter((d) => d.count > 0), [items]);
 
@@ -851,7 +855,38 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
     });
   }, [activeSlices, totalClicks, circumference]);
 
-  const activeSlice = hoveredIdx !== null ? slices[hoveredIdx] : null;
+  // Handle clicking to toggle category selection or switch immediately
+  const handleCategoryToggle = (deviceType) => {
+    setSelectedCategory((prev) => (prev === deviceType ? null : deviceType));
+  };
+
+  const handleKeyDown = (e, deviceType) => {
+    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+      e.preventDefault();
+      handleCategoryToggle(deviceType);
+    }
+  };
+
+  // Determine active view target: hover has temporary preview precedence, otherwise selectedCategory
+  const currentTargetType = hoveredCategory || selectedCategory;
+  const targetItem = currentTargetType
+    ? items.find((d) => d.deviceType === currentTargetType)
+    : null;
+
+  // Center display values (safe zero-handling)
+  const centerPct = targetItem
+    ? `${targetItem.percentage}%`
+    : totalClicks > 0
+    ? "100%"
+    : "0%";
+
+  const centerLabel = targetItem
+    ? targetItem.label
+    : "All Devices";
+
+  const centerSubtext = targetItem
+    ? `${targetItem.count.toLocaleString()} clicks`
+    : `${totalClicks.toLocaleString()} total`;
 
   return (
     <div className="traffic-chart-card">
@@ -861,12 +896,24 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
             <span>📱</span> Device Traffic Distribution
           </h3>
           <p className="traffic-chart-subtitle">
-            Share across visitor hardware categories
+            Click any category to filter and inspect distribution
           </p>
         </div>
-        <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-          {totalClicks > 0 ? `${totalClicks.toLocaleString()} total` : "0 recorded"}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {selectedCategory && (
+            <button
+              type="button"
+              className="traffic-reset-btn"
+              onClick={() => setSelectedCategory(null)}
+              aria-label="Reset device category filter"
+            >
+              <span>✕</span> Reset
+            </button>
+          )}
+          <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+            {totalClicks > 0 ? `${totalClicks.toLocaleString()} total` : "0 recorded"}
+          </span>
+        </div>
       </div>
 
       {totalClicks > 0 ? (
@@ -881,8 +928,13 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
                 stroke="rgba(255, 255, 255, 0.05)"
                 strokeWidth={strokeWidth}
               />
-              {slices.map((slice, idx) => {
-                const isHov = hoveredIdx === idx;
+              {slices.map((slice) => {
+                const isSelected = selectedCategory === slice.deviceType;
+                const isHovered = hoveredCategory === slice.deviceType;
+                const isEmphasized = isSelected || isHovered;
+                const hasFocus = currentTargetType !== null;
+                const isDimmed = hasFocus && !isEmphasized;
+
                 return (
                   <circle
                     key={slice.deviceType}
@@ -891,62 +943,116 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
                     r={radius}
                     fill="transparent"
                     stroke={slice.color}
-                    strokeWidth={isHov ? strokeWidth + 3 : strokeWidth}
+                    strokeWidth={isEmphasized ? strokeWidth + 4 : strokeWidth}
                     strokeDasharray={slice.strokeDasharray}
                     strokeDashoffset={slice.strokeDashoffset}
                     strokeLinecap="round"
                     style={{
                       transformOrigin: "center",
                       transform: "rotate(-90deg)",
-                      transition: "stroke-width 0.15s ease, opacity 0.15s ease",
+                      transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                       cursor: "pointer",
-                      opacity: hoveredIdx !== null && !isHov ? 0.45 : 1,
+                      opacity: isDimmed ? 0.22 : 1,
+                      filter: isEmphasized ? `drop-shadow(0 0 6px ${slice.color})` : "none",
                     }}
-                    onMouseEnter={() => setHoveredIdx(idx)}
-                    onMouseLeave={() => setHoveredIdx(null)}
+                    onClick={() => handleCategoryToggle(slice.deviceType)}
+                    onMouseEnter={() => setHoveredCategory(slice.deviceType)}
+                    onMouseLeave={() => setHoveredCategory(null)}
                   />
                 );
               })}
             </svg>
-            <div className="donut-center-label">
-              <span className="donut-center-pct">
-                {activeSlice ? `${activeSlice.pct}%` : `${slices[0]?.pct || 0}%`}
+            <div className="donut-center-label" aria-live="polite">
+              <span className="donut-center-pct" style={{ color: targetItem ? targetItem.color : "#ffffff" }}>
+                {centerPct}
               </span>
               <span className="donut-center-text">
-                {activeSlice ? activeSlice.label : slices[0]?.label || "Traffic"}
+                {centerLabel}
+              </span>
+              <span className="donut-center-subtext">
+                {centerSubtext}
               </span>
             </div>
           </div>
 
           <div style={{ flex: 1, minWidth: "200px", display: "flex", flexDirection: "column", gap: "8px" }}>
-            {items.map((item, idx) => {
-              const isHov = hoveredIdx === idx;
+            {items.map((item) => {
+              const isSelected = selectedCategory === item.deviceType;
+              const isHovered = hoveredCategory === item.deviceType;
+              const hasSelection = selectedCategory !== null;
+              const isOtherCategory = hasSelection && !isSelected;
+
               return (
                 <div
                   key={item.deviceType}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
+                  aria-label={`${item.label} traffic: ${item.count} clicks, ${item.percentage} percent`}
+                  className={`device-category-row ${isSelected ? "selected" : ""} ${isOtherCategory ? "dimmed" : ""}`}
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "7px 10px",
-                    borderRadius: "6px",
-                    background: isHov ? "rgba(255, 255, 255, 0.06)" : "rgba(255, 255, 255, 0.02)",
-                    border: "1px solid rgba(255, 255, 255, 0.05)",
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    background: isSelected
+                      ? `${item.color}22`
+                      : isHovered
+                      ? "rgba(255, 255, 255, 0.06)"
+                      : "rgba(255, 255, 255, 0.02)",
+                    border: isSelected
+                      ? `1.5px solid ${item.color}`
+                      : isHovered
+                      ? "1px solid rgba(255, 255, 255, 0.15)"
+                      : "1px solid rgba(255, 255, 255, 0.05)",
+                    boxShadow: isSelected ? `0 0 12px ${item.color}35` : "none",
                     cursor: "pointer",
-                    transition: "all 0.15s ease",
+                    transition: "all 0.18s ease",
+                    outline: "none",
+                    opacity: isOtherCategory && !isHovered ? 0.65 : 1,
                   }}
-                  onMouseEnter={() => setHoveredIdx(activeSlices.findIndex((s) => s.deviceType === item.deviceType))}
-                  onMouseLeave={() => setHoveredIdx(null)}
+                  onClick={() => handleCategoryToggle(item.deviceType)}
+                  onKeyDown={(e) => handleKeyDown(e, item.deviceType)}
+                  onMouseEnter={() => setHoveredCategory(item.deviceType)}
+                  onMouseLeave={() => setHoveredCategory(null)}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span>{item.icon}</span>
-                    <strong style={{ fontSize: "12.5px", color: "var(--text-primary)" }}>{item.label}</strong>
+                  <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+                    <span style={{ fontSize: "15px" }}>{item.icon}</span>
+                    <strong style={{ fontSize: "13px", color: isSelected ? item.color : "var(--text-primary)" }}>
+                      {item.label}
+                    </strong>
+                    {isSelected && (
+                      <span
+                        style={{
+                          fontSize: "10px",
+                          fontWeight: "700",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.4px",
+                          color: item.color,
+                          background: `${item.color}25`,
+                          border: `1px solid ${item.color}55`,
+                          padding: "1px 6px",
+                          borderRadius: "4px",
+                        }}
+                      >
+                        Active
+                      </span>
+                    )}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontSize: "12px", color: "#fff", fontWeight: "600" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <span style={{ fontSize: "12.5px", color: "#fff", fontWeight: "600" }}>
                       {item.count.toLocaleString()}
                     </span>
-                    <span className="geo-percentage-text" style={{ minWidth: "36px", textAlign: "right" }}>
+                    <span
+                      className="geo-percentage-text"
+                      style={{
+                        minWidth: "38px",
+                        textAlign: "right",
+                        color: isSelected ? item.color : undefined,
+                        fontWeight: isSelected ? "700" : undefined,
+                      }}
+                    >
                       {item.percentage}%
                     </span>
                   </div>

@@ -18,6 +18,13 @@ import {
   getDeviceAnalytics,
   // CHANGE: Stage 10 Advanced Traffic Visualization — 2026-11-16
   getTrafficAnalytics,
+  // CHANGE: Stage 11 Link Comparison Analytics — 2026-11-16
+  getLinkComparisonAnalytics,
+  // CHANGE: Stage 12 Smart Traffic Anomaly Detection — 2026-11-16
+  getTrafficAnomalies,
+  updateAnomalyStatus,
+  acknowledgeAnomaly,
+  resolveAnomaly,
 } from "../controllers/link.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 
@@ -46,6 +53,16 @@ router.get("/user/analytics/devices", verifyJWT, getDeviceAnalytics);
 
 // CHANGE: Stage 10 Advanced Traffic Visualization — 2026-11-16
 router.get("/user/analytics/traffic", verifyJWT, getTrafficAnalytics);
+
+// CHANGE: Stage 11 Link Comparison Analytics — 2026-11-16
+router.get("/user/analytics/comparison", verifyJWT, getLinkComparisonAnalytics);
+router.post("/user/analytics/comparison", verifyJWT, getLinkComparisonAnalytics);
+
+// CHANGE: Stage 12 Smart Traffic Anomaly Detection — 2026-11-16
+router.get("/user/analytics/anomalies", verifyJWT, getTrafficAnomalies);
+router.patch("/user/analytics/anomalies/:id/status", verifyJWT, updateAnomalyStatus);
+router.patch("/user/analytics/anomalies/:id/acknowledge", verifyJWT, acknowledgeAnomaly);
+router.patch("/user/analytics/anomalies/:id/resolve", verifyJWT, resolveAnomaly);
 
 // CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
 router.patch("/:id/access", verifyJWT, updateLinkAccess);

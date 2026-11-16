@@ -2,6 +2,10 @@ import Link from "../models/link.model.js";
 import Click from "../models/click.model.js";
 // CHANGE: Notifications Step 3A — 2026-11-04
 import Notification from "../models/notification.model.js";
+// CHANGE: Stage 12 Smart Traffic Anomaly Detection — 2026-11-16
+import Anomaly from "../models/anomaly.model.js";
+// CHANGE: Stage 13 A/B Testing Experiment Model — 2026-11-17
+import Experiment from "../models/experiment.model.js";
 import crypto from "crypto";
 import mongoose from "mongoose";
 import { parseUserAgent } from "../utils/userAgentParser.js";
@@ -217,9 +221,9 @@ const redirectLink = async (req, res) => {
         ],
       },
       { $inc: { clicks: 1 } },
-      { new: true }
+      { returnDocument: "after" }
     )
-      .select("originalUrl _id shortCode user clicks utmSource utmMedium utmCampaign utmTerm utmContent notifiedMilestones expiresAt maxClicks isPaused")
+      .select("originalUrl _id shortCode user clicks utmSource utmMedium utmCampaign utmTerm utmContent notifiedMilestones expiresAt maxClicks isPaused isExperiment experiment")
       .lean();
 
     // 2. If atomic update did not succeed, inspect reason without recording clicks or notifications
@@ -272,8 +276,58 @@ const redirectLink = async (req, res) => {
       });
     }
 
+    // CHANGE: Stage 13 Smart A/B Link Testing — 2026-11-17
+    let experiment = null;
+    let experimentVariant = null;
+    let targetOriginalUrl = link.originalUrl;
+
+    if (link.isExperiment) {
+      experiment = await Experiment.findById(link.experiment || link._id).lean();
+      if (!experiment) {
+        experiment = await Experiment.findOne({ link: link._id }).lean();
+      }
+
+      if (experiment) {
+        // If experiment is in draft state, public traffic is blocked and clicks are not counted
+        if (experiment.status === "draft") {
+          await Link.updateOne({ _id: link._id }, { $inc: { clicks: -1 } });
+          return res.status(403).json({
+            success: false,
+            code: "EXPERIMENT_DRAFT",
+            message: "This experiment has not been started yet. Links are inactive while in draft status.",
+          });
+        }
+
+        // If experiment is paused or completed, route to configured fallback variant
+        if (experiment.status === "paused" || experiment.status === "completed") {
+          experimentVariant = experiment.fallbackVariant === "B" ? "B" : "A";
+          targetOriginalUrl = experimentVariant === "B" ? experiment.variantB : experiment.variantA;
+        } else if (experiment.status === "active") {
+          // Active experiment: 50/50 split with signed cookie persistence
+          const cookieName = `ab_exp_${experiment._id}`;
+          let assignedVariant = req.signedCookies ? req.signedCookies[cookieName] : null;
+
+          // If no signed cookie, or cookie was tampered with (signedCookies will not have "A" or "B")
+          if (assignedVariant !== "A" && assignedVariant !== "B") {
+            assignedVariant = Math.random() < 0.5 ? "A" : "B";
+            const cookieOptions = {
+              maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+              httpOnly: true,
+              signed: true,
+              sameSite: "lax",
+              secure: process.env.NODE_ENV === "production",
+            };
+            res.cookie(cookieName, assignedVariant, cookieOptions);
+          }
+
+          experimentVariant = assignedVariant;
+          targetOriginalUrl = experimentVariant === "B" ? experiment.variantB : experiment.variantA;
+        }
+      }
+    }
+
     // Ensure the destination URL uses a safe web protocol
-    if (!isValidHttpUrl(link.originalUrl)) {
+    if (!isValidHttpUrl(targetOriginalUrl)) {
       return res.status(400).json({
         success: false,
         message: "Destination URL is invalid or unsafe",
@@ -281,9 +335,9 @@ const redirectLink = async (req, res) => {
     }
 
     // Build the final destination URL with UTM campaign parameters
-    let destinationUrl = link.originalUrl;
+    let destinationUrl = targetOriginalUrl;
     try {
-      const parsedUrl = new URL(link.originalUrl);
+      const parsedUrl = new URL(targetOriginalUrl);
       const utmMap = [
         ["utm_source", link.utmSource],
         ["utm_medium", link.utmMedium],
@@ -364,6 +418,9 @@ const redirectLink = async (req, res) => {
         countryCode,
         region,
         city,
+        // CHANGE: Stage 13 A/B Testing — 2026-11-17
+        experimentId: experiment ? experiment._id : null,
+        experimentVariant: experimentVariant || null,
       });
 
       if (process.env.NODE_ENV !== "production" && recordedClick) {
@@ -403,7 +460,7 @@ const redirectLink = async (req, res) => {
             {
               $addToSet: { notifiedMilestones: m },
             },
-            { new: true }
+            { returnDocument: "after" }
           );
 
           if (!claimed) {
@@ -3060,6 +3117,1050 @@ const getTrafficAnalytics = async (req, res) => {
   }
 };
 
+// =============================================================================
+// CHANGE: Stage 11 Link Comparison Analytics — 2026-11-16
+// Multi-link comparison aggregating total clicks, QR vs direct, device
+// categories, geographic distribution, and aligned daily trends.
+// =============================================================================
+const getLinkComparisonAnalytics = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.userId || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized request",
+      });
+    }
+
+    // Parse and normalize link IDs from query or body
+    let rawLinkIds = req.query.linkIds || req.body?.linkIds;
+    if (typeof rawLinkIds === "string") {
+      rawLinkIds = rawLinkIds.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+
+    if (!Array.isArray(rawLinkIds) || rawLinkIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select at least two links to compare",
+      });
+    }
+
+    // Deduplicate
+    const uniqueIds = Array.from(new Set(rawLinkIds));
+    if (uniqueIds.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "At least two distinct link IDs are required for comparison",
+      });
+    }
+
+    // Validate MongoDB ObjectId format
+    const hasInvalidId = uniqueIds.some((id) => !mongoose.Types.ObjectId.isValid(id));
+    if (hasInvalidId) {
+      return res.status(400).json({
+        success: false,
+        message: "One or more link IDs are invalid",
+      });
+    }
+
+    const objectIds = uniqueIds.map((id) => new mongoose.Types.ObjectId(id));
+    const userOid = mongoose.Types.ObjectId.isValid(userId)
+      ? new mongoose.Types.ObjectId(userId)
+      : userId;
+
+    // Strict ownership verification: all links must belong to this user
+    const userLinks = await Link.find({
+      _id: { $in: objectIds },
+      user: userOid,
+    })
+      .select("_id shortCode originalUrl clicks createdAt utmCampaign utmSource utmMedium")
+      .lean();
+
+    if (userLinks.length !== objectIds.length) {
+      return res.status(403).json({
+        success: false,
+        message: "One or more selected links were not found or access is denied",
+      });
+    }
+
+    // Preserve the user-requested link order
+    const linkOrderMap = new Map();
+    userLinks.forEach((l) => linkOrderMap.set(l._id.toString(), l));
+    const orderedUserLinks = uniqueIds.map((id) => linkOrderMap.get(id)).filter(Boolean);
+
+    // Range filtering
+    const rawRange = (req.query.range || req.body?.range || "7d").toString().toLowerCase().trim();
+    const range = rawRange === "30d" || rawRange === "all" ? rawRange : "7d";
+
+    const matchCondition = {
+      link: { $in: objectIds },
+    };
+
+    if (range === "7d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(7) };
+    } else if (range === "30d") {
+      matchCondition.clickedAt = { $gte: getISTCalendarStart(30) };
+    }
+
+    const todayStr = getISTDateStr();
+    let dates = [];
+    if (range === "7d") {
+      dates = generateISTDateList(7, todayStr);
+    } else if (range === "30d") {
+      dates = generateISTDateList(30, todayStr);
+    }
+
+    // Single faceted aggregation pipeline
+    const [aggResult] = await Click.aggregate([
+      { $match: matchCondition },
+      {
+        $facet: {
+          dateBounds: [
+            {
+              $group: {
+                _id: null,
+                minDate: {
+                  $min: {
+                    $dateToString: {
+                      format: "%Y-%m-%d",
+                      date: "$clickedAt",
+                      timezone: "+05:30",
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          linkSummaries: [
+            {
+              $group: {
+                _id: "$link",
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+          ],
+          deviceBreakdown: [
+            {
+              $group: {
+                _id: {
+                  link: "$link",
+                  deviceType: { $ifNull: ["$deviceType", "unknown"] },
+                },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { count: -1 } },
+          ],
+          countryBreakdown: [
+            {
+              $group: {
+                _id: {
+                  link: "$link",
+                  country: { $ifNull: ["$country", "Unknown"] },
+                  countryCode: "$countryCode",
+                },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { count: -1 } },
+          ],
+          cityBreakdown: [
+            {
+              $group: {
+                _id: {
+                  link: "$link",
+                  city: { $ifNull: ["$city", "Unknown"] },
+                  country: "$country",
+                },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { count: -1 } },
+          ],
+          dailyTrends: [
+            {
+              $group: {
+                _id: {
+                  link: "$link",
+                  date: {
+                    $dateToString: {
+                      format: "%Y-%m-%d",
+                      date: "$clickedAt",
+                      timezone: "+05:30",
+                    },
+                  },
+                },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { "_id.date": 1 } },
+          ],
+        },
+      },
+    ]);
+
+    // CHANGE: Robust date bounds for "all" range considering both Click docs and Link creation dates — 2026-11-16
+    if (range === "all") {
+      let minDate = aggResult?.dateBounds?.[0]?.minDate;
+      orderedUserLinks.forEach((l) => {
+        if (l.createdAt) {
+          const cDateStr = getISTDateStr(new Date(l.createdAt));
+          if (!minDate || cDateStr < minDate) {
+            minDate = cDateStr;
+          }
+        }
+      });
+      if (minDate) {
+        const span = getDaysDiff(minDate, todayStr);
+        dates = generateISTDateList(Math.max(7, Math.min(span, 90)), todayStr);
+      } else {
+        dates = generateISTDateList(7, todayStr);
+      }
+    }
+
+    // Index aggregation results for O(1) lookup
+    const summaryMap = new Map();
+    (aggResult?.linkSummaries || []).forEach((item) => {
+      if (item._id) summaryMap.set(item._id.toString(), item);
+    });
+
+    const deviceMap = new Map();
+    (aggResult?.deviceBreakdown || []).forEach((item) => {
+      const lid = item._id?.link?.toString();
+      const dev = item._id?.deviceType || "unknown";
+      if (!lid) return;
+      if (!deviceMap.has(lid)) deviceMap.set(lid, {});
+      deviceMap.get(lid)[dev] = item.count || 0;
+    });
+
+    const countryMap = new Map();
+    (aggResult?.countryBreakdown || []).forEach((item) => {
+      const lid = item._id?.link?.toString();
+      if (!lid) return;
+      if (!countryMap.has(lid)) countryMap.set(lid, []);
+      countryMap.get(lid).push({
+        country: item._id?.country || "Unknown",
+        countryCode: item._id?.countryCode || null,
+        count: item.count || 0,
+      });
+    });
+
+    const cityMap = new Map();
+    (aggResult?.cityBreakdown || []).forEach((item) => {
+      const lid = item._id?.link?.toString();
+      if (!lid) return;
+      if (!cityMap.has(lid)) cityMap.set(lid, []);
+      cityMap.get(lid).push({
+        city: item._id?.city || "Unknown",
+        country: item._id?.country || "Unknown",
+        count: item.count || 0,
+      });
+    });
+
+    const dailyMap = new Map();
+    (aggResult?.dailyTrends || []).forEach((item) => {
+      const lid = item._id?.link?.toString();
+      const date = item._id?.date;
+      if (!lid || !date) return;
+      if (!dailyMap.has(lid)) dailyMap.set(lid, new Map());
+      dailyMap.get(lid).set(date, item);
+    });
+
+    // Build per-link comparison payloads with authoritative click reconciliation
+    let totalCombinedClicks = 0;
+    let totalCombinedQR = 0;
+    let totalCombinedDirect = 0;
+    let bestLink = null;
+    let maxClicks = -1;
+
+    const standardDeviceTypes = ["mobile", "desktop", "tablet", "unknown"];
+
+    const comparedLinks = orderedUserLinks.map((link) => {
+      const lidStr = link._id.toString();
+      const sumItem = summaryMap.get(lidStr) || { totalClicks: 0, qrClicks: 0, directClicks: 0 };
+      const recordedClicks = sumItem.totalClicks || 0;
+      const allTimeTotalClicks = link.clicks || 0;
+
+      // CHANGE: Source-of-truth click count reconciliation — 2026-11-16
+      // For 'all' range, Link.clicks lifetime counter is the authoritative source of truth.
+      // For date-filtered windows ('7d' / '30d'), totalClicks reflects visits within that specific calendar window.
+      const totalClicks = range === "all" ? Math.max(allTimeTotalClicks, recordedClicks) : recordedClicks;
+      const qrClicks = sumItem.qrClicks || 0;
+      // Reconcile direct clicks so qrClicks + directClicks === totalClicks
+      const directClicks = Math.max(0, totalClicks - qrClicks);
+
+      totalCombinedClicks += totalClicks;
+      totalCombinedQR += qrClicks;
+      totalCombinedDirect += directClicks;
+
+      if (totalClicks > maxClicks) {
+        maxClicks = totalClicks;
+        bestLink = {
+          linkId: link._id,
+          shortCode: link.shortCode,
+          originalUrl: link.originalUrl,
+          totalClicks,
+        };
+      }
+
+      const qrPercentage = totalClicks > 0 ? Math.round((qrClicks / totalClicks) * 100) : 0;
+      const directPercentage = totalClicks > 0 ? Math.round((directClicks / totalClicks) * 100) : 0;
+
+      const rawDevs = deviceMap.get(lidStr) || {};
+      const recordedDevClicks = standardDeviceTypes.reduce((acc, t) => acc + (rawDevs[t] || 0), 0);
+      const unrecordedDevClicks = Math.max(0, totalClicks - recordedDevClicks);
+
+      const devices = standardDeviceTypes.map((type) => {
+        // Allocate any unrecorded clicks to unknown hardware category
+        const count = (rawDevs[type] || 0) + (type === "unknown" ? unrecordedDevClicks : 0);
+        const percentage = totalClicks > 0 ? Math.round((count / totalClicks) * 100) : 0;
+        return {
+          deviceType: type,
+          label: type.charAt(0).toUpperCase() + type.slice(1),
+          count,
+          percentage,
+        };
+      });
+
+      const rawCountries = countryMap.get(lidStr) || [];
+      const recordedCountryClicks = rawCountries.reduce((acc, c) => acc + (c.count || 0), 0);
+      const unrecordedCountryClicks = Math.max(0, totalClicks - recordedCountryClicks);
+
+      let topCountries = rawCountries.slice(0, 5).map((c) => ({
+        country: c.country,
+        countryCode: c.countryCode,
+        count: c.count,
+        percentage: totalClicks > 0 ? Math.round((c.count / totalClicks) * 100) : 0,
+      }));
+
+      if (unrecordedCountryClicks > 0) {
+        const unknownCountryEntry = topCountries.find((c) => c.country === "Unknown");
+        if (unknownCountryEntry) {
+          unknownCountryEntry.count += unrecordedCountryClicks;
+          unknownCountryEntry.percentage = Math.round((unknownCountryEntry.count / totalClicks) * 100);
+        } else {
+          topCountries.push({
+            country: "Unknown",
+            countryCode: null,
+            count: unrecordedCountryClicks,
+            percentage: Math.round((unrecordedCountryClicks / totalClicks) * 100),
+          });
+          topCountries.sort((a, b) => b.count - a.count);
+        }
+      }
+
+      const topCities = (cityMap.get(lidStr) || []).slice(0, 5).map((c) => ({
+        city: c.city,
+        country: c.country,
+        count: c.count,
+        percentage: totalClicks > 0 ? Math.round((c.count / totalClicks) * 100) : 0,
+      }));
+
+      const linkDaily = dailyMap.get(lidStr) || new Map();
+      const dailySeries = dates.map((d) => {
+        const pt = linkDaily.get(d);
+        return {
+          date: d,
+          totalClicks: pt?.totalClicks || 0,
+          qrClicks: pt?.qrClicks || 0,
+          directClicks: pt?.directClicks || 0,
+        };
+      });
+
+      // If unrecorded legacy clicks exist in 'all' range, distribute to link creation date or first available date
+      const recordedDailyClicks = dailySeries.reduce((acc, p) => acc + p.totalClicks, 0);
+      const unrecordedDailyClicks = Math.max(0, totalClicks - recordedDailyClicks);
+      if (unrecordedDailyClicks > 0 && dailySeries.length > 0) {
+        const creationDateStr = link.createdAt ? getISTDateStr(new Date(link.createdAt)) : dates[0];
+        let targetPt = dailySeries.find((p) => p.date === creationDateStr);
+        if (!targetPt) {
+          targetPt = dailySeries[0];
+        }
+        targetPt.totalClicks += unrecordedDailyClicks;
+        targetPt.directClicks += unrecordedDailyClicks;
+      }
+
+      return {
+        _id: link._id,
+        shortCode: link.shortCode,
+        originalUrl: link.originalUrl,
+        allTimeTotalClicks,
+        createdAt: link.createdAt,
+        totalClicks,
+        qrClicks,
+        directClicks,
+        qrPercentage,
+        directPercentage,
+        devices,
+        topCountries,
+        topCities,
+        dailySeries,
+      };
+    });
+
+    const bestPerformer = maxClicks > 0 && bestLink ? {
+      ...bestLink,
+      percentageOfTotal: totalCombinedClicks > 0 ? Math.round((bestLink.totalClicks / totalCombinedClicks) * 100) : 0,
+    } : null;
+
+    return res.status(200).json({
+      success: true,
+      range,
+      dates,
+      summary: {
+        totalLinks: comparedLinks.length,
+        totalClicksCombined: totalCombinedClicks,
+        totalQRCombined: totalCombinedQR,
+        totalDirectCombined: totalCombinedDirect,
+        qrPercentage: totalCombinedClicks > 0 ? Math.round((totalCombinedQR / totalCombinedClicks) * 100) : 0,
+        directPercentage: totalCombinedClicks > 0 ? Math.round((totalCombinedDirect / totalCombinedClicks) * 100) : 0,
+        bestPerformer,
+        rankingCriteria: "Ranking is based on total recorded clicks within the selected date range, not conversion rate or unique visitors.",
+      },
+      links: comparedLinks,
+    });
+  } catch (error) {
+    console.error("Get link comparison analytics error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch link comparison analytics",
+    });
+  }
+};
+
+// =============================================================================
+// CHANGE: Stage 12 Smart Traffic Anomaly Detection — 2026-11-16
+// Statistical anomaly detection engine evaluating historical MongoDB clicks.
+// Identifies sudden traffic surges (spikes), traffic cliffs (drops), channel
+// shifts, and geographic surges with Z-score and dynamic threshold bands.
+// =============================================================================
+const getTrafficAnomalies = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.userId || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized request",
+      });
+    }
+
+    const rawRange = (req.query.range || "14d").toString().toLowerCase().trim();
+    const range = rawRange === "7d" || rawRange === "30d" || rawRange === "all" ? rawRange : "14d";
+    let daysCount = range === "7d" ? 7 : range === "30d" ? 30 : 14;
+
+    const userOid = mongoose.Types.ObjectId.isValid(userId)
+      ? new mongoose.Types.ObjectId(userId)
+      : userId;
+
+    // Fetch user-owned links
+    const userLinks = await Link.find({ user: userOid })
+      .select("_id shortCode originalUrl clicks createdAt")
+      .lean();
+
+    const todayStr = getISTDateStr();
+
+    if (range === "all") {
+      let earliestDate = todayStr;
+      userLinks.forEach((l) => {
+        if (l.createdAt) {
+          const cDateStr = getISTDateStr(new Date(l.createdAt));
+          if (cDateStr < earliestDate) earliestDate = cDateStr;
+        }
+      });
+      const span = getDaysDiff(earliestDate, todayStr);
+      daysCount = Math.max(14, Math.min(span, 90));
+    }
+
+    const dates = generateISTDateList(daysCount, todayStr);
+
+    if (userLinks.length === 0) {
+      return res.status(200).json({
+        success: true,
+        range,
+        summary: {
+          totalAnomaliesDetected: 0,
+          criticalCount: 0,
+          warningCount: 0,
+          infoCount: 0,
+          spikeCount: 0,
+          dropCount: 0,
+          unresolvedCount: 0,
+          healthScore: 100,
+          healthRating: "EXCELLENT",
+          totalMonitoredLinks: 0,
+          totalClicksInPeriod: 0,
+        },
+        anomalyEvents: [],
+        timeline: dates.map((d) => ({
+          date: d,
+          clicks: 0,
+          expected: 0,
+          upperThreshold: 2,
+          lowerThreshold: 0,
+          isAnomaly: false,
+          anomalyType: "NORMAL",
+        })),
+        linkHealth: [],
+      });
+    }
+
+    const linkIds = userLinks.map((l) => l._id);
+
+    // Match condition in IST calendar boundaries
+    const matchCondition = {
+      link: { $in: linkIds },
+      clickedAt: { $gte: getISTCalendarStart(daysCount) },
+    };
+
+    // Faceted aggregation in IST Timezone (+05:30)
+    const [aggResult] = await Click.aggregate([
+      { $match: matchCondition },
+      {
+        $facet: {
+          // Fleet-wide daily click counts
+          dailyFleet: [
+            {
+              $group: {
+                _id: {
+                  $dateToString: {
+                    format: "%Y-%m-%d",
+                    date: "$clickedAt",
+                    timezone: "+05:30",
+                  },
+                },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ],
+          // Daily clicks per link
+          dailyPerLink: [
+            {
+              $group: {
+                _id: {
+                  link: "$link",
+                  date: {
+                    $dateToString: {
+                      format: "%Y-%m-%d",
+                      date: "$clickedAt",
+                      timezone: "+05:30",
+                    },
+                  },
+                },
+                totalClicks: { $sum: 1 },
+                qrClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 1, 0] },
+                },
+                directClicks: {
+                  $sum: { $cond: [{ $eq: ["$isQR", true] }, 0, 1] },
+                },
+              },
+            },
+            { $sort: { "_id.date": 1 } },
+          ],
+        },
+      },
+    ]);
+
+    // Build Fleet Daily Map
+    const fleetMap = new Map();
+    let totalClicksInPeriod = 0;
+    (aggResult?.dailyFleet || []).forEach((item) => {
+      if (item._id) {
+        fleetMap.set(item._id, item.totalClicks || 0);
+        totalClicksInPeriod += item.totalClicks || 0;
+      }
+    });
+
+    // Compute fleet statistical baseline (mean and std dev)
+    const fleetDailyClicks = dates.map((d) => fleetMap.get(d) || 0);
+    const fleetMean =
+      fleetDailyClicks.reduce((sum, v) => sum + v, 0) / Math.max(1, dates.length);
+    const fleetVariance =
+      fleetDailyClicks.reduce((sum, v) => sum + Math.pow(v - fleetMean, 2), 0) /
+      Math.max(1, dates.length);
+    const fleetStdDev = Math.sqrt(fleetVariance);
+
+    // Fleet timeline with dynamic upper/lower threshold band (excluding evaluation day from baseline)
+    const timeline = dates.map((d, dIdx) => {
+      const clicks = fleetMap.get(d) || 0;
+      const otherFleetClicks = fleetDailyClicks.filter((_, idx) => idx !== dIdx);
+      const evalFleetMean =
+        otherFleetClicks.reduce((sum, v) => sum + v, 0) / Math.max(1, otherFleetClicks.length);
+      const evalFleetVariance =
+        otherFleetClicks.reduce((sum, v) => sum + Math.pow(v - evalFleetMean, 2), 0) /
+        Math.max(1, otherFleetClicks.length);
+      const evalFleetStdDev = Math.sqrt(evalFleetVariance);
+
+      const expected = Math.round(evalFleetMean);
+      const upperThreshold = Math.max(2, Math.round(evalFleetMean + 2 * Math.max(1, evalFleetStdDev)));
+      const lowerThreshold = Math.max(0, Math.round(evalFleetMean - 2 * Math.max(1, evalFleetStdDev)));
+
+      const isSpike = clicks >= 3 && clicks > upperThreshold;
+      const isDrop = evalFleetMean >= 5 && clicks <= lowerThreshold;
+
+      return {
+        date: d,
+        clicks,
+        expected,
+        upperThreshold,
+        lowerThreshold,
+        isAnomaly: isSpike || isDrop,
+        anomalyType: isSpike ? "SPIKE" : isDrop ? "DROP" : "NORMAL",
+      };
+    });
+
+    // Build Per-Link Daily Map: linkId -> Map(date -> clicks)
+    const linkDailyMap = new Map();
+    (aggResult?.dailyPerLink || []).forEach((item) => {
+      const lid = item._id?.link?.toString();
+      const date = item._id?.date;
+      if (!lid || !date) return;
+      if (!linkDailyMap.has(lid)) linkDailyMap.set(lid, new Map());
+      linkDailyMap.get(lid).set(date, item);
+    });
+
+    // Detect anomalies per link and construct Link Health summary
+    const rawAnomalyEvents = [];
+    let criticalCount = 0;
+    let warningCount = 0;
+    let infoCount = 0;
+    let spikeCount = 0;
+    let dropCount = 0;
+
+    const todayDateStr = dates[dates.length - 1];
+    const yesterdayDateStr = dates.length > 1 ? dates[dates.length - 2] : todayDateStr;
+
+    const linkHealth = userLinks.map((link) => {
+      const lidStr = link._id.toString();
+      const dailyData = linkDailyMap.get(lidStr) || new Map();
+
+      const clicksSeries = dates.map((d) => dailyData.get(d)?.totalClicks || 0);
+      const totalLinkClicks = clicksSeries.reduce((s, c) => s + c, 0);
+
+      // Link age in days
+      const linkAgeDays = Math.max(
+        0,
+        Math.floor((Date.now() - new Date(link.createdAt).getTime()) / (24 * 60 * 60 * 1000))
+      );
+      // Active days with clicks in the window
+      const nonZeroDays = clicksSeries.filter((c) => c > 0).length;
+      const hasInsufficientData = totalLinkClicks < 3 || (totalLinkClicks < 5 && nonZeroDays < 2);
+
+      // Exclude current evaluation period (today) from link historical daily baseline
+      const historicalDaysCount = Math.max(0, dates.length - 1);
+      const historicalSeries = clicksSeries.slice(0, dates.length - 1);
+      const historicalClicks = historicalSeries.reduce((s, c) => s + c, 0);
+      const linkDailyBaseline = historicalDaysCount > 0 ? historicalClicks / historicalDaysCount : 0;
+      const avgBaseline = Number(linkDailyBaseline.toFixed(1));
+
+      const histPeriodStr =
+        historicalDaysCount > 0
+          ? `${historicalDaysCount} days (${dates[0]} to ${yesterdayDateStr}, excluding today ${todayDateStr})`
+          : `1 day (${todayDateStr})`;
+      const baselineCalcStr =
+        historicalDaysCount > 0
+          ? `${historicalClicks} clicks ÷ ${historicalDaysCount} historical days = ${avgBaseline} clicks/day (excluding today)`
+          : `${totalLinkClicks} clicks ÷ 1 day = ${avgBaseline} clicks/day`;
+
+      let linkStatus = "HEALTHY";
+      let baselineExplanation = `Traffic is healthy and operating within normal statistical variation (±2σ). Historical baseline average is ${avgBaseline} clicks/day (${histPeriodStr}).`;
+
+      if (totalLinkClicks === 0) {
+        linkStatus = "INACTIVE";
+        baselineExplanation = `No click activity recorded yet within the selected ${daysCount}-day surveillance window (${dates[0]} to ${todayDateStr}).`;
+      } else if (hasInsufficientData) {
+        linkStatus = "INSUFFICIENT_DATA";
+        baselineExplanation = `Insufficient historical data to establish an accurate baseline (${totalLinkClicks} click${totalLinkClicks === 1 ? "" : "s"} across ${nonZeroDays} active day${nonZeroDays === 1 ? "" : "s"}). At least 3–5 clicks across multiple active days are required.`;
+      }
+
+      let highestZScore = 0;
+      let linkSpikeCount = 0;
+      let linkDropCount = 0;
+      let maxSpikeDetails = null;
+      let maxDropDetails = null;
+
+      // Scan dates for link anomalies ONLY on links with sufficient data
+      if (!hasInsufficientData && totalLinkClicks > 0) {
+        dates.forEach((d, dIdx) => {
+          const dayClicks = clicksSeries[dIdx];
+
+          // Exclude day d from its own baseline calculation
+          const otherDaysClicks = clicksSeries.filter((_, idx) => idx !== dIdx);
+          const evalDaysCount = otherDaysClicks.length;
+          const evalBaselineClicks = otherDaysClicks.reduce((sum, v) => sum + v, 0);
+          const evalMean = evalBaselineClicks / Math.max(1, evalDaysCount);
+          const evalVariance =
+            otherDaysClicks.reduce((sum, v) => sum + Math.pow(v - evalMean, 2), 0) /
+            Math.max(1, evalDaysCount);
+          const evalStdDev = Math.sqrt(evalVariance);
+
+          // Finite, mathematically valid Z-score (never NaN or Infinity, handles zero variance/baseline safely)
+          const denom = evalStdDev > 0 ? Math.max(1.0, evalStdDev) : 1.0;
+          let z = 0.0;
+          if (evalStdDev > 0 || (evalMean > 0 && dayClicks !== evalMean)) {
+            z = Number(((dayClicks - evalMean) / denom).toFixed(2));
+          }
+          if (isNaN(z) || !isFinite(z)) z = 0.0;
+
+          const expectedBaseline = Math.round(evalMean);
+          const baselineExplanationPeriod = `${evalDaysCount} historical days in ${daysCount}d window (excluding ${d})`;
+          const baselineExplanationFormula = `${evalBaselineClicks} clicks ÷ ${evalDaysCount} historical days = ${Number(evalMean.toFixed(1))} clicks/day (rounded: ${expectedBaseline})`;
+
+          // Absolute difference
+          const diff = dayClicks - expectedBaseline;
+          const absDiffStr = (diff >= 0 ? "+" : "") + diff + " clicks";
+
+          // Percentage deviation: Never calculate percentage increase using zero baseline
+          let devPct = null;
+          let devDisplay = "";
+          if (expectedBaseline === 0) {
+            devPct = null;
+            devDisplay = `N/A – baseline is zero (${absDiffStr})`;
+          } else {
+            devPct = Math.round((diff / expectedBaseline) * 100);
+            devDisplay = `${devPct > 0 ? "+" : ""}${devPct}% (${absDiffStr})`;
+          }
+
+          // 1. Detect Traffic Spike Anomaly
+          // Condition: at least 3 clicks, and either Z >= 2.0 or current clicks >= 2.5x mean with delta >= 4
+          const isSpike =
+            dayClicks >= 3 &&
+            (z >= 2.0 || (evalMean > 0 && dayClicks >= 2.5 * evalMean && dayClicks - evalMean >= 4));
+
+          if (isSpike) {
+            const isCritical = z >= 3.0 || (evalMean > 0 && dayClicks >= 4 * evalMean && dayClicks >= 10);
+            const severity = isCritical ? "CRITICAL" : "WARNING";
+
+            if (isCritical) criticalCount++;
+            else warningCount++;
+            spikeCount++;
+            linkSpikeCount++;
+
+            linkStatus = "SPIKE_ALERT";
+            if (Math.abs(z) > Math.abs(highestZScore)) highestZScore = z;
+
+            const triggerReason =
+              z >= 2.0 && evalMean > 0 && dayClicks >= 2.5 * evalMean
+                ? `exceeded 2.5× baseline (${absDiffStr}) and Z-score ${z} ≥ 2.0`
+                : z >= 2.0
+                ? `statistical Z-score ${z} ≥ 2.0 threshold`
+                : `exceeded 2.5× baseline with ≥ 4 click surge (${absDiffStr})`;
+
+            maxSpikeDetails = { dayClicks, date: d, devDisplay, expectedBaseline, z };
+
+            rawAnomalyEvents.push({
+              id: `spike_${link._id}_${d}`,
+              linkId: link._id.toString(),
+              shortCode: link.shortCode,
+              originalUrl: link.originalUrl,
+              type: "SPIKE",
+              severity,
+              date: d,
+              actualClicks: dayClicks,
+              expectedClicks: expectedBaseline,
+              absoluteDifference: diff,
+              deviationPercentage: devPct,
+              deviationDisplay: devDisplay,
+              zScore: z,
+              baselineCalculation: baselineExplanationFormula,
+              historicalPeriod: baselineExplanationPeriod,
+              title: `Traffic Spike on s/${link.shortCode}`,
+              description: `Observed ${dayClicks} clicks on ${d} (${devDisplay}) compared to historical baseline of ${expectedBaseline} clicks/day (Z-score: ${z}). Triggered by: ${triggerReason}.`,
+              rootCause:
+                "Unverified traffic surge: Potential external promotional campaign, social share, newsletter distribution, or sudden referral influx. Review traffic sources to confirm.",
+              recommendation:
+                "1. Inspect Traffic Analytics referral channels and UTM sources to identify the traffic driver. 2. Verify destination server capacity to handle elevated concurrency. 3. Monitor for unusual IP concentrations.",
+            });
+          }
+
+          // 2. Detect Traffic Drop Anomaly (Cliff)
+          // Condition: Baseline mean >= 5 clicks/day, but on this day traffic dropped to <= 35% of mean or to 0
+          const isDrop =
+            evalMean >= 5 &&
+            dayClicks <= 0.35 * evalMean &&
+            dIdx >= dates.length - 3; // Focus on recent days for drop alerts
+
+          if (isDrop) {
+            const isCritical = evalMean >= 8 && dayClicks === 0;
+            const severity = isCritical ? "CRITICAL" : "WARNING";
+
+            if (isCritical) criticalCount++;
+            else warningCount++;
+            dropCount++;
+            linkDropCount++;
+
+            linkStatus = "DROP_ALERT";
+            if (Math.abs(z) > Math.abs(highestZScore)) highestZScore = z;
+
+            const triggerReason = `traffic fell to ${dayClicks} clicks (below 35% of established baseline of ${expectedBaseline} clicks/day)`;
+
+            maxDropDetails = { dayClicks, date: d, devDisplay, expectedBaseline, z };
+
+            rawAnomalyEvents.push({
+              id: `drop_${link._id}_${d}`,
+              linkId: link._id.toString(),
+              shortCode: link.shortCode,
+              originalUrl: link.originalUrl,
+              type: "DROP",
+              severity,
+              date: d,
+              actualClicks: dayClicks,
+              expectedClicks: expectedBaseline,
+              absoluteDifference: diff,
+              deviationPercentage: devPct,
+              deviationDisplay: devDisplay,
+              zScore: z,
+              baselineCalculation: baselineExplanationFormula,
+              historicalPeriod: baselineExplanationPeriod,
+              title: `Severe Traffic Drop on s/${link.shortCode}`,
+              description: `Traffic dropped to ${dayClicks} clicks on ${d} (${devDisplay}) from historical baseline of ${expectedBaseline} clicks/day (Z-score: ${z}). Triggered by: ${triggerReason}.`,
+              rootCause:
+                "Unverified traffic drop: Potential campaign expiration, destination endpoint downtime, reduced social post visibility, or natural audience churn.",
+              recommendation:
+                "1. Verify that the destination URL (originalUrl) is reachable and returning HTTP 200. 2. Check active ad campaigns or scheduled social posts for pauses or expiration. 3. Review device and geo distribution for channel-specific drops.",
+            });
+          }
+        });
+
+        // Set contextual explanation if alerts were triggered
+        if (linkStatus === "SPIKE_ALERT" && maxSpikeDetails) {
+          baselineExplanation = `Traffic spike of ${maxSpikeDetails.dayClicks} clicks detected on ${maxSpikeDetails.date} (${maxSpikeDetails.devDisplay}) vs historical baseline of ${maxSpikeDetails.expectedBaseline} clicks/day. Exceeded dynamic upper threshold (+2σ) with Z-score of ${maxSpikeDetails.z}.`;
+        } else if (linkStatus === "DROP_ALERT" && maxDropDetails) {
+          baselineExplanation = `Traffic cliff observed: dropped to ${maxDropDetails.dayClicks} clicks on ${maxDropDetails.date} (${maxDropDetails.devDisplay}) from historical baseline of ${maxDropDetails.expectedBaseline} clicks/day. Traffic fell below 35% of established baseline.`;
+        }
+      }
+
+      return {
+        _id: link._id.toString(),
+        shortCode: link.shortCode,
+        originalUrl: link.originalUrl,
+        totalClicks: totalLinkClicks,
+        lifetimeClicks: link.clicks || 0,
+        averageClicksPerDay: avgBaseline,
+        baselineCalculation: baselineCalcStr,
+        historicalPeriod: histPeriodStr,
+        todayClicks: clicksSeries[clicksSeries.length - 1] || 0,
+        todayDate: todayDateStr,
+        yesterdayClicks: dates.length > 1 ? clicksSeries[clicksSeries.length - 2] || 0 : 0,
+        yesterdayDate: yesterdayDateStr,
+        periodDates: { start: dates[0], end: todayDateStr, days: daysCount },
+        status: linkStatus,
+        spikeCount: linkSpikeCount,
+        dropCount: linkDropCount,
+        linkAgeDays,
+        baselineExplanation,
+        recentSparkline: clicksSeries,
+      };
+    });
+
+    // Persist anomalies into MongoDB Anomaly collection with deduplication and notification integration
+    const anomalyEvents = [];
+    for (const evt of rawAnomalyEvents) {
+      const dedupKey = `${userId}_${evt.linkId}_${evt.type}_${evt.date}`;
+      let anomalyDoc = null;
+      try {
+        anomalyDoc = await Anomaly.findOne({ dedupKey });
+        if (!anomalyDoc) {
+          anomalyDoc = await Anomaly.create({
+            user: userOid,
+            link: new mongoose.Types.ObjectId(evt.linkId),
+            shortCode: evt.shortCode,
+            originalUrl: evt.originalUrl,
+            type: evt.type,
+            severity: evt.severity,
+            status: "new",
+            currentClicks: evt.actualClicks,
+            baselineAverage: evt.expectedClicks,
+            percentageDeviation: evt.deviationPercentage,
+            absoluteDifference: evt.absoluteDifference,
+            deviationDisplay: evt.deviationDisplay,
+            baselineCalculation: evt.baselineCalculation,
+            historicalPeriod: evt.historicalPeriod,
+            zScore: evt.zScore,
+            date: evt.date,
+            detectionTimestamp: new Date(),
+            title: evt.title,
+            description: evt.description,
+            rootCause: evt.rootCause,
+            recommendation: evt.recommendation,
+            dedupKey,
+          });
+
+          // Concurrency-safe, idempotent in-app notification creation
+          try {
+            const notifTitle =
+              evt.type === "SPIKE"
+                ? `🚨 Traffic Spike Alert: s/${evt.shortCode}`
+                : `📉 Traffic Drop Alert: s/${evt.shortCode}`;
+            await Notification.create({
+              user: userOid,
+              title: notifTitle,
+              message: evt.description,
+              type: "anomaly",
+              link: new mongoose.Types.ObjectId(evt.linkId),
+              idempotencyKey: `notif_${dedupKey}`,
+            });
+          } catch (notifErr) {
+            if (notifErr.code !== 11000) {
+              console.error("Non-blocking anomaly notification error:", notifErr);
+            }
+          }
+        }
+      } catch (err) {
+        if (err.code === 11000) {
+          anomalyDoc = await Anomaly.findOne({ dedupKey });
+        } else {
+          console.error("Anomaly persistence error:", err);
+        }
+      }
+
+      anomalyEvents.push({
+        ...evt,
+        id: anomalyDoc?._id ? anomalyDoc._id.toString() : evt.id,
+        status: anomalyDoc?.status || "new",
+        detectionTimestamp: anomalyDoc?.detectionTimestamp || anomalyDoc?.createdAt || new Date(),
+      });
+    }
+
+    // Compute Health Score: 100 - (critical * 20 + warning * 10)
+    let healthScore = 100 - (criticalCount * 20 + warningCount * 10 + infoCount * 5);
+    healthScore = Math.max(0, Math.min(100, healthScore));
+
+    let healthRating = "EXCELLENT";
+    if (healthScore < 50) healthRating = "CRITICAL";
+    else if (healthScore < 75) healthRating = "ATTENTION_NEEDED";
+    else if (healthScore < 90) healthRating = "GOOD";
+
+    // Sort anomaly events: CRITICAL first, then WARNING, newest date first
+    const severityRank = { CRITICAL: 1, WARNING: 2, INFO: 3 };
+    anomalyEvents.sort((a, b) => {
+      const rankDiff = (severityRank[a.severity] || 9) - (severityRank[b.severity] || 9);
+      if (rankDiff !== 0) return rankDiff;
+      return b.date.localeCompare(a.date);
+    });
+
+    const unresolvedCount = anomalyEvents.filter((e) => e.status !== "resolved").length;
+
+    return res.status(200).json({
+      success: true,
+      range,
+      summary: {
+        totalAnomaliesDetected: anomalyEvents.length,
+        criticalCount,
+        warningCount,
+        infoCount,
+        spikeCount,
+        dropCount,
+        unresolvedCount,
+        healthScore,
+        healthRating,
+        totalMonitoredLinks: userLinks.length,
+        totalClicksInPeriod,
+      },
+      anomalyEvents,
+      timeline,
+      linkHealth,
+    });
+  } catch (error) {
+    console.error("Get traffic anomalies error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to detect traffic anomalies",
+    });
+  }
+};
+
+// =============================================================================
+// CHANGE: Stage 12 Anomaly Lifecycle Management Endpoints — 2026-11-16
+// Allows authenticated link owners to acknowledge or resolve detected anomalies.
+// =============================================================================
+const updateAnomalyStatus = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.userId || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized request" });
+    }
+
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["new", "acknowledged", "resolved"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Allowed values: new, acknowledged, resolved",
+      });
+    }
+
+    const userOid = mongoose.Types.ObjectId.isValid(userId)
+      ? new mongoose.Types.ObjectId(userId)
+      : userId;
+
+    let anomaly = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      anomaly = await Anomaly.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(id), user: userOid },
+        { $set: { status } },
+        { returnDocument: "after" }
+      );
+    } else {
+      // In case ID is the dedup string id
+      anomaly = await Anomaly.findOneAndUpdate(
+        { dedupKey: id, user: userOid },
+        { $set: { status } },
+        { returnDocument: "after" }
+      );
+    }
+
+    if (!anomaly) {
+      return res.status(404).json({
+        success: false,
+        message: "Anomaly not found or access denied",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Anomaly status updated to ${status}`,
+      anomaly,
+    });
+  } catch (error) {
+    console.error("Update anomaly status error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update anomaly status",
+    });
+  }
+};
+
+const acknowledgeAnomaly = async (req, res) => {
+  req.body = { status: "acknowledged" };
+  return updateAnomalyStatus(req, res);
+};
+
+const resolveAnomaly = async (req, res) => {
+  req.body = { status: "resolved" };
+  return updateAnomalyStatus(req, res);
+};
+
 export {
   createLink,
   redirectLink,
@@ -3074,4 +4175,17 @@ export {
   getGeoAnalytics,
   getDeviceAnalytics,
   getTrafficAnalytics,
+  // CHANGE: Stage 11 Link Comparison Analytics — 2026-11-16
+  getLinkComparisonAnalytics,
+  // CHANGE: Stage 12 Smart Traffic Anomaly Detection — 2026-11-16
+  getTrafficAnomalies,
+  updateAnomalyStatus,
+  acknowledgeAnomaly,
+  resolveAnomaly,
+  // CHANGE: Stage 13 A/B Testing helper exports — 2026-11-17
+  isValidHttpUrl,
+  getISTCalendarStart,
+  getISTDateStr,
+  generateISTDateList,
+  getDaysDiff,
 };

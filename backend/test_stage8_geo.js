@@ -51,7 +51,12 @@ async function runTests() {
   console.log("Stage 8: Geo-Location Analytics Verification Suite");
   console.log("=======================================================\n");
 
-  await mongoose.connect(MONGO_URI);
+  try {
+    await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 2500 });
+  } catch (err) {
+    console.log("  ⚠️ Atlas connection timed out. Connecting to local MongoDB at mongodb://127.0.0.1:27017/smartlink_test...");
+    await mongoose.connect("mongodb://127.0.0.1:27017/smartlink_test");
+  }
 
   server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, resolve));
@@ -362,8 +367,9 @@ async function runTests() {
     console.log("=======================================================\n");
   } finally {
     // Cleanup
+    const testLinkIds = await Link.find({ user: { $in: [userAId, userBId] } }).distinct("_id");
+    await Click.deleteMany({ link: { $in: testLinkIds } });
     await Link.deleteMany({ user: { $in: [userAId, userBId] } });
-    await Click.deleteMany({});
     await User.deleteMany({ _id: { $in: [userAId, userBId] } });
     server.close();
     await mongoose.disconnect();

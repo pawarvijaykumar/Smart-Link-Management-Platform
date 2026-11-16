@@ -20,7 +20,8 @@ const notificationSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ["link", "milestone", "campaign", "system"],
+    // CHANGE: Added anomaly and experiment notification types — 2026-11-17
+    enum: ["link", "milestone", "campaign", "system", "anomaly", "experiment"],
   },
   isRead: {
     type: Boolean,

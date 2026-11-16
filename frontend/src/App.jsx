@@ -16,6 +16,12 @@ import RotatingDottedGlobe from "./components/RotatingDottedGlobe";
 import DeviceAnalyticsView from "./components/DeviceAnalyticsView";
 // CHANGE: Stage 10 Advanced Traffic Visualization Dashboard — 2026-11-16
 import TrafficAnalyticsView from "./components/TrafficAnalyticsView";
+// CHANGE: Stage 11 Link Comparison Dashboard — 2026-11-16
+import LinkComparisonView from "./components/LinkComparisonView";
+// CHANGE: Stage 12 Smart Traffic Anomaly Detection — 2026-11-16
+import TrafficAnomalyView from "./components/TrafficAnomalyView";
+// CHANGE: Stage 13 Smart A/B Link Testing View — 2026-11-17
+import ABTestingView from "./components/ABTestingView";
 import "./App.css";
 
 // CHANGE: QR Code Feature Stage 2 — 2026-11-05
@@ -4727,6 +4733,79 @@ function App() {
               </span>
               <span>Traffic Analytics</span>
             </button>
+            {/* CHANGE: Stage 11 Link Comparison Sidebar Item — 2026-11-16 */}
+            <button
+              type="button"
+              className={`nav-item ${activeView === "link-comparison" ? "active" : ""}`}
+              onClick={() => setActiveView("link-comparison")}
+              title="Link Comparison"
+              aria-label="Link Comparison"
+            >
+              <span className="nav-item-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  width="16"
+                  height="16"
+                >
+                  <path d="M16 3h5v5" />
+                  <path d="M4 20L21 3" />
+                  <path d="M21 16v5h-5" />
+                  <path d="M15 15l6 6" />
+                  <path d="M4 4l5 5" />
+                </svg>
+              </span>
+              <span>Link Comparison</span>
+            </button>
+            {/* CHANGE: Stage 12 Smart Traffic Anomaly Detection Sidebar Item — 2026-11-16 */}
+            <button
+              type="button"
+              className={`nav-item ${activeView === "anomaly-detection" ? "active" : ""}`}
+              onClick={() => setActiveView("anomaly-detection")}
+              title="Smart Traffic Intelligence"
+              aria-label="Smart Traffic Intelligence"
+            >
+              <span className="nav-item-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  width="16"
+                  height="16"
+                >
+                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </span>
+              <span>Smart Traffic Intelligence</span>
+            </button>
+            {/* CHANGE: Stage 13 Smart A/B Link Testing Sidebar Item — 2026-11-17 */}
+            <button
+              type="button"
+              className={`nav-item ${activeView === "ab-testing" ? "active" : ""}`}
+              onClick={() => setActiveView("ab-testing")}
+              title="A/B Testing"
+              aria-label="A/B Testing"
+            >
+              <span className="nav-item-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  width="16"
+                  height="16"
+                >
+                  <circle cx="18" cy="18" r="3" />
+                  <circle cx="6" cy="6" r="3" />
+                  <path d="M13 6h3a2 2 0 0 1 2 2v7" />
+                  <line x1="6" y1="9" x2="6" y2="21" />
+                </svg>
+              </span>
+              <span>A/B Testing</span>
+            </button>
             <button
               type="button"
               className="nav-item"
@@ -5126,6 +5205,25 @@ function App() {
             trafficRange={trafficRange}
             onRangeChange={handleTrafficRangeChange}
             onRefresh={() => fetchTrafficAnalytics(trafficRange)}
+          />
+        ) : activeView === "link-comparison" ? (
+          /* CHANGE: Stage 11 Link Comparison Dashboard — 2026-11-16 */
+          <LinkComparisonView
+            links={links}
+            token={token}
+            apiBaseUrl={API_BASE_URL}
+          />
+        ) : activeView === "anomaly-detection" ? (
+          /* CHANGE: Stage 12 Smart Traffic Anomaly Detection Dashboard — 2026-11-16 */
+          <TrafficAnomalyView
+            token={token}
+            apiBaseUrl={API_BASE_URL}
+          />
+        ) : activeView === "ab-testing" ? (
+          /* CHANGE: Stage 13 Smart A/B Link Testing Dashboard — 2026-11-17 */
+          <ABTestingView
+            token={token}
+            apiBaseUrl={API_BASE_URL}
           />
         ) : null}
       </main>

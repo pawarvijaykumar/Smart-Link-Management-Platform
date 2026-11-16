@@ -106,6 +106,20 @@ const clickSchema = new mongoose.Schema(
       default: "Unknown",
       trim: true,
     },
+    // CHANGE: Stage 13 A/B Testing — 2026-11-17
+    // Tracks associated A/B experiment and the variant (A or B) selected for the visitor
+    experimentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Experiment",
+      default: null,
+      index: true,
+    },
+    experimentVariant: {
+      type: String,
+      enum: ["A", "B", null],
+      default: null,
+      index: true,
+    },
   },
   { timestamps: true }
 );
@@ -117,6 +131,9 @@ clickSchema.index({ link: 1, countryCode: 1, clickedAt: -1 });
 // CHANGE: Stage 9 Device & Browser Intelligence — 2026-11-14
 clickSchema.index({ link: 1, operatingSystem: 1, clickedAt: -1 });
 clickSchema.index({ link: 1, deviceVendor: 1, clickedAt: -1 });
+// CHANGE: Stage 13 A/B Testing indexes — 2026-11-17
+clickSchema.index({ experimentId: 1, experimentVariant: 1, clickedAt: -1 });
+clickSchema.index({ experimentId: 1, clickedAt: -1 });
 
 const Click = mongoose.model("Click", clickSchema);
 
