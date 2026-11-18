@@ -1,0 +1,48 @@
+/* =============================================================================
+   SplitText Component Styles — React Bits JavaScript + CSS Variant
+   CHANGE: SplitText animation integration — 2026-11-19
+   ============================================================================= */
+
+.split-parent {
+  display: inline-block;
+  white-space: normal;
+  word-wrap: break-word;
+  vertical-align: middle;
+  position: relative;
+  line-height: inherit;
+}
+
+.split-line {
+  display: block;
+  position: relative;
+  line-height: inherit;
+}
+
+.split-word {
+  display: inline-block;
+  white-space: nowrap;
+  position: relative;
+  line-height: inherit;
+}
+
+.split-char {
+  display: inline-block;
+  position: relative;
+  line-height: inherit;
+  will-change: transform, opacity;
+}
+
+/* Accessibility: Respect prefers-reduced-motion settings */
+@media (prefers-reduced-motion: reduce) {
+  .split-parent,
+  .split-line,
+  .split-word,
+  .split-char {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    visibility: visible !important;
+  }
+}

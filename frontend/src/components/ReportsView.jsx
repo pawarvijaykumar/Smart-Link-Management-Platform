@@ -7,6 +7,8 @@
 
 import React, { useState, useMemo } from "react";
 import axios from "axios";
+// CHANGE: Integrated React Bits SplitText component — 2026-11-19
+import SplitText from "./SplitText";
 
 // -----------------------------------------------------------------------------
 // Report Categories Configuration
@@ -233,11 +235,25 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
   return (
     <div className="reports-view-root">
       {/* View Header */}
+      {/* CHANGE: Automated Reports page heading animated with SplitText — 2026-11-19 */}
       <div className="reports-header-row">
         <div>
           <h1 className="reports-page-title">
-            <span className="reports-title-icon">📊</span>
-            Automated Reports & Exports
+            <span className="reports-title-icon" aria-hidden="true">📊</span>
+            <SplitText
+              text="Automated Reports & Exports"
+              tag="span"
+              effect="rise"
+              splitType="chars"
+              trigger="load"
+              delay={35}
+              duration={0.8}
+              staggerFrom="start"
+              loop={false}
+              hoverEffect="none"
+              mask={false}
+              textAlign="left"
+            />
           </h1>
           <p className="reports-page-subtitle">
             Generate and export presentation-ready PDF reports and Excel-compatible

@@ -11,6 +11,8 @@
 // =============================================================================
 
 import { useState, useMemo } from "react";
+// CHANGE: Integrated React Bits SplitText component — 2026-11-19
+import SplitText from "./SplitText";
 
 // -----------------------------------------------------------------------------
 // Format Helpers in Indian Standard Time (IST)
@@ -1361,8 +1363,24 @@ export default function TrafficAnalyticsView({
       <div className="page-greeting">
         <div className="campaigns-title-row">
           <div>
-            <h1 style={{ display: "flex", alignItems: "center", gap: "10px", margin: 0 }}>
-              Traffic Analytics 📈
+            {/* CHANGE: Traffic Analytics heading animated with SplitText — 2026-11-19 */}
+            <h1 style={{ display: "flex", alignItems: "center", gap: "10px", margin: 0, flexWrap: "wrap" }}>
+              <SplitText
+                text="Traffic Analytics"
+                tag="span"
+                className="analytics-heading-text"
+                effect="rise"
+                splitType="chars"
+                trigger="load"
+                delay={35}
+                duration={0.8}
+                staggerFrom="start"
+                loop={false}
+                hoverEffect="none"
+                mask={false}
+                textAlign="left"
+              />
+              <span aria-hidden="true">📈</span>
             </h1>
             <p style={{ margin: "6px 0 0", color: "var(--text-muted)", fontSize: "13.5px" }}>
               Deep dive into daily velocity, hourly density, QR vs direct channel dynamics, device footprint, campaign ROI, and time-of-day heatmaps.

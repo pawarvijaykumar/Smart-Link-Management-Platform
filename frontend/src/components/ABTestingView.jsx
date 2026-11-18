@@ -7,6 +7,8 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
+// CHANGE: Integrated React Bits SplitText component — 2026-11-19
+import SplitText from "./SplitText";
 
 import {
   DRAFT_STORAGE_KEY,
@@ -1188,7 +1190,23 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
       {/* Page Title & Main Header */}
       <div className="ab-header-row">
         <div>
-          <h1 className="ab-title">Smart A/B Link Testing</h1>
+          {/* CHANGE: A/B Testing page heading animated with SplitText — 2026-11-19 */}
+          <h1 className="ab-title">
+            <SplitText
+              text="Smart A/B Link Testing"
+              tag="span"
+              effect="rise"
+              splitType="chars"
+              trigger="load"
+              delay={35}
+              duration={0.8}
+              staggerFrom="start"
+              loop={false}
+              hoverEffect="none"
+              mask={false}
+              textAlign="left"
+            />
+          </h1>
           <p className="ab-subtitle">
             Split visitor traffic evenly across two destination URLs to evaluate which variant drives more recorded clicks.
           </p>

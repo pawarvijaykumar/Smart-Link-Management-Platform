@@ -24,6 +24,8 @@ import TrafficAnomalyView from "./components/TrafficAnomalyView";
 import ABTestingView from "./components/ABTestingView";
 // CHANGE: Stage 14 Automated Reports View — 2026-11-19
 import ReportsView from "./components/ReportsView";
+// CHANGE: Integrated React Bits SplitText component — 2026-11-19
+import SplitText from "./components/SplitText";
 import "./App.css";
 
 // CHANGE: QR Code Feature Stage 2 — 2026-11-05
@@ -5119,9 +5121,27 @@ function App() {
         {activeView === "dashboard" ? (
           <>
             {/* Welcome Greeting */}
+            {/* CHANGE: Main Dashboard heading animated with SplitText — 2026-11-19 */}
             <div className="page-greeting">
               <div>
-                <h1>Welcome back, {user?.username || "Vijay"}! 👋</h1>
+                <h1 style={{ margin: "0 0 6px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <SplitText
+                    text={`Welcome back, ${user?.username || "Vijay"}!`}
+                    tag="span"
+                    className="dashboard-heading-text"
+                    effect="rise"
+                    splitType="chars"
+                    trigger="load"
+                    delay={35}
+                    duration={0.8}
+                    staggerFrom="start"
+                    loop={false}
+                    hoverEffect="none"
+                    mask={false}
+                    textAlign="left"
+                  />
+                  <span aria-hidden="true">👋</span>
+                </h1>
                 <p>Here&apos;s an overview of your links and performance.</p>
               </div>
             </div>
