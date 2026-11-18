@@ -22,6 +22,8 @@ import LinkComparisonView from "./components/LinkComparisonView";
 import TrafficAnomalyView from "./components/TrafficAnomalyView";
 // CHANGE: Stage 13 Smart A/B Link Testing View — 2026-11-17
 import ABTestingView from "./components/ABTestingView";
+// CHANGE: Stage 14 Automated Reports View — 2026-11-19
+import ReportsView from "./components/ReportsView";
 import "./App.css";
 
 // CHANGE: QR Code Feature Stage 2 — 2026-11-05
@@ -4806,6 +4808,32 @@ function App() {
               </span>
               <span>A/B Testing</span>
             </button>
+            {/* CHANGE: Stage 14 Automated Reports (PDF & CSV Export) Sidebar Item — 2026-11-19 */}
+            <button
+              type="button"
+              className={`nav-item ${activeView === "reports" ? "active" : ""}`}
+              onClick={() => setActiveView("reports")}
+              title="Automated Reports & Exports"
+              aria-label="Automated Reports & Exports"
+            >
+              <span className="nav-item-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  width="16"
+                  height="16"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+              </span>
+              <span>Reports</span>
+            </button>
             <button
               type="button"
               className="nav-item"
@@ -5220,8 +5248,16 @@ function App() {
             apiBaseUrl={API_BASE_URL}
           />
         ) : activeView === "ab-testing" ? (
-          /* CHANGE: Stage 13 Smart A/B Link Testing Dashboard — 2026-11-17 */
+          /* CHANGE: Stage 13 Smart A/B Link Testing Dashboard — 2026-11-18 */
           <ABTestingView
+            links={links}
+            token={token}
+            apiBaseUrl={API_BASE_URL}
+          />
+        ) : activeView === "reports" ? (
+          /* CHANGE: Stage 14 Automated Reports View — 2026-11-19 */
+          <ReportsView
+            links={links}
             token={token}
             apiBaseUrl={API_BASE_URL}
           />

@@ -16,6 +16,8 @@ import { redirectLink } from "./controllers/link.controller.js";
 import notificationRoutes from "./routes/notification.routes.js";
 // CHANGE: Stage 13 A/B Testing Routes — 2026-11-17
 import experimentRoutes from "./routes/experiment.routes.js";
+// CHANGE: Stage 14 Automated Reports Routes — 2026-11-19
+import reportRoutes from "./routes/report.routes.js";
 
 const app = express();
 
@@ -67,6 +69,8 @@ app.use("/api/links", linkRouter);
 app.use("/api/notifications", notificationRoutes);
 // CHANGE: Stage 13 A/B Testing — 2026-11-17
 app.use("/api/experiments", experimentRoutes);
+// CHANGE: Stage 14 Automated Reports (PDF & CSV) — 2026-11-19
+app.use("/api/reports", reportRoutes);
 
 // Public short-code redirect at domain root (e.g. https://domain.com/:shortCode)
 app.get("/:shortCode", redirectLink);

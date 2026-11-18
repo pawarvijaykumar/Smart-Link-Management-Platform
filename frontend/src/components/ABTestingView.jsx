@@ -105,8 +105,9 @@ const renderStatusBadge = (status) => {
 
 // -----------------------------------------------------------------------------
 // Main Component: ABTestingView
+// CHANGE: Stage 13 URL Selection from My Links & Draft Persistence — 2026-11-18
 // -----------------------------------------------------------------------------
-export default function ABTestingView({ token, apiBaseUrl }) {
+export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl }) {
   // Navigation & view states
   const [experiments, setExperiments] = useState([]);
   const [selectedExperimentId, setSelectedExperimentId] = useState(null);
@@ -131,52 +132,69 @@ export default function ABTestingView({ token, apiBaseUrl }) {
   const [createError, setCreateError] = useState("");
   const [creating, setCreating] = useState(false);
 
+  // CHANGE: Stage 13 URL Selection from My Links State — 2026-11-18
+  const [fetchedLinks, setFetchedLinks] = useState([]);
+  const [loadingLinks, setLoadingLinks] = useState(false);
+  const [linkPickerTarget, setLinkPickerTarget] = useState(null); // "A" | "B" | null
+  const [linkSearchTerm, setLinkSearchTerm] = useState("");
+
   // Detect whether incomplete draft data currently exists
   const hasDraft = useMemo(() => {
     return Boolean(
       createForm.name?.trim() ||
       createForm.variantA?.trim() ||
-      createForm.variantB?.trim()
+      createForm.variantB?.trim() ||
+      createForm.fallbackVariant !== "A" ||
+      createForm.status !== "active"
     );
-  }, [createForm.name, createForm.variantA, createForm.variantB]);
+  }, [createForm]);
 
   // Automatically save incomplete form data as temporary draft
   useEffect(() => {
-    try {
-      if (hasDraft) {
-        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(createForm));
-      } else {
-        localStorage.removeItem(DRAFT_STORAGE_KEY);
-      }
-    } catch (err) {
-      console.warn("Failed to persist A/B experiment draft:", err);
-    }
-  }, [createForm, hasDraft]);
+    persistDraft(createForm);
+  }, [createForm]);
 
   // Modal open & close handlers preserving draft
   const handleOpenModal = () => {
     setCreateError("");
     setShowCreateModal(true);
-    try {
-      localStorage.setItem(MODAL_OPEN_STORAGE_KEY, "true");
-    } catch (_) {}
+    setModalOpenState(true);
   };
 
   const handleCloseModal = () => {
     setShowCreateModal(false);
-    try {
-      localStorage.setItem(MODAL_OPEN_STORAGE_KEY, "false");
-    } catch (_) {}
+    setModalOpenState(false);
+    setLinkPickerTarget(null);
   };
 
   // Explicit Reset Action: Clears draft only upon user request
   const handleResetDraft = () => {
     setCreateForm({ ...DEFAULT_FORM_STATE });
     setCreateError("");
-    try {
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
-    } catch (_) {}
+    clearDraftStorage();
   };
+
+  // ---------------------------------------------------------------------------
+  // CHANGE: Stage 13 Prevent background page scrolling while modal is open — 2026-11-18
+  // Locks body scroll when create experiment or link picker modal is active.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const isAnyModalOpen = Boolean(showCreateModal || linkPickerTarget);
+    if (isAnyModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      const originalPaddingRight = document.body.style.paddingRight;
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+      document.body.style.overflow = "hidden";
+
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.paddingRight = originalPaddingRight;
+      };
+    }
+  }, [showCreateModal, linkPickerTarget]);
 
   // Copy feedback state
   const [copiedId, setCopiedId] = useState(null);
@@ -201,6 +219,58 @@ export default function ABTestingView({ token, apiBaseUrl }) {
       withCredentials: true,
     };
   }, [token]);
+
+  // ---------------------------------------------------------------------------
+  // CHANGE: Stage 13 Fetch & Filter User Links for URL Picker — 2026-11-18
+  // ---------------------------------------------------------------------------
+  const availableLinks = useMemo(() => {
+    if (propLinks && propLinks.length > 0) return propLinks;
+    return fetchedLinks;
+  }, [propLinks, fetchedLinks]);
+
+  const fetchUserLinks = useCallback(async () => {
+    if (!token) return;
+    setLoadingLinks(true);
+    try {
+      const res = await axios.get(`${apiBaseUrl}/api/links/my-links`, getAuthHeaders());
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        setFetchedLinks(res.data.data);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch user links for picker:", err);
+    } finally {
+      setLoadingLinks(false);
+    }
+  }, [token, apiBaseUrl, getAuthHeaders]);
+
+  useEffect(() => {
+    if ((!propLinks || propLinks.length === 0) && token) {
+      fetchUserLinks();
+    }
+  }, [propLinks, token, fetchUserLinks]);
+
+  const filteredLinks = useMemo(() => {
+    const term = linkSearchTerm.trim().toLowerCase();
+    if (!term) return availableLinks;
+    return availableLinks.filter((l) => {
+      const name = (l.name || l.title || l.utmCampaign || "").toLowerCase();
+      const code = (l.shortCode || "").toLowerCase();
+      const orig = (l.originalUrl || "").toLowerCase();
+      return name.includes(term) || code.includes(term) || orig.includes(term);
+    });
+  }, [availableLinks, linkSearchTerm]);
+
+  // Insert original destination URL from selected short link
+  const handleSelectLinkUrl = (originalUrl) => {
+    if (!originalUrl) return;
+    if (linkPickerTarget === "A") {
+      setCreateForm((prev) => ({ ...prev, variantA: originalUrl }));
+    } else if (linkPickerTarget === "B") {
+      setCreateForm((prev) => ({ ...prev, variantB: originalUrl }));
+    }
+    setLinkPickerTarget(null);
+    setLinkSearchTerm("");
+  };
 
   // ---------------------------------------------------------------------------
   // Fetch All Experiments
@@ -1364,132 +1434,163 @@ export default function ABTestingView({ token, apiBaseUrl }) {
               </button>
             </div>
 
+            {/* CHANGE: Stage 13 Vertically scrollable modal body with sticky header/footer — 2026-11-18 */}
             <form onSubmit={handleCreateSubmit} className="ab-form">
-              {createError && (
-                <div className="ab-form-error">⚠️ {createError}</div>
-              )}
+              <div className="modal-body ab-modal-body">
+                {createError && (
+                  <div className="ab-form-error">⚠️ {createError}</div>
+                )}
 
-              {/* Experiment Name */}
-              <div className="form-group">
-                <label className="form-label">
-                  Experiment Name <span className="req">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Black Friday Hero Banner Test"
-                  value={createForm.name}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, name: e.target.value })
-                  }
-                  maxLength={100}
-                  required
-                />
-              </div>
+                {/* Experiment Name */}
+                <div className="form-group">
+                  <label className="form-label">
+                    Experiment Name <span className="req">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Black Friday Hero Banner Test"
+                    value={createForm.name}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, name: e.target.value })
+                    }
+                    maxLength={100}
+                    required
+                  />
+                </div>
 
-              {/* Destination Variant A */}
-              <div className="form-group">
-                <label className="form-label">
-                  Variant A Destination URL <span className="req">*</span>
-                </label>
-                <input
-                  type="url"
-                  className="form-input"
-                  placeholder="https://example.com/landing-page-a"
-                  value={createForm.variantA}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, variantA: e.target.value })
-                  }
-                  required
-                />
-                <span className="form-hint">
-                  Baseline original page or control landing destination.
-                </span>
-              </div>
-
-              {/* Destination Variant B */}
-              <div className="form-group">
-                <label className="form-label">
-                  Variant B Destination URL <span className="req">*</span>
-                </label>
-                <input
-                  type="url"
-                  className="form-input"
-                  placeholder="https://example.com/landing-page-b"
-                  value={createForm.variantB}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, variantB: e.target.value })
-                  }
-                  required
-                />
-                <span className="form-hint">
-                  Challenger or alternative landing destination.
-                </span>
-              </div>
-
-              {/* Traffic Split Display (Fixed 50/50) */}
-              <div className="form-group">
-                <label className="form-label">Traffic Allocation</label>
-                <div className="ab-preview-split-box">
-                  <div className="preview-split-bar">
-                    <div className="preview-split-part part-a">50% Variant A</div>
-                    <div className="preview-split-part part-b">50% Variant B</div>
+                {/* Destination Variant A */}
+                <div className="form-group">
+                  <label className="form-label">
+                    Variant A Destination URL <span className="req">*</span>
+                  </label>
+                  <div className="ab-url-input-row">
+                    <input
+                      type="url"
+                      className="form-input"
+                      placeholder="https://example.com/landing-page-a"
+                      value={createForm.variantA}
+                      onChange={(e) =>
+                        setCreateForm({ ...createForm, variantA: e.target.value })
+                      }
+                      required
+                    />
+                    {/* CHANGE: Stage 13 Select from My Links Button for Variant A — 2026-11-18 */}
+                    <button
+                      type="button"
+                      className="ab-btn-select-link"
+                      onClick={() => {
+                        setLinkPickerTarget("A");
+                        if (availableLinks.length === 0) fetchUserLinks();
+                      }}
+                      title="Select URL from your existing links"
+                    >
+                      🔗 Select from My Links
+                    </button>
                   </div>
                   <span className="form-hint">
-                    Equal 50/50 allocation enforced with signed HTTP cookies valid for 30 days.
+                    Baseline original page or control landing destination.
                   </span>
                 </div>
-              </div>
 
-              {/* Initial Lifecycle Status */}
-              <div className="form-group">
-                <label className="form-label">Initial Status</label>
-                <div className="ab-radio-group">
-                  <label className={`ab-radio-card ${createForm.status === "active" ? "selected" : ""}`}>
-                    <input
-                      type="radio"
-                      name="initialStatus"
-                      value="active"
-                      checked={createForm.status === "active"}
-                      onChange={() => setCreateForm({ ...createForm, status: "active" })}
-                    />
-                    <div>
-                      <strong>Active (Recommended)</strong>
-                      <p>Start splitting traffic immediately on short link creation.</p>
-                    </div>
+                {/* Destination Variant B */}
+                <div className="form-group">
+                  <label className="form-label">
+                    Variant B Destination URL <span className="req">*</span>
                   </label>
-                  <label className={`ab-radio-card ${createForm.status === "draft" ? "selected" : ""}`}>
+                  <div className="ab-url-input-row">
                     <input
-                      type="radio"
-                      name="initialStatus"
-                      value="draft"
-                      checked={createForm.status === "draft"}
-                      onChange={() => setCreateForm({ ...createForm, status: "draft" })}
+                      type="url"
+                      className="form-input"
+                      placeholder="https://example.com/landing-page-b"
+                      value={createForm.variantB}
+                      onChange={(e) =>
+                        setCreateForm({ ...createForm, variantB: e.target.value })
+                      }
+                      required
                     />
-                    <div>
-                      <strong>Draft</strong>
-                      <p>Do not route public traffic until you manually start the experiment.</p>
-                    </div>
-                  </label>
+                    {/* CHANGE: Stage 13 Select from My Links Button for Variant B — 2026-11-18 */}
+                    <button
+                      type="button"
+                      className="ab-btn-select-link"
+                      onClick={() => {
+                        setLinkPickerTarget("B");
+                        if (availableLinks.length === 0) fetchUserLinks();
+                      }}
+                      title="Select URL from your existing links"
+                    >
+                      🔗 Select from My Links
+                    </button>
+                  </div>
+                  <span className="form-hint">
+                    Challenger or alternative landing destination.
+                  </span>
                 </div>
-              </div>
 
-              {/* Fallback Variant */}
-              <div className="form-group">
-                <label className="form-label">Fallback Destination</label>
-                <select
-                  className="form-input"
-                  value={createForm.fallbackVariant}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, fallbackVariant: e.target.value })
-                  }
-                >
-                  <option value="A">Variant A (Default)</option>
-                  <option value="B">Variant B</option>
-                </select>
-                <span className="form-hint">
-                  Destination to receive 100% of traffic if the experiment is paused or completed.
-                </span>
+                {/* Traffic Split Display (Fixed 50/50) */}
+                <div className="form-group">
+                  <label className="form-label">Traffic Allocation</label>
+                  <div className="ab-preview-split-box">
+                    <div className="preview-split-bar">
+                      <div className="preview-split-part part-a">50% Variant A</div>
+                      <div className="preview-split-part part-b">50% Variant B</div>
+                    </div>
+                    <span className="form-hint">
+                      Equal 50/50 allocation enforced with signed HTTP cookies valid for 30 days.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Initial Lifecycle Status */}
+                <div className="form-group">
+                  <label className="form-label">Initial Status</label>
+                  <div className="ab-radio-group">
+                    <label className={`ab-radio-card ${createForm.status === "active" ? "selected" : ""}`}>
+                      <input
+                        type="radio"
+                        name="initialStatus"
+                        value="active"
+                        checked={createForm.status === "active"}
+                        onChange={() => setCreateForm({ ...createForm, status: "active" })}
+                      />
+                      <div>
+                        <strong>Active (Recommended)</strong>
+                        <p>Start splitting traffic immediately on short link creation.</p>
+                      </div>
+                    </label>
+                    <label className={`ab-radio-card ${createForm.status === "draft" ? "selected" : ""}`}>
+                      <input
+                        type="radio"
+                        name="initialStatus"
+                        value="draft"
+                        checked={createForm.status === "draft"}
+                        onChange={() => setCreateForm({ ...createForm, status: "draft" })}
+                      />
+                      <div>
+                        <strong>Draft</strong>
+                        <p>Do not route public traffic until you manually start the experiment.</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Fallback Variant */}
+                <div className="form-group">
+                  <label className="form-label">Fallback Destination</label>
+                  <select
+                    className="form-input"
+                    value={createForm.fallbackVariant}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, fallbackVariant: e.target.value })
+                    }
+                  >
+                    <option value="A">Variant A (Default)</option>
+                    <option value="B">Variant B</option>
+                  </select>
+                  <span className="form-hint">
+                    Destination to receive 100% of traffic if the experiment is paused or completed.
+                  </span>
+                </div>
               </div>
 
               {/* Modal Actions */}
@@ -1526,6 +1627,150 @@ export default function ABTestingView({ token, apiBaseUrl }) {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* =======================================================================
+          CHANGE: Stage 13 Link Picker Modal — 2026-11-18
+          Modal displaying existing links to select original destination URL
+      ======================================================================== */}
+      {linkPickerTarget && (
+        <div
+          className="modal-backdrop ab-picker-backdrop"
+          onClick={() => {
+            setLinkPickerTarget(null);
+            setLinkSearchTerm("");
+          }}
+        >
+          <div
+            className="modal-panel ab-picker-panel"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div className="ab-modal-title-group">
+                <h3>Select from My Links</h3>
+                <span className={`ab-picker-variant-badge badge-${linkPickerTarget.toLowerCase()}`}>
+                  For Variant {linkPickerTarget}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="close-button"
+                onClick={() => {
+                  setLinkPickerTarget(null);
+                  setLinkSearchTerm("");
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="ab-picker-search-bar">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                className="ab-picker-search-input"
+                placeholder="Search by link name, short code, or URL…"
+                value={linkSearchTerm}
+                onChange={(e) => setLinkSearchTerm(e.target.value)}
+                autoFocus
+              />
+              {linkSearchTerm && (
+                <button
+                  type="button"
+                  className="clear-search"
+                  onClick={() => setLinkSearchTerm("")}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="ab-picker-links-list">
+              {loadingLinks ? (
+                <div className="ab-picker-loading">
+                  <div className="spinner" />
+                  <span>Loading your links…</span>
+                </div>
+              ) : filteredLinks.length === 0 ? (
+                <div className="ab-picker-empty">
+                  <p>
+                    {availableLinks.length === 0
+                      ? "No existing links found. You can enter destination URLs directly in the form."
+                      : `No links match "${linkSearchTerm}".`}
+                  </p>
+                </div>
+              ) : (
+                filteredLinks.map((link) => {
+                  const displayName =
+                    link.name ||
+                    link.title ||
+                    link.utmCampaign ||
+                    `Link /${link.shortCode}`;
+                  const shortUrl = `${apiBaseUrl}/${link.shortCode}`;
+
+                  return (
+                    <div
+                      key={link._id || link.shortCode}
+                      className="ab-picker-link-card"
+                    >
+                      <div className="ab-picker-link-info">
+                        <div className="ab-picker-link-top">
+                          <strong className="ab-picker-link-name">
+                            {displayName}
+                          </strong>
+                          <span className="ab-picker-short-pill">
+                            s/{link.shortCode}
+                          </span>
+                          <span className="ab-picker-clicks-pill">
+                            {(link.clicks || 0).toLocaleString()} clicks
+                          </span>
+                        </div>
+                        <div className="ab-picker-link-row">
+                          <span className="ab-picker-meta-label">Short URL:</span>
+                          <span className="ab-picker-short-url">{shortUrl}</span>
+                        </div>
+                        <div className="ab-picker-link-row">
+                          <span className="ab-picker-meta-label">Destination URL:</span>
+                          <span
+                            className="ab-picker-dest-url"
+                            title={link.originalUrl}
+                          >
+                            {link.originalUrl}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="ab-picker-link-action">
+                        <button
+                          type="button"
+                          className="ab-btn-use-url"
+                          onClick={() => handleSelectLinkUrl(link.originalUrl)}
+                        >
+                          Use This URL
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="modal-actions ab-picker-footer">
+              <span className="ab-picker-count">
+                Showing {filteredLinks.length} of {availableLinks.length} links
+              </span>
+              <button
+                type="button"
+                className="ab-btn-secondary"
+                onClick={() => {
+                  setLinkPickerTarget(null);
+                  setLinkSearchTerm("");
+                }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

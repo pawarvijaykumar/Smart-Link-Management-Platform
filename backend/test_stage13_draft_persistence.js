@@ -281,11 +281,94 @@ async function runTests() {
       "Visitor routed to Variant A or Variant B"
     );
 
+    // -------------------------------------------------------------------------
+    // TEST 9: Select from My Links URL Insertion & Draft Auto-Save Flow
+    // -------------------------------------------------------------------------
+    console.log("\n--- TEST 9: Select from My Links URL Insertion & Draft Auto-Save Flow ---");
+    // Seed 2 user links in DB
+    const seededLink1 = await Link.create({
+      originalUrl: "https://example.com/seeded-dest-a",
+      shortCode: "seed1a",
+      user: testUserId,
+    });
+    const seededLink2 = await Link.create({
+      originalUrl: "https://example.com/seeded-dest-b",
+      shortCode: "seed2b",
+      user: testUserId,
+    });
+
+    // Verify /api/links/my-links returns the user's short links
+    const myLinksRes = await request({
+      method: "GET",
+      urlPath: "/api/links/my-links",
+      headers: authHeader,
+    });
+    assert(myLinksRes.statusCode === 200, "GET /api/links/my-links returns 200");
+    assert(Array.isArray(myLinksRes.data?.data), "Links list is an array");
+    const foundLink2 = myLinksRes.data.data.find((l) => l.shortCode === "seed2b");
+    assert(Boolean(foundLink2), "Seeded Link 2 found in user's links");
+    assert(foundLink2.originalUrl === "https://example.com/seeded-dest-b", "Link 2 destination URL matches");
+
+    // Simulate user: Enter Variant A manually, then select Variant B from My Links popup
+    const formState = {
+      name: "Promo Banner Headline Test",
+      variantA: "https://example.com/manual-headline-a",
+      variantB: "",
+      trafficSplit: { a: 50, b: 50 },
+      status: "active",
+      fallbackVariant: "A",
+    };
+
+    // User selects Link 2 for Variant B from Link Picker
+    formState.variantB = foundLink2.originalUrl;
+    mockStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(formState));
+    mockStorage.setItem(MODAL_OPEN_STORAGE_KEY, "true");
+
+    // Confirm both URLs remain in the form
+    assert(formState.variantA === "https://example.com/manual-headline-a", "Variant A URL is preserved");
+    assert(formState.variantB === "https://example.com/seeded-dest-b", "Variant B URL inserted from selected link");
+
+    // Simulate navigate away to another dashboard page (unmount) and return (remount)
+    const navRestoredDraft = loadSavedDraft();
+    assert(navRestoredDraft.name === "Promo Banner Headline Test", "Restored name matches after navigation");
+    assert(navRestoredDraft.variantA === "https://example.com/manual-headline-a", "Restored Variant A matches after navigation");
+    assert(navRestoredDraft.variantB === "https://example.com/seeded-dest-b", "Restored Variant B matches after navigation");
+    assert(loadSavedModalOpen() === true, "Creation form modal remains open after return");
+
+    // Simulate browser refresh (reload)
+    const refreshRestoredDraft = loadSavedDraft();
+    assert(refreshRestoredDraft.name === "Promo Banner Headline Test", "Restored name matches after browser refresh");
+    assert(refreshRestoredDraft.variantA === "https://example.com/manual-headline-a", "Restored Variant A matches after browser refresh");
+    assert(refreshRestoredDraft.variantB === "https://example.com/seeded-dest-b", "Restored Variant B matches after browser refresh");
+
+    // Create the experiment with these selected URLs
+    const createFromDraftRes = await request({
+      method: "POST",
+      urlPath: "/api/experiments",
+      headers: authHeader,
+      body: refreshRestoredDraft,
+    });
+    assert(createFromDraftRes.statusCode === 201, "Creates experiment from draft successfully (201)");
+    assert(createFromDraftRes.data?.experiment?.variantA === "https://example.com/manual-headline-a", "Experiment Variant A matches");
+    assert(createFromDraftRes.data?.experiment?.variantB === "https://example.com/seeded-dest-b", "Experiment Variant B matches selected link");
+
+    // Purge draft after successful creation
+    mockStorage.removeItem(DRAFT_STORAGE_KEY);
+    mockStorage.removeItem(MODAL_OPEN_STORAGE_KEY);
+    assert(mockStorage.getItem(DRAFT_STORAGE_KEY) === null, "Draft is purged after successful experiment creation");
+    const finalCleanDraft = loadSavedDraft();
+    assert(finalCleanDraft.name === "", "Form state is clean after creation");
+    assert(finalCleanDraft.variantA === "", "Variant A clean after creation");
+    assert(finalCleanDraft.variantB === "", "Variant B clean after creation");
+
     console.log("\n=======================================================");
     console.log(`All Tests Finished: ${passedAssertions} Passed, ${failedAssertions} Failed`);
     console.log("=======================================================\n");
 
   } finally {
+    // Wait briefly for any background click logs before teardown
+    await new Promise((r) => setTimeout(r, 200));
+
     // Cleanup DB
     await Experiment.deleteMany({ user: testUserId });
     await Link.deleteMany({ user: testUserId });

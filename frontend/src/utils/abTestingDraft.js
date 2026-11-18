@@ -1,7 +1,8 @@
 // =============================================================================
-// CHANGE: Stage 13 A/B Testing Form Draft Persistence Utilities — 2026-11-17
-// Preserves incomplete experiment name, Variant A and Variant B URLs across
-// page navigation, component unmounts, and browser reloads.
+// CHANGE: Stage 13 A/B Testing Form Draft Persistence Utilities — 2026-11-18
+// Preserves incomplete experiment name, Variant A and Variant B URLs,
+// traffic split (50/50), status, and fallback variant across page navigation,
+// component unmounts, and browser reloads.
 // =============================================================================
 
 export const DRAFT_STORAGE_KEY = "smartlink_ab_experiment_draft";
@@ -11,6 +12,7 @@ export const DEFAULT_FORM_STATE = {
   name: "",
   variantA: "",
   variantB: "",
+  trafficSplit: { a: 50, b: 50 },
   status: "active",
   fallbackVariant: "A",
 };
@@ -37,6 +39,7 @@ export const loadSavedDraft = () => {
           name: typeof parsed.name === "string" ? parsed.name : "",
           variantA: typeof parsed.variantA === "string" ? parsed.variantA : "",
           variantB: typeof parsed.variantB === "string" ? parsed.variantB : "",
+          trafficSplit: parsed.trafficSplit || { a: 50, b: 50 },
           status: parsed.status === "draft" ? "draft" : "active",
           fallbackVariant: parsed.fallbackVariant === "B" ? "B" : "A",
         };
