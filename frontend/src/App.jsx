@@ -26,6 +26,37 @@ import ABTestingView from "./components/ABTestingView";
 import ReportsView from "./components/ReportsView";
 // CHANGE: Integrated React Bits SplitText component — 2026-11-19
 import SplitText from "./components/SplitText";
+// CHANGE: React Bits & Lucide Icons Integration — 2026-11-19
+import SpotlightCard from "./components/SpotlightCard";
+import CountUp from "./components/CountUp";
+import AnimatedContent from "./components/AnimatedContent";
+import TrafficSourcesCard from "./components/TrafficSourcesCard";
+import {
+  LayoutDashboard,
+  Megaphone,
+  QrCode,
+  Globe,
+  Smartphone,
+  Activity,
+  ArrowRightLeft,
+  ShieldAlert,
+  GitFork,
+  FileText,
+  Link2,
+  BarChart3,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  Bell,
+  Plus,
+  LogOut,
+  MousePointerClick,
+  CheckCircle2,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
 import "./App.css";
 
 // CHANGE: QR Code Feature Stage 2 — 2026-11-05
@@ -135,88 +166,92 @@ const NOTIFICATION_TYPE_CONFIG = {
 };
 
 // -----------------------------------------------------------------------------
-// Component: MetricCards (Top 4 Statistics)
+// Component: MetricCards (React Bits SpotlightCard + CountUp) — 2026-11-19
 // -----------------------------------------------------------------------------
-function MetricCards({ totalLinks = 0, totalClicks = 0, activeLinks = 0, avgClicks = 0 }) {
+function MetricCards({
+  totalLinks = 0,
+  totalClicks = 0,
+  activeLinks = 0,
+  avgClicks = 0,
+  intelligence = null,
+}) {
+  const todayClicks = intelligence?.totalClicksToday || 0;
+  const activePercent = totalLinks > 0 ? Math.round((activeLinks / totalLinks) * 100) : 0;
+  const inactiveLinks = Math.max(0, totalLinks - activeLinks);
+  const clicksPerActive = activeLinks > 0 ? (totalClicks / activeLinks).toFixed(1) : "0.0";
+
   const cards = [
     {
       id: "total_links",
       label: "Total Links",
-      value: totalLinks.toLocaleString(),
-      badgeText: totalLinks > 0 ? "Active Library" : "No links yet",
+      value: totalLinks,
+      badgeText: totalLinks > 0 ? `${activePercent}% Active` : "No links yet",
       badgeType: totalLinks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-        </svg>
-      ),
+      icon: <Link2 size={20} />,
       iconBg: "rgba(124, 58, 237, 0.15)",
       iconColor: "#8B5CF6",
+      spotlightColor: "rgba(124, 58, 237, 0.22)",
+      sub: totalLinks > 0 ? `${activeLinks} active • ${inactiveLinks} paused` : "Create your first short link",
     },
     {
       id: "total_clicks",
       label: "Total Clicks",
-      value: totalClicks.toLocaleString(),
-      badgeText: totalClicks > 0 ? `↑ ${totalClicks.toLocaleString()} hits` : "Awaiting clicks",
+      value: totalClicks,
+      badgeText: todayClicks > 0 ? `+${todayClicks} today` : (totalClicks > 0 ? `↑ ${totalClicks.toLocaleString()} hits` : "Awaiting clicks"),
       badgeType: totalClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
-          <path d="M13 13l6 6" />
-        </svg>
-      ),
+      icon: <MousePointerClick size={20} />,
       iconBg: "rgba(99, 102, 241, 0.15)",
       iconColor: "#6366F1",
+      spotlightColor: "rgba(99, 102, 241, 0.22)",
+      sub: todayClicks > 0 ? `${todayClicks} clicks recorded today (IST)` : "All-time recorded visitor hits",
     },
     {
       id: "avg_clicks",
       label: "Avg Clicks / Link",
-      value: totalLinks > 0 ? avgClicks.toFixed(1) : "0.0",
-      badgeText: totalLinks > 0 ? "Engagement Rate" : "Create first link",
+      value: totalLinks > 0 ? avgClicks : 0,
+      decimals: 1,
+      badgeText: avgClicks > 0 ? "Healthy velocity" : "New collection",
       badgeType: avgClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-      ),
+      icon: <TrendingUp size={20} />,
       iconBg: "rgba(6, 182, 212, 0.15)",
       iconColor: "#06B6D4",
+      spotlightColor: "rgba(6, 182, 212, 0.22)",
+      sub: totalLinks > 0 ? `${clicksPerActive} avg per active link` : "Mean click density",
     },
     {
       id: "active_links",
       label: "Active Links",
-      value: activeLinks.toLocaleString(),
-      badgeText: totalLinks > 0 ? `${Math.round((activeLinks / Math.max(1, totalLinks)) * 100)}% Active` : "0% Active",
+      value: activeLinks,
+      badgeText: activePercent === 100 && totalLinks > 0 ? "100% Operational" : (activeLinks > 0 ? "Live routing" : "Paused"),
       badgeType: activeLinks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
+      icon: <Zap size={20} />,
       iconBg: "rgba(16, 185, 129, 0.15)",
       iconColor: "#10B981",
+      spotlightColor: "rgba(16, 185, 129, 0.22)",
+      sub: `${activePercent}% fleet routing capacity`,
     },
   ];
 
   return (
     <div className="metrics-grid">
       {cards.map((card) => (
-        <div className="metric-card" key={card.id}>
+        <SpotlightCard
+          key={card.id}
+          className="metric-card metric-spotlight-card"
+          spotlightColor={card.spotlightColor}
+        >
           <div className="metric-card-top">
             <div className="metric-icon-badge" style={{ background: card.iconBg, color: card.iconColor }}>
               {card.icon}
             </div>
             <span className={`metric-trend-pill ${card.badgeType}`}>{card.badgeText}</span>
           </div>
-          <div className="metric-card-val">{card.value}</div>
+          <div className="metric-card-val">
+            <CountUp to={card.value} decimals={card.decimals || 0} duration={1.2} />
+          </div>
           <div className="metric-card-label">{card.label}</div>
-        </div>
+          <div className="metric-card-sub">{card.sub}</div>
+        </SpotlightCard>
       ))}
     </div>
   );
@@ -239,9 +274,9 @@ function DonutChart({ title, icon, data = [], emptyMessage = "No data recorded y
     return activeItems.reduce((sum, d) => sum + (d.count || 0), 0);
   }, [activeItems]);
 
-  const size = 150;
-  const strokeWidth = 15;
-  const radius = (size - strokeWidth) / 2 - 4;
+  const size = 124;
+  const strokeWidth = 13;
+  const radius = (size - strokeWidth) / 2 - 3;
   const circumference = 2 * Math.PI * radius; // ~395.84
 
   let accumulatedPercent = 0;
@@ -298,7 +333,7 @@ function DonutChart({ title, icon, data = [], emptyMessage = "No data recorded y
                     r={radius}
                     fill="transparent"
                     stroke={slice.color}
-                    strokeWidth={isHovered ? strokeWidth + 4 : strokeWidth}
+                    strokeWidth={isHovered ? strokeWidth + 3 : strokeWidth}
                     strokeDasharray={slice.strokeDasharray}
                     strokeDashoffset={slice.strokeDashoffset}
                     strokeLinecap="round"
@@ -317,10 +352,10 @@ function DonutChart({ title, icon, data = [], emptyMessage = "No data recorded y
               {/* Center text */}
               <text
                 x="50%"
-                y="46%"
+                y="47%"
                 textAnchor="middle"
                 fill="#ffffff"
-                fontSize="18"
+                fontSize="16"
                 fontWeight="800"
                 fontFamily="Inter, sans-serif"
               >
@@ -328,10 +363,10 @@ function DonutChart({ title, icon, data = [], emptyMessage = "No data recorded y
               </text>
               <text
                 x="50%"
-                y="62%"
+                y="63%"
                 textAnchor="middle"
                 fill="#94A3B8"
-                fontSize="10"
+                fontSize="9.5"
                 fontFamily="Inter, sans-serif"
               >
                 {activeSlice ? activeSlice.name : "Total Clicks"}
@@ -350,10 +385,10 @@ function DonutChart({ title, icon, data = [], emptyMessage = "No data recorded y
               >
                 <div className="donut-legend-item">
                   <span className="legend-swatch" style={{ background: item.color }} />
-                  <span>{item.name}</span>
+                  <span className="legend-label-name">{item.name}</span>
                 </div>
                 <div className="donut-legend-stats">
-                  <span className="legend-val-num">{item.count}</span>
+                  <span className="legend-val-num">{item.count} {item.count === 1 ? "click" : "clicks"}</span>
                   <span className="legend-val-pct">{item.pct}%</span>
                 </div>
               </div>
@@ -521,17 +556,885 @@ function ActivityHeatmap({ history = [] }) {
 }
 
 // -----------------------------------------------------------------------------
+// Component: YearlyActivityGraph (GitHub-Style Yearly Contribution Activity in IST)
+// -----------------------------------------------------------------------------
+function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }) {
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  const [hoveredDay, setHoveredDay] = useState(null);
+  const [hoveredMonth, setHoveredMonth] = useState(null);
+  const [hoveredWeek, setHoveredWeek] = useState(null);
+  const [hoveredDow, setHoveredDow] = useState(null);
+  const cardRef = useRef(null);
+
+  // 1. Build a fast lookup map of IST dates YYYY-MM-DD -> click count
+  const { dateClickMap, availableYears, currentYearClicks } = useMemo(() => {
+    const map = {};
+    const yearsSet = new Set();
+    const currentYr = new Date().getFullYear();
+    yearsSet.add(currentYr);
+    // Ensure previous 2 years are available for selection even if empty
+    yearsSet.add(currentYr - 1);
+    yearsSet.add(currentYr - 2);
+
+    // Populate from dailyTrends (already in IST YYYY-MM-DD)
+    (dailyTrends || []).forEach((t) => {
+      if (t.isoDate) {
+        map[t.isoDate] = (map[t.isoDate] || 0) + (t.count || 0);
+        const yr = parseInt(t.isoDate.split("-")[0], 10);
+        if (!isNaN(yr)) yearsSet.add(yr);
+      }
+    });
+
+    // Populate from click history (convert clickedAt to IST YYYY-MM-DD)
+    (history || []).forEach((c) => {
+      if (!c.clickedAt) return;
+      const d = new Date(c.clickedAt);
+      if (isNaN(d.getTime())) return;
+      // Convert to IST (+05:30)
+      const istTime = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+      const iso = istTime.toISOString().slice(0, 10);
+      if (!map[iso]) {
+        map[iso] = (map[iso] || 0) + 1;
+      }
+      const yr = istTime.getUTCFullYear();
+      if (!isNaN(yr)) yearsSet.add(yr);
+    });
+
+    const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
+
+    // Calculate total clicks for the selected year
+    let yrClicks = 0;
+    Object.keys(map).forEach((dateKey) => {
+      if (dateKey.startsWith(`${selectedYear}-`)) {
+        yrClicks += map[dateKey];
+      }
+    });
+
+    return {
+      dateClickMap: map,
+      availableYears: sortedYears,
+      currentYearClicks: yrClicks,
+    };
+  }, [history, dailyTrends, selectedYear]);
+
+  // 2. Generate calendar weeks (52-53 weeks) for selectedYear
+  const { weeks, monthHeaders, maxDayClicks } = useMemo(() => {
+    const isLeap = (selectedYear % 4 === 0 && selectedYear % 100 !== 0) || selectedYear % 400 === 0;
+    const daysInYear = isLeap ? 366 : 365;
+
+    const startDate = new Date(Date.UTC(selectedYear, 0, 1));
+    const startDayOfWeek = (startDate.getUTCDay() + 6) % 7; // 0 for Mon ... 6 for Sun
+
+    const allWeeks = [];
+    let currentWeek = [];
+    const months = [];
+    let lastMonthSeen = -1;
+    let maxClicks = 0;
+
+    // Pad beginning of first week if Jan 1 is not Monday
+    for (let i = 0; i < startDayOfWeek; i++) {
+      currentWeek.push(null);
+    }
+
+    // Iterate through every day of the year
+    for (let dayOfYear = 0; dayOfYear < daysInYear; dayOfYear++) {
+      const curDate = new Date(Date.UTC(selectedYear, 0, 1 + dayOfYear));
+      const m = curDate.getUTCMonth();
+      const d = curDate.getUTCDate();
+      const isoDate = `${selectedYear}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const clicks = dateClickMap[isoDate] || 0;
+      if (clicks > maxClicks) maxClicks = clicks;
+
+      if (m !== lastMonthSeen) {
+        lastMonthSeen = m;
+        months.push({
+          monthIndex: m,
+          name: curDate.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }),
+          weekColIndex: allWeeks.length,
+        });
+      }
+
+      currentWeek.push({
+        date: curDate,
+        isoDate,
+        month: m,
+        dayOfMonth: d,
+        clicks,
+        formattedDate: curDate.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          timeZone: "UTC",
+        }),
+      });
+
+      if (currentWeek.length === 7) {
+        allWeeks.push(currentWeek);
+        currentWeek = [];
+      }
+    }
+
+    if (currentWeek.length > 0) {
+      while (currentWeek.length < 7) {
+        currentWeek.push(null);
+      }
+      allWeeks.push(currentWeek);
+    }
+
+    return {
+      weeks: allWeeks,
+      monthHeaders: months,
+      maxDayClicks: maxClicks,
+    };
+  }, [selectedYear, dateClickMap]);
+
+  // 3. Dynamic Statistics for Yearly Activity Summary Panel (Right Side)
+  const summaryStats = useMemo(() => {
+    const monthNamesShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthNamesFull = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+
+    const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+      monthIndex: i,
+      nameShort: monthNamesShort[i],
+      nameFull: monthNamesFull[i],
+      clicks: 0,
+    }));
+
+    let totalYearClicks = 0;
+    let activeDaysCount = 0;
+    let busiestDay = null;
+    let maxClicksOnDay = 0;
+
+    Object.keys(dateClickMap).forEach((dateKey) => {
+      if (dateKey.startsWith(`${selectedYear}-`)) {
+        const count = dateClickMap[dateKey] || 0;
+        if (count > 0) {
+          totalYearClicks += count;
+          activeDaysCount += 1;
+
+          const parts = dateKey.split("-").map(Number);
+          const mIdx = parts[1] - 1;
+          const dayNum = parts[2];
+
+          if (mIdx >= 0 && mIdx < 12) {
+            monthlyData[mIdx].clicks += count;
+          }
+
+          if (count > maxClicksOnDay) {
+            maxClicksOnDay = count;
+            const d = new Date(Date.UTC(parts[0], mIdx, dayNum));
+            busiestDay = {
+              isoDate: dateKey,
+              formattedDate: d.toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                timeZone: "UTC",
+              }),
+              clicks: count,
+            };
+          }
+        }
+      }
+    });
+
+    let busiestMonth = null;
+    let maxMonthClicks = 0;
+    monthlyData.forEach((m) => {
+      if (m.clicks > maxMonthClicks) {
+        maxMonthClicks = m.clicks;
+        busiestMonth = m;
+      }
+    });
+
+    const avgClicksPerActiveDay = activeDaysCount > 0
+      ? (totalYearClicks / activeDaysCount).toFixed(1)
+      : "0.0";
+
+    return {
+      totalYearClicks,
+      activeDaysCount,
+      busiestMonth: busiestMonth ? { name: busiestMonth.nameFull, nameShort: busiestMonth.nameShort, clicks: busiestMonth.clicks } : null,
+      busiestDay,
+      avgClicksPerActiveDay,
+      monthlyData,
+      maxMonthClicks,
+    };
+  }, [dateClickMap, selectedYear]);
+
+  // 4. Weekly Click Activity Data across up to 53 weeks (Indian Standard Time)
+  const weeklyData = useMemo(() => {
+    let maxClicks = 0;
+    let totalClicks = 0;
+
+    const list = weeks.map((week, idx) => {
+      const nonNullDays = week.filter(Boolean);
+      const weekClicks = week.reduce((sum, d) => sum + (d ? d.clicks : 0), 0);
+      if (weekClicks > maxClicks) maxClicks = weekClicks;
+      totalClicks += weekClicks;
+
+      const firstDay = nonNullDays[0];
+      const lastDay = nonNullDays[nonNullDays.length - 1];
+      const rangeLabel = firstDay && lastDay
+        ? `${firstDay.formattedDate.split(",")[1]?.trim() || firstDay.isoDate} – ${lastDay.formattedDate.split(",")[1]?.trim() || lastDay.isoDate}`
+        : `Week ${idx + 1}`;
+
+      return {
+        weekIndex: idx + 1,
+        clicks: weekClicks,
+        rangeLabel,
+      };
+    });
+
+    // Generate SVG path coordinates
+    let linePath = "";
+    let areaPath = "";
+
+    if (maxClicks > 0 && list.length > 0) {
+      const pts = list.map((w, idx) => {
+        const x = 36 + (idx / Math.max(1, list.length - 1)) * 709;
+        const y = 88 - (w.clicks / maxClicks) * 72;
+        return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+      });
+
+      linePath = `M ${pts[0].x},${pts[0].y} ` + pts.slice(1).map((p) => `L ${p.x},${p.y}`).join(" ");
+      areaPath = `M ${pts[0].x},88 L ${pts[0].x},${pts[0].y} ` +
+        pts.slice(1).map((p) => `L ${p.x},${p.y}`).join(" ") +
+        ` L ${pts[pts.length - 1].x},88 Z`;
+    }
+
+    return {
+      list,
+      maxClicks,
+      totalClicks,
+      linePath,
+      areaPath,
+    };
+  }, [weeks]);
+
+  // 5. Day-of-Week Analysis Data (Monday through Sunday)
+  const dowData = useMemo(() => {
+    const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const dayNamesShort = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    let totalClicks = 0;
+
+    weeks.forEach((week) => {
+      week.forEach((day, dIdx) => {
+        if (day && day.clicks > 0) {
+          counts[dIdx] += day.clicks;
+          totalClicks += day.clicks;
+        }
+      });
+    });
+
+    let maxDayClicks = 0;
+    let busiestIdx = -1;
+    counts.forEach((c, idx) => {
+      if (c > maxDayClicks) {
+        maxDayClicks = c;
+        busiestIdx = idx;
+      }
+    });
+
+    const list = dayNames.map((name, idx) => ({
+      name,
+      nameShort: dayNamesShort[idx],
+      clicks: counts[idx],
+      percent: totalClicks > 0 ? ((counts[idx] / totalClicks) * 100).toFixed(1) : "0.0",
+      isBusiest: busiestIdx === idx && counts[idx] > 0,
+    }));
+
+    return {
+      list,
+      maxDayClicks,
+      totalClicks,
+      busiestDay: busiestIdx >= 0 && counts[busiestIdx] > 0 ? list[busiestIdx] : null,
+    };
+  }, [weeks]);
+
+  // Intensity level calculation (0 to 4)
+  const getIntensityLevel = (count) => {
+    if (count === 0) return 0;
+    if (maxDayClicks <= 3) return Math.min(count, 4);
+    const ratio = count / maxDayClicks;
+    if (ratio >= 0.75) return 4;
+    if (ratio >= 0.5) return 3;
+    if (ratio >= 0.25) return 2;
+    return 1;
+  };
+
+  const dayLabels = ["Mon", "", "Wed", "", "Fri", "", "Sun"];
+
+  return (
+    <div className="yearly-graph-card" ref={cardRef}>
+      {/* Top Header Row with Title and Year Selector */}
+      <div className="yearly-graph-topbar">
+        <div className="yearly-graph-title-group">
+          <h3>
+            <span style={{ marginRight: "8px" }}>📅</span>
+            Click Activity Graph ({selectedYear})
+          </h3>
+          <p>Daily interaction density and audience contribution frequency in Indian Standard Time (IST)</p>
+        </div>
+
+        <div className="yearly-graph-actions">
+          <div className="yearly-total-badge">
+            <span className="yearly-total-num">{summaryStats.totalYearClicks.toLocaleString()}</span> clicks in {selectedYear}
+          </div>
+
+          <select
+            className="year-select-dropdown"
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            aria-label="Select Activity Year"
+          >
+            {availableYears.map((yr) => (
+              <option key={yr} value={yr}>
+                {yr}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Main Two-Column Side-by-Side Layout */}
+      <div className="yearly-main-layout">
+        {/* LEFT COLUMN: Contribution Calendar + Weekly Click Activity + Day-of-Week Analysis */}
+        <div className="yearly-calendar-panel">
+          {/* Block 1: Contribution Calendar (Top) */}
+          <div className="yearly-panel-block calendar-sub-block">
+            <div className="yearly-panel-title">
+              <span>Contribution Calendar</span>
+              <span className="yearly-sub-hint">53 Weeks · Monday to Sunday (IST)</span>
+            </div>
+
+            <div className="yearly-graph-container">
+              <div className="yearly-graph-scroll">
+                {/* Month labels row */}
+                <div className="yearly-months-row">
+                  <div className="yearly-day-label-placeholder" />
+                  <div className="yearly-months-track">
+                    {monthHeaders.map((m, idx) => (
+                      <span
+                        key={idx}
+                        className="yearly-month-label"
+                        style={{ left: `${m.weekColIndex * 15}px` }}
+                      >
+                        {m.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Grid body: Weekday labels on left + 53 week columns on right */}
+                <div className="yearly-grid-body">
+                  <div className="yearly-day-labels-col">
+                    {dayLabels.map((lbl, idx) => (
+                      <span key={idx} className="yearly-day-label">
+                        {lbl}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="yearly-weeks-grid">
+                    {weeks.map((week, wIdx) => (
+                      <div key={wIdx} className="yearly-week-col">
+                        {week.map((day, dIdx) => {
+                          if (!day) {
+                            return <div key={dIdx} className="yearly-cell yearly-cell-empty" />;
+                          }
+                          const lvl = getIntensityLevel(day.clicks);
+                          return (
+                            <div
+                              key={dIdx}
+                              className={`yearly-cell yearly-cell-lvl-${lvl}`}
+                              onMouseEnter={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const cardRect = cardRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
+                                setHoveredDay({
+                                  ...day,
+                                  x: rect.left - cardRect.left + rect.width / 2,
+                                  y: rect.top - cardRect.top,
+                                });
+                              }}
+                              onMouseLeave={() => setHoveredDay(null)}
+                              aria-label={`${day.clicks} clicks on ${day.formattedDate}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating Tooltip */}
+              {hoveredDay && (
+                <div
+                  className="yearly-tooltip"
+                  style={{
+                    left: `${hoveredDay.x}px`,
+                    top: `${hoveredDay.y - 12}px`,
+                  }}
+                >
+                  <div className="yearly-tooltip-count">
+                    {hoveredDay.clicks > 0
+                      ? `${hoveredDay.clicks} ${hoveredDay.clicks === 1 ? "click" : "clicks"}`
+                      : "No clicks"}
+                  </div>
+                  <div className="yearly-tooltip-date">{hoveredDay.formattedDate} (IST)</div>
+                </div>
+              )}
+            </div>
+
+            {/* Legend & Stats footer */}
+            <div className="yearly-graph-footer">
+              <span className="yearly-footer-note">Hover over any day square to inspect recorded clicks in IST</span>
+              <div className="yearly-legend">
+                <span className="yearly-legend-text">Less</span>
+                <div className="yearly-legend-cell yearly-cell-lvl-0" />
+                <div className="yearly-legend-cell yearly-cell-lvl-1" />
+                <div className="yearly-legend-cell yearly-cell-lvl-2" />
+                <div className="yearly-legend-cell yearly-cell-lvl-3" />
+                <div className="yearly-legend-cell yearly-cell-lvl-4" />
+                <span className="yearly-legend-text">More</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Block 2: Weekly Click Activity (Middle) */}
+          <div className="yearly-panel-block weekly-chart-block">
+            <div className="weekly-chart-header">
+              <div className="weekly-title-group">
+                <h5>
+                  <span aria-hidden="true">📈</span>
+                  Weekly Click Activity ({selectedYear})
+                </h5>
+                <p>Aggregated weekly interaction totals across 52 weeks in Indian Standard Time (IST)</p>
+              </div>
+              <div className="weekly-stat-badge">
+                {weeklyData.maxClicks > 0 ? (
+                  <>Peak: <strong>{weeklyData.maxClicks} clicks/wk</strong></>
+                ) : (
+                  <>0 clicks in {selectedYear}</>
+                )}
+              </div>
+            </div>
+
+            <div className="weekly-chart-svg-wrap">
+              <svg viewBox="0 0 760 110" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="weeklyAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.45" />
+                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.02" />
+                  </linearGradient>
+                </defs>
+
+                {/* Horizontal reference grid lines */}
+                <line x1="36" y1="16" x2="745" y2="16" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
+                <line x1="36" y1="52" x2="745" y2="52" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
+                <line x1="36" y1="88" x2="745" y2="88" stroke="rgba(255,255,255,0.12)" />
+
+                {/* Y-axis tick labels */}
+                <text x="30" y="19" fill="#64748b" fontSize="9" textAnchor="end">{weeklyData.maxClicks > 0 ? weeklyData.maxClicks : "-"}</text>
+                <text x="30" y="55" fill="#64748b" fontSize="9" textAnchor="end">{weeklyData.maxClicks > 0 ? Math.round(weeklyData.maxClicks / 2) : "-"}</text>
+                <text x="30" y="91" fill="#64748b" fontSize="9" textAnchor="end">0</text>
+
+                {/* X-axis Month Markers */}
+                {monthHeaders.map((m, mIdx) => {
+                  const xPos = 36 + (m.weekColIndex / Math.max(1, weeklyData.list.length - 1)) * 709;
+                  return (
+                    <text key={mIdx} x={xPos} y="104" fill="#94a3b8" fontSize="8.5" fontWeight="500">
+                      {m.name}
+                    </text>
+                  );
+                })}
+
+                {/* Area and Line Path */}
+                {weeklyData.maxClicks > 0 ? (
+                  <>
+                    <path
+                      d={weeklyData.areaPath}
+                      fill="url(#weeklyAreaGrad)"
+                    />
+                    <path
+                      d={weeklyData.linePath}
+                      fill="none"
+                      stroke="#c084fc"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+
+                    {/* Data points on active weeks */}
+                    {weeklyData.list.map((w, wIdx) => {
+                      if (w.clicks === 0) return null;
+                      const x = 36 + (wIdx / Math.max(1, weeklyData.list.length - 1)) * 709;
+                      const y = 88 - (w.clicks / weeklyData.maxClicks) * 72;
+                      return (
+                        <circle
+                          key={wIdx}
+                          cx={x}
+                          cy={y}
+                          r="4"
+                          fill="#38bdf8"
+                          stroke="#0f172a"
+                          strokeWidth="2"
+                        />
+                      );
+                    })}
+                  </>
+                ) : (
+                  <text x="390" y="52" fill="#64748b" fontSize="11" textAnchor="middle">
+                    No weekly click activity recorded for {selectedYear}
+                  </text>
+                )}
+
+                {/* Interactive Hover Guideline */}
+                {hoveredWeek && (
+                  <>
+                    <line
+                      x1={hoveredWeek.x}
+                      y1="16"
+                      x2={hoveredWeek.x}
+                      y2="88"
+                      stroke="#38bdf8"
+                      strokeWidth="1.5"
+                      strokeDasharray="2,2"
+                    />
+                    <circle
+                      cx={hoveredWeek.x}
+                      cy={hoveredWeek.y}
+                      r="5"
+                      fill="#38bdf8"
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                    />
+                  </>
+                )}
+
+                {/* Transparent hover capture rects */}
+                {weeklyData.list.map((w, wIdx) => {
+                  const x = 36 + (wIdx / Math.max(1, weeklyData.list.length - 1)) * 709;
+                  const y = weeklyData.maxClicks > 0 ? 88 - (w.clicks / weeklyData.maxClicks) * 72 : 88;
+                  const sliceWidth = 709 / weeklyData.list.length;
+                  return (
+                    <rect
+                      key={wIdx}
+                      x={x - sliceWidth / 2}
+                      y="10"
+                      width={sliceWidth}
+                      height="80"
+                      fill="transparent"
+                      cursor="pointer"
+                      onMouseEnter={() => setHoveredWeek({ ...w, x, y })}
+                      onMouseLeave={() => setHoveredWeek(null)}
+                    />
+                  );
+                })}
+              </svg>
+            </div>
+
+            <div className="weekly-chart-footer">
+              {hoveredWeek ? (
+                <span className="weekly-hover-info">
+                  <strong>Week {hoveredWeek.weekIndex} ({hoveredWeek.rangeLabel})</strong>: {hoveredWeek.clicks} {hoveredWeek.clicks === 1 ? "click" : "clicks"}
+                </span>
+              ) : (
+                <span className="weekly-chart-hint">
+                  {weeklyData.totalClicks > 0
+                    ? `Hover curve to inspect weekly volume · ${weeklyData.totalClicks} clicks recorded across 52 weeks`
+                    : `No weekly click records for ${selectedYear}`}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Block 3: Day-of-Week Analysis (Bottom) */}
+          <div className="yearly-panel-block dow-chart-block">
+            <div className="dow-chart-header">
+              <div className="dow-title-group">
+                <h5>
+                  <span aria-hidden="true">📊</span>
+                  Day-of-Week Analysis
+                </h5>
+                <p>Recorded audience interaction distribution from Monday through Sunday in IST</p>
+              </div>
+              <div className="dow-peak-pill">
+                {dowData.busiestDay ? (
+                  <>
+                    <span aria-hidden="true">🏆</span> Peak Day: <strong>{dowData.busiestDay.name} ({dowData.busiestDay.clicks} clicks)</strong>
+                  </>
+                ) : (
+                  <>No weekday activity in {selectedYear}</>
+                )}
+              </div>
+            </div>
+
+            <div className="dow-bars-container">
+              {dowData.list.map((day, dIdx) => {
+                const ratio = dowData.maxDayClicks > 0 ? day.clicks / dowData.maxDayClicks : 0;
+                const heightPercent = dowData.maxDayClicks > 0
+                  ? Math.max(day.clicks > 0 ? 14 : 4, Math.round(ratio * 100))
+                  : 4;
+
+                return (
+                  <div
+                    key={dIdx}
+                    className={`dow-bar-col ${day.isBusiest ? "busiest-dow-col" : ""}`}
+                    onMouseEnter={() => setHoveredDow(day)}
+                    onMouseLeave={() => setHoveredDow(null)}
+                  >
+                    <div className="dow-bar-val">
+                      {day.clicks > 0 ? day.clicks : ""}
+                    </div>
+
+                    <div className="dow-bar-track">
+                      <div
+                        className={`dow-bar-fill ${day.clicks > 0 ? "has-clicks" : "zero-clicks"}`}
+                        style={{ height: `${heightPercent}%` }}
+                      />
+                    </div>
+
+                    <span className={`dow-bar-label ${day.isBusiest ? "busiest-dow-label" : ""}`}>
+                      {day.nameShort}
+                    </span>
+                    <span className="dow-bar-percent">
+                      {dowData.totalClicks > 0 ? `${day.percent}%` : "0%"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="dow-chart-footer">
+              {hoveredDow ? (
+                <span className="dow-hover-info">
+                  <strong>{hoveredDow.name}</strong>: {hoveredDow.clicks} {hoveredDow.clicks === 1 ? "click" : "clicks"} ({hoveredDow.percent}% of yearly total)
+                </span>
+              ) : (
+                <span className="dow-chart-hint">
+                  {dowData.totalClicks > 0
+                    ? `Hover day column to inspect weekday concentration · Busiest: ${dowData.busiestDay ? dowData.busiestDay.name : "None"}`
+                    : `No weekday click data recorded in ${selectedYear}`}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT PANEL: Yearly Activity Summary */}
+        <div className="yearly-summary-panel">
+          <div className="yearly-summary-top">
+            <div className="yearly-summary-title">
+              <span className="summary-title-icon" aria-hidden="true">📈</span>
+              <h4>Yearly Activity Summary</h4>
+            </div>
+            <span className="summary-year-tag">{selectedYear}</span>
+          </div>
+
+          {/* 5 KPI Metric Cards */}
+          <div className="yearly-summary-metrics-grid">
+            {/* Metric 1: Total Clicks */}
+            <div className="summary-metric-card">
+              <div className="metric-card-header">
+                <span className="metric-card-label">Total Clicks</span>
+                <span className="metric-card-icon" aria-hidden="true">🎯</span>
+              </div>
+              <div className="metric-card-value">{summaryStats.totalYearClicks.toLocaleString()}</div>
+              <div className="metric-card-subtext">in {selectedYear}</div>
+            </div>
+
+            {/* Metric 2: Active Days */}
+            <div className="summary-metric-card">
+              <div className="metric-card-header">
+                <span className="metric-card-label">Active Days</span>
+                <span className="metric-card-icon" aria-hidden="true">📅</span>
+              </div>
+              <div className="metric-card-value">
+                {summaryStats.activeDaysCount} <span className="metric-unit">{summaryStats.activeDaysCount === 1 ? "day" : "days"}</span>
+              </div>
+              <div className="metric-card-subtext">with &ge;1 recorded click</div>
+            </div>
+
+            {/* Metric 3: Avg Clicks / Active Day */}
+            <div className="summary-metric-card">
+              <div className="metric-card-header">
+                <span className="metric-card-label">Avg / Active Day</span>
+                <span className="metric-card-icon" aria-hidden="true">⚡</span>
+              </div>
+              <div className="metric-card-value">
+                {summaryStats.avgClicksPerActiveDay}
+              </div>
+              <div className="metric-card-subtext">clicks per active day</div>
+            </div>
+
+            {/* Metric 4: Busiest Month */}
+            <div className="summary-metric-card">
+              <div className="metric-card-header">
+                <span className="metric-card-label">Busiest Month</span>
+                <span className="metric-card-icon" aria-hidden="true">🏆</span>
+              </div>
+              <div className="metric-card-value" title={summaryStats.busiestMonth ? summaryStats.busiestMonth.name : "None"}>
+                {summaryStats.busiestMonth ? summaryStats.busiestMonth.nameShort : "None"}
+              </div>
+              <div className="metric-card-subtext">
+                {summaryStats.busiestMonth ? `${summaryStats.busiestMonth.clicks} clicks` : "No clicks recorded"}
+              </div>
+            </div>
+
+            {/* Metric 5: Busiest Day */}
+            <div className="summary-metric-card summary-metric-card-wide">
+              <div className="metric-card-header">
+                <span className="metric-card-label">Busiest Day</span>
+                <span className="metric-card-icon" aria-hidden="true">🔥</span>
+              </div>
+              <div className="metric-card-value">
+                {summaryStats.busiestDay ? summaryStats.busiestDay.formattedDate : "None"}
+              </div>
+              <div className="metric-card-subtext">
+                {summaryStats.busiestDay ? `${summaryStats.busiestDay.clicks} clicks recorded (IST)` : "No clicks recorded in " + selectedYear}
+              </div>
+            </div>
+          </div>
+
+          {/* Metric 6: Monthly Activity Chart comparing all 12 months */}
+          <div className="yearly-monthly-chart-box">
+            <div className="monthly-chart-header">
+              <span className="monthly-chart-title">Monthly Activity (12 Months)</span>
+              <span className="monthly-chart-legend">
+                {summaryStats.maxMonthClicks > 0
+                  ? `Peak: ${summaryStats.maxMonthClicks} clicks`
+                  : `0 clicks in ${selectedYear}`}
+              </span>
+            </div>
+
+            <div className="monthly-bars-container">
+              {summaryStats.monthlyData.map((m) => {
+                const ratio = summaryStats.maxMonthClicks > 0 ? m.clicks / summaryStats.maxMonthClicks : 0;
+                const heightPercent = summaryStats.maxMonthClicks > 0
+                  ? Math.max(m.clicks > 0 ? 14 : 4, Math.round(ratio * 100))
+                  : 4;
+                const isBusiest = summaryStats.busiestMonth && summaryStats.busiestMonth.nameShort === m.nameShort && m.clicks > 0;
+
+                return (
+                  <div
+                    key={m.monthIndex}
+                    className={`monthly-bar-col ${isBusiest ? "busiest-month-col" : ""}`}
+                    onMouseEnter={() => setHoveredMonth(m)}
+                    onMouseLeave={() => setHoveredMonth(null)}
+                  >
+                    {/* Click count label above bar if > 0 */}
+                    <div className="monthly-bar-val">
+                      {m.clicks > 0 ? m.clicks : ""}
+                    </div>
+
+                    {/* Bar track & fill */}
+                    <div className="monthly-bar-track">
+                      <div
+                        className={`monthly-bar-fill ${m.clicks > 0 ? "has-clicks" : "zero-clicks"}`}
+                        style={{ height: `${heightPercent}%` }}
+                      />
+                    </div>
+
+                    {/* Month label */}
+                    <span className={`monthly-bar-label ${isBusiest ? "busiest-label" : ""}`}>
+                      {m.nameShort}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Hover details / contextual helper */}
+            <div className="monthly-chart-footer">
+              {hoveredMonth ? (
+                <span className="monthly-hover-info">
+                  <strong>{hoveredMonth.nameFull} {selectedYear}</strong>: {hoveredMonth.clicks} {hoveredMonth.clicks === 1 ? "click" : "clicks"}
+                </span>
+              ) : (
+                <span className="monthly-chart-hint">
+                  {summaryStats.totalYearClicks > 0
+                    ? `Hover bar to inspect monthly volume · ${summaryStats.totalYearClicks} clicks total`
+                    : `No click activity recorded across 12 months for ${selectedYear}`}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
 // Component: SmartTrafficSection (Spike Alerts & 4 Intel Cards)
 // -----------------------------------------------------------------------------
 function SmartTrafficSection({ intelligence }) {
-  if (!intelligence) return null;
+  const defaultCards = [
+    {
+      id: "traffic_status",
+      title: "Traffic Trend",
+      icon: "📊",
+      headline: "Baseline Forming",
+      detail: "Share your short link to start gathering automated visitor trends and spike detection.",
+      type: "info",
+    },
+    {
+      id: "audience_platform",
+      title: "Audience Platform",
+      icon: "🖥️",
+      headline: "Audience Platform",
+      detail: "Visitor device and browser breakdowns will appear automatically once clicked.",
+      type: "neutral",
+    },
+    {
+      id: "peak_window",
+      title: "Peak Engagement (IST)",
+      icon: "⏰",
+      headline: "Timing Unidentified",
+      detail: "Active engagement hours in Indian Standard Time will be calculated with incoming traffic.",
+      type: "neutral",
+    },
+    {
+      id: "action_tip",
+      title: "Actionable Strategy",
+      icon: "💡",
+      headline: "Optimal Sharing Window",
+      detail: "Distribute your short link across channels to generate actionable engagement insights.",
+      type: "tip",
+    },
+  ];
 
-  const { spikeAlert, momentum, cards } = intelligence;
+  const spikeAlert = intelligence?.spikeAlert || null;
+  const momentum = intelligence?.momentum || {
+    status: "baseline_forming",
+    label: "Baseline Forming",
+    description: "Monitoring incoming traffic velocity and patterns.",
+  };
+
+  const rawCards = intelligence?.cards && intelligence.cards.length > 0 ? intelligence.cards : defaultCards;
+  const displayCards = defaultCards.map((fallback, idx) => {
+    const raw = rawCards[idx] || rawCards.find((c) => c.id === fallback.id);
+    return {
+      id: fallback.id,
+      title: raw?.title || fallback.title,
+      icon: raw?.icon || fallback.icon,
+      headline: raw?.headline || fallback.headline,
+      detail: raw?.detail || fallback.detail,
+      type: raw?.type || fallback.type,
+    };
+  });
 
   return (
     <div className="intelligence-section">
       {/* Surge Alert Banner */}
-      {intelligence.hasSpike && spikeAlert && (
+      {intelligence?.hasSpike && spikeAlert && (
         <div className={`intelligence-spike-banner severity-${spikeAlert.severity || "moderate"}`} role="alert">
           <div className="spike-banner-content">
             <span className="spike-icon" aria-hidden="true">⚡</span>
@@ -559,15 +1462,15 @@ function SmartTrafficSection({ intelligence }) {
         </div>
 
         {momentum && (
-          <span className={`momentum-pill momentum-${momentum.status}`}>
-            {momentum.label}
+          <span className={`momentum-pill momentum-${momentum.status || "steady"}`}>
+            {momentum.label || "Monitoring"}
           </span>
         )}
       </div>
 
       {/* 4 Actionable Insight Cards */}
       <div className="intel-cards-grid">
-        {(cards || []).map((card) => (
+        {displayCards.map((card) => (
           <div className="intel-card" key={card.id}>
             <div className="intel-card-top">
               <span className="intel-card-icon" aria-hidden="true">{card.icon}</span>
@@ -690,6 +1593,8 @@ function RecentLinksTable({
   sortOrder,
   setSortOrder,
 }) {
+  const tableBoxRef = useRef(null);
+
   const filteredLinks = useMemo(() => {
     let list = [...links];
 
@@ -698,7 +1603,8 @@ function RecentLinksTable({
       list = list.filter(
         (l) =>
           l.shortCode?.toLowerCase().includes(q) ||
-          l.originalUrl?.toLowerCase().includes(q)
+          l.originalUrl?.toLowerCase().includes(q) ||
+          l.utmCampaign?.toLowerCase().includes(q)
       );
     }
 
@@ -713,6 +1619,13 @@ function RecentLinksTable({
 
     return list;
   }, [links, searchTerm, sortOrder]);
+
+  // Ensure table starts at its first column when rendered or filter changes
+  useEffect(() => {
+    if (tableBoxRef.current) {
+      tableBoxRef.current.scrollLeft = 0;
+    }
+  }, [filteredLinks]);
 
   return (
     <div className="links-table-card">
@@ -736,11 +1649,11 @@ function RecentLinksTable({
         </div>
       </div>
 
-      <div className="table-responsive-box">
+      <div className="table-responsive-box" ref={tableBoxRef}>
         <table className="custom-links-table">
           <thead>
             <tr>
-              <th>Original URL</th>
+              <th>Link Title & Destination</th>
               <th>Short URL</th>
               <th>Clicks</th>
               <th>Created & Expiry</th>
@@ -765,18 +1678,39 @@ function RecentLinksTable({
                 const expiryInfo = getExpiryDisplayInfo(link.expiresAt);
                 const isToggling = togglingLinkId === link._id;
 
+                const domainName = (() => {
+                  try {
+                    return new URL(link.originalUrl).hostname.replace(/^www\./, "");
+                  } catch {
+                    return "Link Destination";
+                  }
+                })();
+
                 return (
                   <tr key={link._id}>
                     <td className="original-url-cell">
-                      <a
-                        href={link.originalUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="original-url-link"
-                        title={link.originalUrl}
-                      >
-                        {link.originalUrl}
-                      </a>
+                      <div className="link-title-cell-wrap">
+                        <div className="link-title-row">
+                          {link.utmCampaign ? (
+                            <span className="link-campaign-tag" title={`Campaign: ${link.utmCampaign}`}>
+                              🏷️ {link.utmCampaign}
+                            </span>
+                          ) : (
+                            <span className="link-domain-badge" title={domainName}>
+                              🌐 {domainName}
+                            </span>
+                          )}
+                        </div>
+                        <a
+                          href={link.originalUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="original-url-link"
+                          title={link.originalUrl}
+                        >
+                          {link.originalUrl}
+                        </a>
+                      </div>
                     </td>
                     <td>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
@@ -795,7 +1729,7 @@ function RecentLinksTable({
                           onClick={() => onCopy(link)}
                           title="Copy short link"
                         >
-                          {isCopied ? "✓ Copied" : "Copy"}
+                          {isCopied ? "✓" : "Copy"}
                         </button>
                       </div>
                     </td>
@@ -891,8 +1825,8 @@ function RecentLinksTable({
                             fill="none"
                             stroke="currentColor"
                             strokeWidth="2"
-                            width="13"
-                            height="13"
+                            width="12"
+                            height="12"
                           >
                             <rect x="3" y="3" width="7" height="7" />
                             <rect x="14" y="3" width="7" height="7" />
@@ -900,7 +1834,7 @@ function RecentLinksTable({
                             <rect x="3" y="14" width="7" height="7" />
                             <line x1="9" y1="9" x2="15" y2="15" />
                           </svg>
-                          <span>QR Code</span>
+                          <span>QR</span>
                         </button>
                         <button
                           type="button"
@@ -908,7 +1842,7 @@ function RecentLinksTable({
                           onClick={() => onOpenAnalytics(link)}
                           title="View deep-dive analytics"
                         >
-                          <span>📊 Analytics</span>
+                          <span>📊 Stats</span>
                         </button>
                         <a
                           href={shortUrl}
@@ -3445,6 +4379,25 @@ function App() {
 
   // CHANGE: Added separate Campaign Analytics frontend view — 2026-11-02
   const [activeView, setActiveView] = useState("dashboard"); // "dashboard" | "campaigns"
+  // CHANGE: Main Dashboard + Sidebar UI Redesign (Desktop collapse & Mobile drawer) — 2026-11-19
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("smartlink_sidebar_collapsed") === "true";
+    } catch {
+      return false;
+    }
+  });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleSidebarCollapsed = useCallback(() => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("smartlink_sidebar_collapsed", String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
   const [campaignAnalytics, setCampaignAnalytics] = useState(null);
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignError, setCampaignError] = useState("");
@@ -4004,8 +4957,19 @@ function App() {
     [fetchCampaignAnalytics]
   );
 
+  // CHANGE: Dashboard UI Redesign Pass 2 (Structural Improvements) — Global Date Range Selector — 2026-11-19
+  const handleGlobalRangeChange = useCallback(
+    (newRange) => {
+      setTimeRange(newRange);
+      setCampaignRange(newRange);
+      fetchCampaignAnalytics(newRange);
+    },
+    [fetchCampaignAnalytics]
+  );
+
   useEffect(() => {
-    if (activeView !== "campaigns" || !token) return;
+    // CHANGE: Fetch campaign analytics for both Campaigns view and Main Dashboard Traffic Source card — 2026-11-19
+    if ((activeView !== "campaigns" && activeView !== "dashboard") || !token) return;
     let isMounted = true;
 
     const timer = setTimeout(() => {
@@ -4614,251 +5578,256 @@ function App() {
 
   return (
     <div className="dashboard-root">
-      {/* Sidebar */}
-      <aside className="sidebar">
+      {/* Mobile Drawer Backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="sidebar-mobile-backdrop"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Redesigned Modern Sidebar */}
+      <aside className={`sidebar ${isSidebarCollapsed ? "collapsed" : ""} ${isMobileMenuOpen ? "mobile-open" : ""}`}>
+        {/* Brand & Logo Header */}
         <div className="sidebar-logo">
-          <div className="logo-badge" aria-hidden="true">🔗</div>
-          <h2 className="logo-title">SmartLink</h2>
+          <div className="logo-badge" aria-hidden="true">
+            <Link2 size={20} className="logo-badge-icon" />
+          </div>
+          <div className="logo-text-group">
+            <h2 className="logo-title">SmartLink</h2>
+            <span className="logo-badge-tag">PRO</span>
+          </div>
+
+          {/* Desktop Collapse / Expand Toggle */}
+          <button
+            type="button"
+            className="sidebar-collapse-toggle desktop-only"
+            onClick={toggleSidebarCollapsed}
+            title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+
+          {/* Mobile Drawer Close Button */}
+          <button
+            type="button"
+            className="sidebar-close-toggle mobile-only"
+            onClick={() => setIsMobileMenuOpen(false)}
+            title="Close menu"
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
+        {/* 1. OVERVIEW Group */}
         <div className="sidebar-nav-group">
-          <p className="sidebar-nav-heading">WORKSPACE</p>
+          <p className="sidebar-nav-heading">OVERVIEW</p>
           <nav className="sidebar-nav">
             <button
               type="button"
               className={`nav-item ${activeView === "dashboard" ? "active" : ""}`}
-              onClick={() => setActiveView("dashboard")}
+              onClick={() => {
+                setActiveView("dashboard");
+                setIsMobileMenuOpen(false);
+              }}
+              title="Dashboard"
+              data-tooltip="Dashboard"
             >
-              <span className="nav-item-icon">▦</span>
-              <span>Dashboard</span>
+              <span className="nav-item-icon">
+                <LayoutDashboard size={18} />
+              </span>
+              <span className="nav-item-text">Dashboard</span>
             </button>
-            {/* CHANGE: Added separate Campaign Analytics frontend view — 2026-11-02 */}
+
             <button
               type="button"
               className={`nav-item ${activeView === "campaigns" ? "active" : ""}`}
-              onClick={() => setActiveView("campaigns")}
+              onClick={() => {
+                setActiveView("campaigns");
+                setIsMobileMenuOpen(false);
+              }}
+              title="Campaigns"
+              data-tooltip="Campaigns"
             >
-              <span className="nav-item-icon">📣</span>
-              <span>Campaigns</span>
+              <span className="nav-item-icon">
+                <Megaphone size={18} />
+              </span>
+              <span className="nav-item-text">Campaigns</span>
             </button>
-            {/* CHANGE: QR analytics dashboard — 2026-11-06 */}
+
             <button
               type="button"
               className={`nav-item ${activeView === "qr-analytics" ? "active" : ""}`}
-              onClick={() => setActiveView("qr-analytics")}
+              onClick={() => {
+                setActiveView("qr-analytics");
+                setIsMobileMenuOpen(false);
+              }}
               title="QR Analytics"
-              aria-label="QR Analytics"
+              data-tooltip="QR Analytics"
             >
-              <span className="nav-item-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  width="16"
-                  height="16"
-                >
-                  <rect x="3" y="3" width="7" height="7" />
-                  <rect x="14" y="3" width="7" height="7" />
-                  <rect x="14" y="14" width="7" height="7" />
-                  <rect x="3" y="14" width="7" height="7" />
-                  <line x1="9" y1="9" x2="15" y2="15" />
-                </svg>
+              <span className="nav-item-icon">
+                <QrCode size={18} />
               </span>
-              <span>QR Analytics</span>
+              <span className="nav-item-text">QR Analytics</span>
             </button>
-            {/* CHANGE: Stage 8 — Geo Analytics Sidebar Item — 2026-11-08 */}
+
             <button
               type="button"
               className={`nav-item ${activeView === "geo-analytics" ? "active" : ""}`}
-              onClick={() => setActiveView("geo-analytics")}
+              onClick={() => {
+                setActiveView("geo-analytics");
+                setIsMobileMenuOpen(false);
+              }}
               title="Geo Analytics"
-              aria-label="Geo Analytics"
+              data-tooltip="Geo Analytics"
             >
-              <span className="nav-item-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  width="16"
-                  height="16"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="2" y1="12" x2="22" y2="12" />
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                </svg>
+              <span className="nav-item-icon">
+                <Globe size={18} />
               </span>
-              <span>Geo Analytics</span>
+              <span className="nav-item-text">Geo Analytics</span>
             </button>
-            {/* CHANGE: Stage 9 Device & Browser Intelligence Sidebar Item — 2026-11-15 */}
+          </nav>
+        </div>
+
+        {/* 2. INTELLIGENCE Group */}
+        <div className="sidebar-nav-group">
+          <p className="sidebar-nav-heading">INTELLIGENCE</p>
+          <nav className="sidebar-nav">
             <button
               type="button"
               className={`nav-item ${activeView === "device-analytics" ? "active" : ""}`}
-              onClick={() => setActiveView("device-analytics")}
+              onClick={() => {
+                setActiveView("device-analytics");
+                setIsMobileMenuOpen(false);
+              }}
               title="Devices & OS"
-              aria-label="Devices & OS"
+              data-tooltip="Devices & OS"
             >
-              <span className="nav-item-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  width="16"
-                  height="16"
-                >
-                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
-                  <line x1="12" y1="18" x2="12.01" y2="18" />
-                </svg>
+              <span className="nav-item-icon">
+                <Smartphone size={18} />
               </span>
-              <span>Devices & OS</span>
+              <span className="nav-item-text">Devices & OS</span>
             </button>
-            {/* CHANGE: Stage 10 Advanced Traffic Visualization Sidebar Item — 2026-11-16 */}
+
             <button
               type="button"
               className={`nav-item ${activeView === "traffic-analytics" ? "active" : ""}`}
-              onClick={() => setActiveView("traffic-analytics")}
+              onClick={() => {
+                setActiveView("traffic-analytics");
+                setIsMobileMenuOpen(false);
+              }}
               title="Traffic Analytics"
-              aria-label="Traffic Analytics"
+              data-tooltip="Traffic Analytics"
             >
-              <span className="nav-item-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  width="16"
-                  height="16"
-                >
-                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                  <polyline points="17 6 23 6 23 12" />
-                </svg>
+              <span className="nav-item-icon">
+                <Activity size={18} />
               </span>
-              <span>Traffic Analytics</span>
+              <span className="nav-item-text">Traffic Analytics</span>
             </button>
-            {/* CHANGE: Stage 11 Link Comparison Sidebar Item — 2026-11-16 */}
+
             <button
               type="button"
               className={`nav-item ${activeView === "link-comparison" ? "active" : ""}`}
-              onClick={() => setActiveView("link-comparison")}
+              onClick={() => {
+                setActiveView("link-comparison");
+                setIsMobileMenuOpen(false);
+              }}
               title="Link Comparison"
-              aria-label="Link Comparison"
+              data-tooltip="Link Comparison"
             >
-              <span className="nav-item-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  width="16"
-                  height="16"
-                >
-                  <path d="M16 3h5v5" />
-                  <path d="M4 20L21 3" />
-                  <path d="M21 16v5h-5" />
-                  <path d="M15 15l6 6" />
-                  <path d="M4 4l5 5" />
-                </svg>
+              <span className="nav-item-icon">
+                <ArrowRightLeft size={18} />
               </span>
-              <span>Link Comparison</span>
+              <span className="nav-item-text">Link Comparison</span>
             </button>
-            {/* CHANGE: Stage 12 Smart Traffic Anomaly Detection Sidebar Item — 2026-11-16 */}
+
             <button
               type="button"
               className={`nav-item ${activeView === "anomaly-detection" ? "active" : ""}`}
-              onClick={() => setActiveView("anomaly-detection")}
+              onClick={() => {
+                setActiveView("anomaly-detection");
+                setIsMobileMenuOpen(false);
+              }}
               title="Smart Traffic Intelligence"
-              aria-label="Smart Traffic Intelligence"
+              data-tooltip="Smart Traffic Intelligence"
             >
-              <span className="nav-item-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  width="16"
-                  height="16"
-                >
-                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
+              <span className="nav-item-icon">
+                <ShieldAlert size={18} />
               </span>
-              <span>Smart Traffic Intelligence</span>
+              <span className="nav-item-text">Traffic Intelligence</span>
             </button>
-            {/* CHANGE: Stage 13 Smart A/B Link Testing Sidebar Item — 2026-11-17 */}
+          </nav>
+        </div>
+
+        {/* 3. MANAGEMENT & TOOLS Group */}
+        <div className="sidebar-nav-group">
+          <p className="sidebar-nav-heading">MANAGEMENT & TOOLS</p>
+          <nav className="sidebar-nav">
             <button
               type="button"
               className={`nav-item ${activeView === "ab-testing" ? "active" : ""}`}
-              onClick={() => setActiveView("ab-testing")}
+              onClick={() => {
+                setActiveView("ab-testing");
+                setIsMobileMenuOpen(false);
+              }}
               title="A/B Testing"
-              aria-label="A/B Testing"
+              data-tooltip="A/B Testing"
             >
-              <span className="nav-item-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  width="16"
-                  height="16"
-                >
-                  <circle cx="18" cy="18" r="3" />
-                  <circle cx="6" cy="6" r="3" />
-                  <path d="M13 6h3a2 2 0 0 1 2 2v7" />
-                  <line x1="6" y1="9" x2="6" y2="21" />
-                </svg>
+              <span className="nav-item-icon">
+                <GitFork size={18} />
               </span>
-              <span>A/B Testing</span>
+              <span className="nav-item-text">A/B Testing</span>
             </button>
-            {/* CHANGE: Stage 14 Automated Reports (PDF & CSV Export) Sidebar Item — 2026-11-19 */}
+
             <button
               type="button"
               className={`nav-item ${activeView === "reports" ? "active" : ""}`}
-              onClick={() => setActiveView("reports")}
-              title="Automated Reports & Exports"
-              aria-label="Automated Reports & Exports"
+              onClick={() => {
+                setActiveView("reports");
+                setIsMobileMenuOpen(false);
+              }}
+              title="Automated Reports"
+              data-tooltip="Automated Reports"
             >
-              <span className="nav-item-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  width="16"
-                  height="16"
-                >
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                  <polyline points="10 9 9 9 8 9" />
-                </svg>
+              <span className="nav-item-icon">
+                <FileText size={18} />
               </span>
-              <span>Reports</span>
+              <span className="nav-item-text">Reports & Export</span>
             </button>
+
             <button
               type="button"
-              className="nav-item"
+              className="nav-item quick-action"
               onClick={() => {
+                setIsMobileMenuOpen(false);
                 if (activeView !== "dashboard") {
                   setActiveView("dashboard");
                   setTimeout(() => {
                     const tableEl = document.querySelector(".links-table-card");
                     if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
-                  }, 50);
+                  }, 60);
                 } else {
                   const tableEl = document.querySelector(".links-table-card");
                   if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
                 }
               }}
+              title="My Links"
+              data-tooltip="My Links"
             >
-              <span className="nav-item-icon">↗</span>
-              <span>My Links</span>
+              <span className="nav-item-icon">
+                <Link2 size={18} />
+              </span>
+              <span className="nav-item-text">My Links</span>
             </button>
+
             <button
               type="button"
-              className="nav-item"
+              className="nav-item quick-action"
               onClick={() => {
+                setIsMobileMenuOpen(false);
                 if (links.length > 0) {
                   const target =
                     selectedLink &&
@@ -4869,20 +5838,29 @@ function App() {
                   handleOpenAnalytics(target);
                 }
               }}
+              title="Link Analytics Modal"
+              data-tooltip="Link Analytics Modal"
             >
-              <span className="nav-item-icon">📊</span>
-              <span>Analytics</span>
+              <span className="nav-item-icon">
+                <BarChart3 size={18} />
+              </span>
+              <span className="nav-item-text">Quick Analytics</span>
             </button>
           </nav>
         </div>
 
+        {/* User Profile Footer */}
         <div className="sidebar-footer">
-          <div className="user-avatar">
+          <div className="user-avatar" title={user?.username || "Vijay"}>
             {user?.username ? user.username.charAt(0).toUpperCase() : "V"}
           </div>
           <div className="user-info">
-            <span className="user-name">{user?.username || "Vijay"}</span>
-            <span className="user-email">{user?.email || "smartlink@user"}</span>
+            <span className="user-name" title={user?.username || "Vijay"}>
+              {user?.username || "Vijay"}
+            </span>
+            <span className="user-email" title={user?.email || "smartlink@user"}>
+              {user?.email || "smartlink@user"}
+            </span>
           </div>
           <button
             type="button"
@@ -4891,32 +5869,37 @@ function App() {
             title="Log out"
             aria-label="Log out"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
+            <LogOut size={16} />
           </button>
         </div>
       </aside>
 
       {/* Main Viewport */}
-      <main className="main-viewport">
+      <main className={`main-viewport ${isSidebarCollapsed ? "collapsed" : ""}`}>
         {/* Topbar */}
         <header className="topbar">
-          <div className="topbar-search-box">
-            <svg className="topbar-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
-            <input
-              type="search"
-              className="topbar-search-input"
-              placeholder="Search links..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              aria-label="Search links"
-            />
+          <div className="topbar-left-group">
+            <button
+              type="button"
+              className="btn-mobile-menu-toggle mobile-only"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Open navigation menu"
+              title="Open menu"
+            >
+              <Menu size={20} />
+            </button>
+
+            <div className="topbar-search-box">
+              <Search className="topbar-search-icon" size={16} />
+              <input
+                type="search"
+                className="topbar-search-input"
+                placeholder="Search links..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="Search links"
+              />
+            </div>
           </div>
 
           <div className="topbar-actions">
@@ -4931,10 +5914,7 @@ function App() {
                 aria-haspopup="true"
                 onClick={() => setShowNotificationsDropdown((prev) => !prev)}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
+                <Bell size={18} />
                 {unreadCount > 0 && (
                   <span className="topbar-notification-badge">
                     {unreadCount > 99 ? "99+" : unreadCount}
@@ -5111,7 +6091,8 @@ function App() {
                 setShowAccessSection(false);
               }}
             >
-              <span>+ Create New Link</span>
+              <Plus size={16} />
+              <span>Create Link</span>
             </button>
           </div>
         </header>
@@ -5120,90 +6101,164 @@ function App() {
         {/* CHANGE: Added separate Campaign Analytics frontend view — 2026-11-02 */}
         {activeView === "dashboard" ? (
           <>
-            {/* Welcome Greeting */}
-            {/* CHANGE: Main Dashboard heading animated with SplitText — 2026-11-19 */}
-            <div className="page-greeting">
-              <div>
-                <h1 style={{ margin: "0 0 6px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                  <SplitText
-                    text={`Welcome back, ${user?.username || "Vijay"}!`}
-                    tag="span"
-                    className="dashboard-heading-text"
-                    effect="rise"
-                    splitType="chars"
-                    trigger="load"
-                    delay={35}
-                    duration={0.8}
-                    staggerFrom="start"
-                    loop={false}
-                    hoverEffect="none"
-                    mask={false}
-                    textAlign="left"
-                  />
-                  <span aria-hidden="true">👋</span>
-                </h1>
-                <p>Here&apos;s an overview of your links and performance.</p>
+            {/* Section A: Welcome Greeting + Compact Global Date-Range Selector */}
+            {/* CHANGE: Main Dashboard heading animated with SplitText & Compact Date Selector — 2026-11-19 */}
+            <AnimatedContent distance={20} delay={0.05}>
+              <div className="page-greeting">
+                <div className="page-greeting-text">
+                  <h1 style={{ margin: "0 0 6px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <SplitText
+                      text={`Welcome back, ${user?.username || "Vijay"}!`}
+                      tag="span"
+                      className="dashboard-heading-text"
+                      effect="rise"
+                      splitType="chars"
+                      trigger="load"
+                      delay={35}
+                      duration={0.8}
+                      staggerFrom="start"
+                      loop={false}
+                      hoverEffect="none"
+                      mask={false}
+                      textAlign="left"
+                    />
+                    <span aria-hidden="true">👋</span>
+                  </h1>
+                  <p>Here&apos;s an overview of your links and performance.</p>
+                </div>
+
+                {/* Section A: Compact Global Date-Range Selector */}
+                <div className="header-range-controls">
+                  <span className="header-range-label">Timeframe:</span>
+                  <div className="header-time-pills" role="radiogroup" aria-label="Global Time Period">
+                    {[
+                      { id: "7d", label: "7D" },
+                      { id: "30d", label: "30D" },
+                      { id: "all", label: "All Time" },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className={`header-time-pill-btn ${timeRange === t.id ? "active" : ""}`}
+                        onClick={() => handleGlobalRangeChange(t.id)}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            </AnimatedContent>
 
-            {/* 1. Top 4 Statistic Cards */}
-            <MetricCards
-              totalLinks={links.length}
-              totalClicks={totalClicks}
-              activeLinks={activeLinks}
-              avgClicks={avgClicks}
-            />
-
-            {/* 2. Clicks Overview Chart */}
-            <ClicksOverviewChart
-              dailyTrends={dashboardAnalytics?.dailyTrends || []}
-              history={dashboardAnalytics?.history || []}
-              selectedLink={selectedLink}
-              links={links}
-              onSelectLink={setSelectedLink}
-              timeRange={timeRange}
-              onTimeRangeChange={setTimeRange}
-            />
-
-            {/* 3 & 4. Dual Donut Charts (Device & Browser Breakdown) */}
-            <div className="donuts-grid">
-              <DonutChart
-                title="Device Breakdown"
-                icon="📱"
-                data={dashboardAnalytics?.devices || []}
-                emptyMessage="No device data recorded yet. Share your short link to view visitor platforms."
+            {/* Section B: Top 4 Statistic Cards (SpotlightCard + CountUp) */}
+            <AnimatedContent distance={25} delay={0.12}>
+              <MetricCards
+                totalLinks={links.length}
+                totalClicks={totalClicks}
+                activeLinks={activeLinks}
+                avgClicks={avgClicks}
+                intelligence={dashboardAnalytics?.intelligence}
               />
-              <DonutChart
-                title="Browser Breakdown"
-                icon="🌐"
-                data={dashboardAnalytics?.browsers || []}
-                emptyMessage="No browser data recorded yet. Visitor browsers will appear after clicks."
-              />
-            </div>
+            </AnimatedContent>
 
-            {/* 5. Click Activity Heatmap (Day x Hour in IST) */}
-            <ActivityHeatmap history={dashboardAnalytics?.history || []} />
+            {/* Section 3: Clicks Overview – All Links (Large Full-Width Spline Chart) */}
+            {/* CHANGE: Dashboard Layout Rearrangement Phase 1 — 2026-11-19 */}
+            <AnimatedContent distance={25} delay={0.18}>
+              <div className="clicks-overview-fullwidth-section">
+                <ClicksOverviewChart
+                  dailyTrends={dashboardAnalytics?.dailyTrends || []}
+                  history={dashboardAnalytics?.history || []}
+                  selectedLink={selectedLink}
+                  links={links}
+                  onSelectLink={setSelectedLink}
+                  timeRange={timeRange}
+                  onTimeRangeChange={handleGlobalRangeChange}
+                />
+              </div>
+            </AnimatedContent>
 
-            {/* 6. Smart Traffic Intelligence Cards */}
-            <SmartTrafficSection intelligence={dashboardAnalytics?.intelligence} />
+            {/* Section 4: Three sections in one row (Device Breakdown + Browser Breakdown + Traffic Sources) */}
+            {/* CHANGE: Dashboard Layout Rearrangement Phase 1 — 2026-11-19 */}
+            <AnimatedContent distance={25} delay={0.24}>
+              <div className="three-analytics-row">
+                <div className="three-col-item">
+                  <DonutChart
+                    title="Device Breakdown"
+                    icon="📱"
+                    data={dashboardAnalytics?.devices || []}
+                    emptyMessage="No device data recorded yet. Share your short link to view visitor platforms."
+                  />
+                </div>
+                <div className="three-col-item">
+                  <DonutChart
+                    title="Browser Breakdown"
+                    icon="🌐"
+                    data={dashboardAnalytics?.browsers || []}
+                    emptyMessage="No browser data recorded yet. Visitor browsers will appear after clicks."
+                  />
+                </div>
+                <div className="three-col-item source-col-item">
+                  <TrafficSourcesCard
+                    campaignAnalytics={campaignAnalytics}
+                    loading={campaignLoading}
+                    onCreateUtmLink={() => {
+                      setShowCreateModal(true);
+                      setCreateSuccessLink(null);
+                      setCreateError("");
+                      setNewUrlInput("");
+                      setUtmInputs(initialUtmState);
+                      setShowUtmSection(true);
+                      setExpiresAtInput("");
+                      setMaxClicksInput("");
+                      setShowAccessSection(false);
+                    }}
+                  />
+                </div>
+              </div>
+            </AnimatedContent>
 
-            {/* 7. Recent Links Table */}
-            <RecentLinksTable
-              links={links}
-              onCopy={handleCopy}
-              copiedLinkId={copiedLinkId}
-              onOpenAnalytics={handleOpenAnalytics}
-              // CHANGE: QR Code Feature Stage 4 — 2026-11-05
-              onOpenQRCode={handleOpenQrModal}
-              // CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
-              onTogglePause={handleTogglePause}
-              onOpenAccessModal={handleOpenAccessModal}
-              togglingLinkId={togglingLinkId}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              sortOrder={sortOrder}
-              setSortOrder={setSortOrder}
-            />
+            {/* Section 5: Full-width Click Activity Graph (GitHub-Style Yearly Contribution Graph) */}
+            {/* CHANGE: Dashboard Layout Rearrangement Phase 1 — 2026-11-19 */}
+            <AnimatedContent distance={25} delay={0.3}>
+              <div className="yearly-graph-fullwidth-section">
+                <YearlyActivityGraph
+                  history={dashboardAnalytics?.history || []}
+                  dailyTrends={dashboardAnalytics?.dailyTrends || []}
+                  totalClicks={totalClicks}
+                />
+              </div>
+            </AnimatedContent>
+
+            {/* Section 6: Smart Traffic Intelligence (Four Insight Cards in One Row) */}
+            {/* CHANGE: Dashboard Layout Rearrangement Phase 1 — 2026-11-19 */}
+            <AnimatedContent distance={25} delay={0.36}>
+              <div className="intelligence-fullwidth-section">
+                <SmartTrafficSection intelligence={dashboardAnalytics?.intelligence} />
+              </div>
+            </AnimatedContent>
+
+            {/* Section 7: Recent Links (Full-Width Section at the Bottom) */}
+            {/* CHANGE: Dashboard Layout Rearrangement Phase 1 — 2026-11-19 */}
+            <AnimatedContent distance={25} delay={0.42}>
+              <div className="recent-links-fullwidth-section">
+                <RecentLinksTable
+                  links={links}
+                  onCopy={handleCopy}
+                  copiedLinkId={copiedLinkId}
+                  onOpenAnalytics={handleOpenAnalytics}
+                  // CHANGE: QR Code Feature Stage 4 — 2026-11-05
+                  onOpenQRCode={handleOpenQrModal}
+                  // CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
+                  onTogglePause={handleTogglePause}
+                  onOpenAccessModal={handleOpenAccessModal}
+                  togglingLinkId={togglingLinkId}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  sortOrder={sortOrder}
+                  setSortOrder={setSortOrder}
+                />
+              </div>
+            </AnimatedContent>
           </>
         ) : activeView === "campaigns" ? (
           <CampaignAnalyticsView

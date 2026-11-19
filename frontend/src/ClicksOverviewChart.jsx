@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
+// CHANGE: Main Dashboard + Sidebar UI Redesign (Dashboard 6 Comparison Mode) — 2026-11-19
+import { ArrowRightLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
-// CHANGE: Verified click graph data accuracy — 2026-10-20
 // -----------------------------------------------------------------------------
 // Date Calculation Helpers in Indian Standard Time (IST, UTC+05:30)
 // -----------------------------------------------------------------------------
@@ -149,8 +150,7 @@ function buildFilteredTrends(
     return result;
   }
 
-  // All time: include every recorded date from earliest history up to today,
-  // filling zero-click dates in between so the full velocity curve is shown.
+  // All time: include every recorded date from earliest history up to today
   const datesWithClicks = Object.keys(countByIso)
     .filter((k) => (countByIso[k] || 0) > 0)
     .sort();
@@ -174,7 +174,6 @@ function buildFilteredTrends(
     earliestDate = earliestCreatedDate;
   }
 
-  // Ensure at least a 7-day span up to today so fresh links never collapse to only 2 dates
   const minStartDate = shiftISODate(todayIST, -6);
   const effectiveStartDate = earliestDate < minStartDate ? earliestDate : minStartDate;
   const totalDays = Math.max(6, getDaysBetween(effectiveStartDate, todayIST));
@@ -202,7 +201,6 @@ function calculateNiceYAxis(maxVal) {
   if (maxVal <= 6) return { max: 6, ticks: [0, 2, 4, 6] };
   if (maxVal <= 9) return { max: 9, ticks: [0, 3, 6, 9] };
 
-  // For larger counts, pick a clean round step (1, 2, 5, 10, 20, 50, etc.)
   const targetIntervals = 3;
   const rawStep = maxVal / targetIntervals;
   const power = Math.pow(10, Math.floor(Math.log10(rawStep)));
@@ -218,7 +216,77 @@ function calculateNiceYAxis(maxVal) {
 }
 
 // -----------------------------------------------------------------------------
-// Component: ClicksOverviewChart (Smooth Monotone Area Chart with No Overshoot)
+// Helper: Calculate Spline Path from points
+// -----------------------------------------------------------------------------
+function computeMonotoneSpline(points, padLeft, padRight, width, padTop, zeroY) {
+  if (!points || points.length === 0) return { linePath: "", areaPath: "" };
+
+  if (points.length === 1) {
+    const p = points[0];
+    const lp = `M ${padLeft} ${p.y.toFixed(1)} L ${(width - padRight).toFixed(1)} ${p.y.toFixed(1)}`;
+    const ap = `M ${padLeft} ${p.y.toFixed(1)} L ${(width - padRight).toFixed(1)} ${p.y.toFixed(1)} L ${(width - padRight).toFixed(1)} ${zeroY.toFixed(1)} L ${padLeft} ${zeroY.toFixed(1)} Z`;
+    return { linePath: lp, areaPath: ap };
+  }
+
+  if (points.length === 2) {
+    const p0 = points[0];
+    const p1 = points[1];
+    const lp = `M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
+    const ap = `${lp} L ${p1.x.toFixed(1)} ${zeroY.toFixed(1)} L ${p0.x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
+    return { linePath: lp, areaPath: ap };
+  }
+
+  const n = points.length;
+  const dx = [];
+  const secants = [];
+
+  for (let i = 0; i < n - 1; i++) {
+    const dX = points[i + 1].x - points[i].x;
+    dx.push(dX);
+    secants.push(dX === 0 ? 0 : (points[i + 1].y - points[i].y) / dX);
+  }
+
+  const m = new Array(n);
+  m[0] = secants[0];
+  m[n - 1] = secants[n - 2];
+
+  for (let i = 1; i < n - 1; i++) {
+    const s0 = secants[i - 1];
+    const s1 = secants[i];
+    if (s0 * s1 <= 0) {
+      m[i] = 0;
+    } else {
+      m[i] = (2 * s0 * s1) / (s0 + s1);
+    }
+  }
+
+  let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+
+  for (let i = 0; i < n - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const dX = dx[i];
+
+    let cp1x = p1.x + dX / 3;
+    let cp1y = p1.y + (m[i] * dX) / 3;
+    let cp2x = p2.x - dX / 3;
+    let cp2y = p2.y - (m[i + 1] * dX) / 3;
+
+    cp1y = Math.min(zeroY, Math.max(padTop, cp1y));
+    cp2y = Math.min(zeroY, Math.max(padTop, cp2y));
+
+    d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+
+  const firstPt = points[0];
+  const lastPt = points[points.length - 1];
+  const area = `${d} L ${lastPt.x.toFixed(1)} ${zeroY.toFixed(1)} L ${firstPt.x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
+
+  return { linePath: d, areaPath: area };
+}
+
+// -----------------------------------------------------------------------------
+// Component: ClicksOverviewChart (React Bits Dashboard 6 Comparison Mode)
 // -----------------------------------------------------------------------------
 function ClicksOverviewChart({
   dailyTrends = [],
@@ -233,6 +301,9 @@ function ClicksOverviewChart({
   const [internalTimeRange, setInternalTimeRange] = useState(timeRange);
   const activeTimeRange = isControlled ? timeRange : internalTimeRange;
 
+  const [comparisonMode, setComparisonMode] = useState(true);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+
   const handleRangeChange = (newRange) => {
     if (isControlled) {
       onTimeRangeChange(newRange);
@@ -240,8 +311,6 @@ function ClicksOverviewChart({
       setInternalTimeRange(newRange);
     }
   };
-
-  const [hoveredPoint, setHoveredPoint] = useState(null);
 
   const isAllLinks =
     !selectedLink ||
@@ -255,6 +324,50 @@ function ClicksOverviewChart({
       ? "last 30 days"
       : "all time";
 
+  // Build full map of clicks by ISO date
+  const countByIso = useMemo(() => {
+    const map = {};
+    if (Array.isArray(dailyTrends) && dailyTrends.length > 0) {
+      dailyTrends.forEach((item) => {
+        if (!item) return;
+        const rawKey =
+          item.isoDate ||
+          (item._id && String(item._id).match(/^\d{4}-\d{2}-\d{2}$/)
+            ? item._id
+            : null);
+        const key = rawKey || (item.date ? formatISODate(item.date) : null);
+        if (key && /^\d{4}-\d{2}-\d{2}$/.test(key)) {
+          map[key] = (map[key] || 0) + Math.max(0, item.count || 0);
+        }
+      });
+    }
+
+    if (Object.keys(map).length === 0 && Array.isArray(history) && history.length > 0) {
+      const seenClickIds = new Set();
+      history.forEach((click) => {
+        if (!click?.clickedAt) return;
+        if (click._id) {
+          const idStr = String(click._id);
+          if (seenClickIds.has(idStr)) return;
+          seenClickIds.add(idStr);
+        }
+        if (!isAllLinks && selectedLink && click.link) {
+          const targetId = String(selectedLink._id || selectedLink.id || "");
+          const clickLinkId = String(click.link?._id || click.link);
+          const targetCode = String(selectedLink.shortCode || "");
+          const clickCode = String(click.shortCode || click.link?.shortCode || "");
+          if (targetId && clickLinkId && targetId !== clickLinkId) return;
+          if (targetCode && clickCode && targetCode !== clickCode) return;
+        }
+        const iso = formatISODate(click.clickedAt);
+        if (iso && /^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+          map[iso] = (map[iso] || 0) + 1;
+        }
+      });
+    }
+    return map;
+  }, [dailyTrends, history, isAllLinks, selectedLink]);
+
   const filteredTrends = useMemo(() => {
     return buildFilteredTrends(
       dailyTrends,
@@ -265,15 +378,37 @@ function ClicksOverviewChart({
     );
   }, [dailyTrends, history, activeTimeRange, selectedLink, links]);
 
-  const maxCount = useMemo(() => {
-    if (!filteredTrends || filteredTrends.length === 0) return 0;
-    return Math.max(0, ...filteredTrends.map((d) => Math.max(0, d.count || 0)));
-  }, [filteredTrends]);
+  // Compute comparison trend data for 7d & 30d
+  const comparisonData = useMemo(() => {
+    if (activeTimeRange !== "7d" && activeTimeRange !== "30d") {
+      return { previousTrends: [], hasPreviousData: false, previousTotal: 0 };
+    }
+    const todayIST = getTodayISTStr();
+    const numDays = activeTimeRange === "7d" ? 7 : 30;
+    const prevTrends = [];
+    let prevTotal = 0;
 
-  // Clean integer axis ticks starting at 0
-  const { max: effectiveMax, ticks: yTicks } = useMemo(() => {
-    return calculateNiceYAxis(maxCount);
-  }, [maxCount]);
+    for (let i = numDays - 1; i >= 0; i--) {
+      const prevIso = shiftISODate(todayIST, -(i + numDays));
+      const prevCount = Math.max(0, countByIso[prevIso] || 0);
+      prevTrends.push({
+        isoDate: prevIso,
+        date: formatDisplayDate(prevIso),
+        count: prevCount,
+      });
+      prevTotal += prevCount;
+    }
+
+    const hasPriorRecords =
+      prevTotal > 0 ||
+      Object.keys(countByIso).some((k) => k <= shiftISODate(todayIST, -numDays));
+
+    return {
+      previousTrends: prevTrends,
+      hasPreviousData: hasPriorRecords,
+      previousTotal: prevTotal,
+    };
+  }, [activeTimeRange, countByIso]);
 
   const totalPeriodClicks = useMemo(() => {
     return Math.max(
@@ -282,6 +417,19 @@ function ClicksOverviewChart({
     );
   }, [filteredTrends]);
 
+  const maxCount = useMemo(() => {
+    const curMax = filteredTrends.length > 0 ? Math.max(0, ...filteredTrends.map((d) => d.count || 0)) : 0;
+    const prevMax =
+      comparisonMode && comparisonData.previousTrends.length > 0
+        ? Math.max(0, ...comparisonData.previousTrends.map((d) => d.count || 0))
+        : 0;
+    return Math.max(curMax, prevMax);
+  }, [filteredTrends, comparisonMode, comparisonData.previousTrends]);
+
+  const { max: effectiveMax, ticks: yTicks } = useMemo(() => {
+    return calculateNiceYAxis(maxCount);
+  }, [maxCount]);
+
   const totalClicksAcrossLinks = useMemo(() => {
     return Math.max(
       0,
@@ -289,124 +437,171 @@ function ClicksOverviewChart({
     );
   }, [links]);
 
-  // Compact graph layout proportions
-  const width = 800;
-  const height = 195;
-  const padLeft = 44;
-  const padRight = 20;
-  const padTop = 16;
-  const padBottom = 32;
+  // Comparison metrics calculation
+  const comparisonMetrics = useMemo(() => {
+    if (activeTimeRange === "all") {
+      return {
+        showBadge: false,
+        text: "All-time total",
+        type: "neutral",
+        diff: 0,
+      };
+    }
+
+    const prevTotal = comparisonData.previousTotal;
+    const curTotal = totalPeriodClicks;
+
+    if (!comparisonData.hasPreviousData && prevTotal === 0 && curTotal === 0) {
+      return {
+        showBadge: true,
+        text: "No activity recorded",
+        type: "neutral",
+        diff: 0,
+        pct: 0,
+      };
+    }
+
+    if (!comparisonData.hasPreviousData || prevTotal === 0) {
+      if (curTotal > 0) {
+        return {
+          showBadge: true,
+          text: `+${curTotal} clicks (New traffic)`,
+          type: "positive",
+          diff: curTotal,
+          pct: 100,
+        };
+      }
+      return {
+        showBadge: true,
+        text: "No prior period data",
+        type: "neutral",
+        diff: 0,
+        pct: 0,
+      };
+    }
+
+    const diff = curTotal - prevTotal;
+    const pct = Math.round((diff / prevTotal) * 100);
+
+    if (diff > 0) {
+      return {
+        showBadge: true,
+        text: `+${pct}% vs prior ${activeTimeRange === "7d" ? "7 days" : "30 days"}`,
+        type: "positive",
+        diff,
+        pct,
+      };
+    }
+    if (diff < 0) {
+      return {
+        showBadge: true,
+        text: `${pct}% vs prior ${activeTimeRange === "7d" ? "7 days" : "30 days"}`,
+        type: "negative",
+        diff,
+        pct,
+      };
+    }
+    return {
+      showBadge: true,
+      text: `0% vs prior ${activeTimeRange === "7d" ? "7 days" : "30 days"}`,
+      type: "neutral",
+      diff: 0,
+      pct: 0,
+    };
+  }, [activeTimeRange, comparisonData, totalPeriodClicks]);
+
+  // Compact, professional graph dimensions (Dashboard 6)
+  const width = 760;
+  const height = 180;
+  const padLeft = 40;
+  const padRight = 16;
+  const padTop = 14;
+  const padBottom = 26;
   const innerW = width - padLeft - padRight;
   const innerH = height - padTop - padBottom;
   const zeroY = height - padBottom;
 
+  // Current period points
   const points = useMemo(() => {
     if (filteredTrends.length === 0) return [];
     const n = filteredTrends.length;
     return filteredTrends.map((item, i) => {
       const count = Math.max(0, item.count || 0);
       const x = n === 1 ? padLeft + innerW / 2 : padLeft + (i / (n - 1)) * innerW;
-      // Clamped to [padTop, zeroY] to guarantee no negative Y values
       const y = Math.min(zeroY, Math.max(padTop, zeroY - (count / effectiveMax) * innerH));
       return {
         x,
         y,
         date: item.date || item.isoDate || `Day ${i + 1}`,
+        isoDate: item.isoDate,
         count,
       };
     });
   }, [filteredTrends, effectiveMax, innerW, innerH, padLeft, padTop, zeroY]);
 
-  // Monotone cubic Hermite spline interpolation (PCHIP) with strict baseline clamping.
-  // Guarantees monotonicity: the line never overshoots or dips below zero between data points.
+  // Previous period points
+  const prevPoints = useMemo(() => {
+    if (!comparisonMode || comparisonData.previousTrends.length === 0 || points.length === 0) return [];
+    const n = comparisonData.previousTrends.length;
+    return comparisonData.previousTrends.map((item, i) => {
+      const count = Math.max(0, item.count || 0);
+      // Align X directly with the corresponding current point
+      const x = points[i] ? points[i].x : padLeft + (i / Math.max(1, n - 1)) * innerW;
+      const y = Math.min(zeroY, Math.max(padTop, zeroY - (count / effectiveMax) * innerH));
+      return {
+        x,
+        y,
+        date: item.date || item.isoDate || `Prior Day ${i + 1}`,
+        isoDate: item.isoDate,
+        count,
+      };
+    });
+  }, [comparisonMode, comparisonData.previousTrends, points, effectiveMax, innerW, innerH, padLeft, padTop, zeroY]);
+
+  // Current curves
   const { linePath, areaPath } = useMemo(() => {
-    if (points.length === 0) return { linePath: "", areaPath: "" };
-
-    if (points.length === 1) {
-      const p = points[0];
-      const lp = `M ${padLeft} ${p.y.toFixed(1)} L ${(width - padRight).toFixed(1)} ${p.y.toFixed(1)}`;
-      const ap = `M ${padLeft} ${p.y.toFixed(1)} L ${(width - padRight).toFixed(1)} ${p.y.toFixed(1)} L ${(width - padRight).toFixed(1)} ${zeroY.toFixed(1)} L ${padLeft} ${zeroY.toFixed(1)} Z`;
-      return { linePath: lp, areaPath: ap };
-    }
-
-    if (points.length === 2) {
-      const p0 = points[0];
-      const p1 = points[1];
-      const lp = `M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
-      const ap = `${lp} L ${p1.x.toFixed(1)} ${zeroY.toFixed(1)} L ${p0.x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
-      return { linePath: lp, areaPath: ap };
-    }
-
-    const n = points.length;
-    const dx = [];
-    const secants = [];
-
-    for (let i = 0; i < n - 1; i++) {
-      const dX = points[i + 1].x - points[i].x;
-      dx.push(dX);
-      secants.push(dX === 0 ? 0 : (points[i + 1].y - points[i].y) / dX);
-    }
-
-    // Tangents m[i] at each point
-    const m = new Array(n);
-    m[0] = secants[0];
-    m[n - 1] = secants[n - 2];
-
-    for (let i = 1; i < n - 1; i++) {
-      const s0 = secants[i - 1];
-      const s1 = secants[i];
-
-      // If slopes have opposite signs or either is flat, set tangent to 0 to eliminate local extrema overshoot
-      if (s0 * s1 <= 0) {
-        m[i] = 0;
-      } else {
-        // Harmonic mean ensures strict monotonicity (PCHIP)
-        m[i] = (2 * s0 * s1) / (s0 + s1);
-      }
-    }
-
-    let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
-
-    for (let i = 0; i < n - 1; i++) {
-      const p1 = points[i];
-      const p2 = points[i + 1];
-      const dX = dx[i];
-
-      let cp1x = p1.x + dX / 3;
-      let cp1y = p1.y + (m[i] * dX) / 3;
-      let cp2x = p2.x - dX / 3;
-      let cp2y = p2.y - (m[i + 1] * dX) / 3;
-
-      // Hard clamp control points to the chart bounds [padTop, zeroY]
-      // This strictly prevents the spline from dipping below the zero-line (zeroY)
-      cp1y = Math.min(zeroY, Math.max(padTop, cp1y));
-      cp2y = Math.min(zeroY, Math.max(padTop, cp2y));
-
-      d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
-    }
-
-    const firstPt = points[0];
-    const lastPt = points[points.length - 1];
-    const area = `${d} L ${lastPt.x.toFixed(1)} ${zeroY.toFixed(1)} L ${firstPt.x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
-
-    return { linePath: d, areaPath: area };
+    return computeMonotoneSpline(points, padLeft, padRight, width, padTop, zeroY);
   }, [points, padLeft, padRight, width, padTop, zeroY]);
 
+  // Previous curves
+  const { linePath: prevLinePath } = useMemo(() => {
+    if (!comparisonMode || prevPoints.length === 0) return { linePath: "" };
+    return computeMonotoneSpline(prevPoints, padLeft, padRight, width, padTop, zeroY);
+  }, [comparisonMode, prevPoints, padLeft, padRight, width, padTop, zeroY]);
+
   const hasData = points.length > 0;
+  const showComparison = comparisonMode && activeTimeRange !== "all" && prevPoints.length > 0;
+
+  const currentHovered = hoveredIndex !== null && points[hoveredIndex] ? points[hoveredIndex] : null;
+  const prevHovered = hoveredIndex !== null && prevPoints[hoveredIndex] ? prevPoints[hoveredIndex] : null;
 
   return (
     <div className="chart-card">
       <div className="chart-card-header">
         <div className="chart-title-group">
-          <h3>
-            {isAllLinks
-              ? "Clicks Overview — All Links"
-              : `Clicks Overview — /${selectedLink.shortCode}`}
-          </h3>
+          <div className="chart-title-row">
+            <h3>
+              {isAllLinks
+                ? "Clicks Overview — All Links"
+                : `Clicks Overview — /${selectedLink.shortCode}`}
+            </h3>
+            {comparisonMetrics.showBadge && (
+              <span className={`chart-comparison-pill ${comparisonMetrics.type}`}>
+                {comparisonMetrics.type === "positive" ? (
+                  <TrendingUp size={12} className="inline-icon" />
+                ) : comparisonMetrics.type === "negative" ? (
+                  <TrendingDown size={12} className="inline-icon" />
+                ) : (
+                  <Minus size={12} className="inline-icon" />
+                )}
+                {comparisonMetrics.text}
+              </span>
+            )}
+          </div>
           <p>
             {isAllLinks
-              ? `Combined performance across all ${links.length} link${links.length !== 1 ? "s" : ""} (${totalPeriodClicks.toLocaleString()} click${totalPeriodClicks !== 1 ? "s" : ""} in ${rangeLabel})`
-              : `Daily performance for link /${selectedLink.shortCode} (${totalPeriodClicks.toLocaleString()} click${totalPeriodClicks !== 1 ? "s" : ""} in ${rangeLabel})`}
+              ? `Combined performance across all ${links.length} link${links.length !== 1 ? "s" : ""} (${totalPeriodClicks.toLocaleString()} clicks in ${rangeLabel})`
+              : `Daily performance for link /${selectedLink.shortCode} (${totalPeriodClicks.toLocaleString()} clicks in ${rangeLabel})`}
           </p>
         </div>
 
@@ -437,6 +632,19 @@ function ClicksOverviewChart({
             </select>
           )}
 
+          {activeTimeRange !== "all" && (
+            <button
+              type="button"
+              className={`comparison-mode-toggle ${comparisonMode ? "active" : ""}`}
+              onClick={() => setComparisonMode((prev) => !prev)}
+              title="Toggle previous period comparison mode"
+              aria-label="Toggle previous period comparison"
+            >
+              <ArrowRightLeft size={13} />
+              <span>Compare</span>
+            </button>
+          )}
+
           <div className="time-filter-pills" role="radiogroup" aria-label="Time period">
             {[
               { id: "7d", label: "Last 7 days" },
@@ -456,22 +664,38 @@ function ClicksOverviewChart({
         </div>
       </div>
 
+      {/* Comparison Legend Bar */}
+      {showComparison && (
+        <div className="chart-legend-bar">
+          <div className="legend-item current">
+            <span className="legend-indicator current-solid" />
+            <span className="legend-label">Current Period:</span>
+            <span className="legend-value">{totalPeriodClicks.toLocaleString()} clicks</span>
+          </div>
+          <div className="legend-item previous">
+            <span className="legend-indicator prev-dashed" />
+            <span className="legend-label">Previous Period:</span>
+            <span className="legend-value">{comparisonData.previousTotal.toLocaleString()} clicks</span>
+          </div>
+        </div>
+      )}
+
       {hasData ? (
-        <div className="chart-svg-container" onMouseLeave={() => setHoveredPoint(null)}>
+        <div className="chart-svg-container" onMouseLeave={() => setHoveredIndex(null)}>
           <svg viewBox={`0 0 ${width} ${height}`} className="chart-svg" preserveAspectRatio="none">
             <defs>
               <linearGradient id="chartAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.32" />
-                <stop offset="65%" stopColor="#7C3AED" stopOpacity="0.08" />
-                <stop offset="100%" stopColor="#7C3AED" stopOpacity="0.0" />
+                <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.35" />
+                <stop offset="60%" stopColor="#06B6D4" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="#06B6D4" stopOpacity="0.0" />
               </linearGradient>
               <linearGradient id="chartLineGradient" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="#7C3AED" />
                 <stop offset="50%" stopColor="#8B5CF6" />
-                <stop offset="100%" stopColor="#A78BFA" />
+                <stop offset="100%" stopColor="#06B6D4" />
               </linearGradient>
               <filter id="purpleGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="2" stdDeviation="3.5" floodColor="#8B5CF6" floodOpacity="0.4" />
+                <feDropShadow dx="0" dy="2" stdDeviation="3.5" floodColor="#8B5CF6" floodOpacity="0.45" />
               </filter>
             </defs>
 
@@ -486,7 +710,7 @@ function ClicksOverviewChart({
                     y1={yPos}
                     x2={width - padRight}
                     y2={yPos}
-                    stroke={isBaseline ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.04)"}
+                    stroke={isBaseline ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.04)"}
                     strokeDasharray={isBaseline ? undefined : "4 4"}
                   />
                   <text
@@ -504,10 +728,23 @@ function ClicksOverviewChart({
               );
             })}
 
-            {/* Gradient Area Fill */}
+            {/* Gradient Area Fill (Current Period) */}
             <path d={areaPath} fill="url(#chartAreaGradient)" />
 
-            {/* Spline Line */}
+            {/* Previous Period Spline (Dashed curve) */}
+            {showComparison && prevLinePath && (
+              <path
+                d={prevLinePath}
+                fill="none"
+                stroke="rgba(148, 163, 184, 0.55)"
+                strokeWidth="2.2"
+                strokeDasharray="5 4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
+
+            {/* Current Period Spline Line */}
             <path
               d={linePath}
               fill="none"
@@ -519,11 +756,11 @@ function ClicksOverviewChart({
             />
 
             {/* Hover Crosshair Line */}
-            {hoveredPoint && (
+            {currentHovered && (
               <line
-                x1={hoveredPoint.x}
+                x1={currentHovered.x}
                 y1={padTop}
-                x2={hoveredPoint.x}
+                x2={currentHovered.x}
                 y2={zeroY}
                 stroke="rgba(167, 139, 250, 0.45)"
                 strokeWidth="1.5"
@@ -531,29 +768,28 @@ function ClicksOverviewChart({
               />
             )}
 
-            {/* Column hover catchers for smooth tracking across the graph */}
-            {points.map((pt, idx) => {
-              const prevX = idx === 0 ? padLeft : (points[idx - 1].x + pt.x) / 2;
-              const nextX = idx === points.length - 1 ? width - padRight : (points[idx + 1].x + pt.x) / 2;
-              const colW = Math.max(1, nextX - prevX);
+            {/* Previous Period Points (when hovered) */}
+            {showComparison &&
+              prevPoints.map((pt, idx) => {
+                const isHovered = hoveredIndex === idx;
+                if (!isHovered && points.length > 15) return null;
+                return (
+                  <circle
+                    key={`prev-dot-${idx}`}
+                    cx={pt.x}
+                    cy={pt.y}
+                    r={isHovered ? 4 : 2}
+                    fill={isHovered ? "#94A3B8" : "transparent"}
+                    stroke="#94A3B8"
+                    strokeWidth={isHovered ? 2 : 1}
+                    style={{ pointerEvents: "none" }}
+                  />
+                );
+              })}
 
-              return (
-                <rect
-                  key={`col-${idx}`}
-                  x={prevX}
-                  y={padTop}
-                  width={colW}
-                  height={innerH}
-                  fill="transparent"
-                  style={{ cursor: "pointer" }}
-                  onMouseEnter={() => setHoveredPoint(pt)}
-                />
-              );
-            })}
-
-            {/* Visible Data Point Dots along the curve */}
+            {/* Current Period Points */}
             {points.map((pt, idx) => {
-              const isHovered = hoveredPoint?.date === pt.date;
+              const isHovered = hoveredIndex === idx;
               const stepInterval =
                 points.length <= 7
                   ? 1
@@ -609,26 +845,70 @@ function ClicksOverviewChart({
                 </g>
               );
             })}
+
+            {/* Column hover catchers for smooth tracking across the graph */}
+            {points.map((pt, idx) => {
+              const prevX = idx === 0 ? padLeft : (points[idx - 1].x + pt.x) / 2;
+              const nextX = idx === points.length - 1 ? width - padRight : (points[idx + 1].x + pt.x) / 2;
+              const colW = Math.max(1, nextX - prevX);
+
+              return (
+                <rect
+                  key={`col-${idx}`}
+                  x={prevX}
+                  y={padTop}
+                  width={colW}
+                  height={innerH}
+                  fill="transparent"
+                  style={{ cursor: "pointer" }}
+                  onMouseEnter={() => setHoveredIndex(idx)}
+                />
+              );
+            })}
           </svg>
 
-          {/* Floating Dark-Purple Tooltip */}
-          {hoveredPoint && (
+          {/* Floating Dark-Navy Glassmorphic Tooltip */}
+          {currentHovered && (
             <div
               className="chart-hover-tooltip"
               style={{
-                left: `${Math.max(12, Math.min(88, (hoveredPoint.x / width) * 100))}%`,
-                top: `${(hoveredPoint.y / height) * 100}%`,
+                left: `${Math.max(12, Math.min(88, (currentHovered.x / width) * 100))}%`,
+                top: `${(currentHovered.y / height) * 100}%`,
                 transform:
-                  hoveredPoint.y < 46
+                  currentHovered.y < 50
                     ? "translate(-50%, 14px)"
                     : "translate(-50%, calc(-100% - 10px))",
               }}
             >
-              <div className="tooltip-date-label">{hoveredPoint.date} (IST)</div>
+              <div className="tooltip-date-label">{currentHovered.date} (IST)</div>
               <div className="tooltip-clicks-val">
-                <span className="tooltip-dot" />
-                <strong>{Math.max(0, hoveredPoint.count).toLocaleString()}</strong> click{hoveredPoint.count !== 1 ? "s" : ""}
+                <span className="tooltip-dot current" />
+                <span>Current:</span>
+                <strong>{Math.max(0, currentHovered.count).toLocaleString()}</strong> clicks
               </div>
+
+              {showComparison && prevHovered && (
+                <>
+                  <div className="tooltip-clicks-val prev">
+                    <span className="tooltip-dot previous" />
+                    <span>Prior ({prevHovered.date}):</span>
+                    <strong>{Math.max(0, prevHovered.count).toLocaleString()}</strong> clicks
+                  </div>
+                  <div className="tooltip-delta-row">
+                    {currentHovered.count > prevHovered.count ? (
+                      <span className="delta-pill positive">
+                        +{currentHovered.count - prevHovered.count} clicks
+                      </span>
+                    ) : currentHovered.count < prevHovered.count ? (
+                      <span className="delta-pill negative">
+                        {currentHovered.count - prevHovered.count} clicks
+                      </span>
+                    ) : (
+                      <span className="delta-pill neutral">Same as prior</span>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -659,4 +939,3 @@ export {
   calculateNiceYAxis,
 };
 export default ClicksOverviewChart;
-
