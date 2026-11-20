@@ -9,6 +9,7 @@ import React, { useState, useMemo } from "react";
 import axios from "axios";
 // CHANGE: Integrated React Bits SplitText component — 2026-11-19
 import SplitText from "./SplitText";
+import SpecularButton from "./SpecularButton";
 
 // -----------------------------------------------------------------------------
 // Report Categories Configuration
@@ -443,11 +444,14 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
 
               <div className="reports-download-buttons">
                 {/* PDF Download Button */}
-                <button
+                <SpecularButton
                   type="button"
+                  variant="primary"
+                  size="md"
                   className="reports-btn-download pdf"
                   onClick={() => handleDownload("pdf")}
                   disabled={Boolean(downloading)}
+                  loading={downloading === "pdf"}
                 >
                   {downloading === "pdf" ? (
                     <>
@@ -463,14 +467,17 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
                       </div>
                     </>
                   )}
-                </button>
+                </SpecularButton>
 
                 {/* CSV Download Button */}
-                <button
+                <SpecularButton
                   type="button"
+                  variant="cyan"
+                  size="md"
                   className="reports-btn-download csv"
                   onClick={() => handleDownload("csv")}
                   disabled={Boolean(downloading)}
+                  loading={downloading === "csv"}
                 >
                   {downloading === "csv" ? (
                     <>
@@ -486,7 +493,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
                       </div>
                     </>
                   )}
-                </button>
+                </SpecularButton>
               </div>
 
               {/* Data & Security Notice */}

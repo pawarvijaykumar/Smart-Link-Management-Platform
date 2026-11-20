@@ -1,6 +1,7 @@
 // CHANGE: Added password recovery — 2026-10-20
 import { useState, useEffect } from "react";
 import axios from "axios";
+import SpecularButton from "./components/SpecularButton";
 
 const AUTH_URL = "http://localhost:5000/api/v1/users";
 
@@ -506,10 +507,13 @@ function Login({ onLoginSuccess, initialError = "" }) {
           )}
 
           {/* Submit Button */}
-          <button
+          <SpecularButton
             type="submit"
+            variant="primary"
+            size="lg"
             className="auth-submit-btn"
             disabled={loading}
+            loading={loading}
           >
             {loading ? (
               <span className="auth-btn-loading">
@@ -527,7 +531,7 @@ function Login({ onLoginSuccess, initialError = "" }) {
                 {mode === "reset" && "Update Password →"}
               </>
             )}
-          </button>
+          </SpecularButton>
         </form>
 
         {/* Footer Navigation / Switch Prompts */}

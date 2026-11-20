@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
+import SpecularButton from "./SpecularButton";
 
 // -----------------------------------------------------------------------------
 // Helper: Shorten Long URLs cleanly
@@ -309,34 +310,40 @@ function AnomalyDetailModal({
           {isAnomalyEvent && item.id && (
             <>
               {item.status !== "acknowledged" && item.status !== "resolved" && (
-                <button
+                <SpecularButton
                   type="button"
+                  variant="cyan"
+                  size="sm"
                   className="anomaly-btn ack"
                   disabled={actionLoading}
                   onClick={() => onAcknowledge(item.id)}
                 >
                   ✓ Acknowledge
-                </button>
+                </SpecularButton>
               )}
               {item.status !== "resolved" && (
-                <button
+                <SpecularButton
                   type="button"
+                  variant="success"
+                  size="sm"
                   className="anomaly-btn resolve"
                   disabled={actionLoading}
                   onClick={() => onResolve(item.id)}
                 >
                   ★ Mark Resolved
-                </button>
+                </SpecularButton>
               )}
             </>
           )}
-          <button
+          <SpecularButton
             type="button"
+            variant="ghost"
+            size="sm"
             className="anomaly-btn details"
             onClick={onClose}
           >
             Close
-          </button>
+          </SpecularButton>
         </div>
       </div>
     </div>
@@ -1337,15 +1344,17 @@ export default function TrafficAnomalyView({
             ))}
           </div>
 
-          <button
+          <SpecularButton
             type="button"
+            variant="secondary"
+            size="md"
             className="traffic-refresh-btn"
             onClick={() => fetchAnomalies(range)}
             disabled={loading}
             title="Recalculate statistical anomalies"
           >
             <span className={loading ? "spin" : ""}>🔄</span> Refresh
-          </button>
+          </SpecularButton>
         </div>
       </div>
 

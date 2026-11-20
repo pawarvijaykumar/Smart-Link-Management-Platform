@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import SpecularButton from "./SpecularButton";
 import * as d3 from "d3";
 import * as topojson from "topojson-client";
 import worldData from "world-atlas/countries-110m.json";
@@ -686,8 +687,9 @@ export default function RotatingDottedGlobe({
         {/* Level Controls & Quick Back Action */}
         <div className="globe-actions-bar">
           {drillLevel !== "world" ? (
-            <button
-              type="button"
+            <SpecularButton
+              variant="secondary"
+              size="sm"
               className="globe-back-btn"
               onClick={
                 drillLevel === "city"
@@ -702,7 +704,7 @@ export default function RotatingDottedGlobe({
                 : drillLevel === "state"
                 ? `← Back to ${selectedCountry?.country || "Country"}`
                 : "← Back to World Map"}
-            </button>
+            </SpecularButton>
           ) : (
             <div className="map-view-toggle-cluster" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               {/* 2D vs 3D Map View Switcher */}
@@ -727,17 +729,19 @@ export default function RotatingDottedGlobe({
 
               {viewMode === "3d" && (
                 <div className="globe-spin-controls">
-                  <button
-                    type="button"
+                  <SpecularButton
+                    variant="secondary"
+                    size="xs"
                     className={`globe-tool-btn ${isRotating ? "active" : ""}`}
                     onClick={() => setIsRotating((prev) => !prev)}
                     title={isRotating ? "Pause Auto-Rotation" : "Resume Auto-Rotation"}
                     aria-label="Toggle Auto-Rotation"
                   >
                     {isRotating ? "⏸ Pause" : "▶ Rotate"}
-                  </button>
-                  <button
-                    type="button"
+                  </SpecularButton>
+                  <SpecularButton
+                    variant="secondary"
+                    size="xs"
                     className="globe-tool-btn"
                     onClick={() => {
                       rotationRef.current = [-20, -15];
@@ -747,7 +751,7 @@ export default function RotatingDottedGlobe({
                     aria-label="Reset Orientation"
                   >
                     ⟲ Reset
-                  </button>
+                  </SpecularButton>
                 </div>
               )}
             </div>

@@ -13,6 +13,7 @@
 import { useState, useMemo } from "react";
 // CHANGE: Integrated React Bits SplitText component — 2026-11-19
 import SplitText from "./SplitText";
+import SpecularButton from "./SpecularButton";
 
 // -----------------------------------------------------------------------------
 // Format Helpers in Indian Standard Time (IST)
@@ -903,14 +904,15 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {selectedCategory && (
-            <button
-              type="button"
+            <SpecularButton
+              variant="ghost"
+              size="xs"
               className="traffic-reset-btn"
               onClick={() => setSelectedCategory(null)}
               aria-label="Reset device category filter"
             >
               <span>✕</span> Reset
-            </button>
+            </SpecularButton>
           )}
           <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
             {totalClicks > 0 ? `${totalClicks.toLocaleString()} total` : "0 recorded"}
@@ -1404,8 +1406,9 @@ export default function TrafficAnalyticsView({
             </div>
 
             {/* Refresh Button */}
-            <button
-              type="button"
+            <SpecularButton
+              variant="secondary"
+              size="sm"
               className="btn-refresh-campaigns"
               onClick={onRefresh}
               disabled={trafficLoading}
@@ -1426,7 +1429,7 @@ export default function TrafficAnalyticsView({
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
               </svg>
               <span>{trafficLoading ? "Updating..." : "Refresh"}</span>
-            </button>
+            </SpecularButton>
           </div>
         </div>
       </div>
@@ -1438,9 +1441,14 @@ export default function TrafficAnalyticsView({
             <span>⚠️</span>
             <span>{trafficError}</span>
           </div>
-          <button type="button" onClick={onRefresh} className="btn-retry">
+          <SpecularButton
+            variant="danger"
+            size="sm"
+            onClick={onRefresh}
+            className="btn-retry"
+          >
             Retry
-          </button>
+          </SpecularButton>
         </div>
       )}
 
@@ -1461,20 +1469,22 @@ export default function TrafficAnalyticsView({
             No clicks were recorded for your short links during this timeframe. Share your links or scan your QR codes to populate real-time traffic intelligence.
           </p>
           <div style={{ display: "inline-flex", gap: "10px" }}>
-            <button
-              type="button"
+            <SpecularButton
+              variant="primary"
+              size="md"
               className="btn-primary"
               onClick={() => onRangeChange?.("all")}
             >
               View All Time
-            </button>
-            <button
-              type="button"
+            </SpecularButton>
+            <SpecularButton
+              variant="secondary"
+              size="md"
               className="btn-secondary"
               onClick={onRefresh}
             >
               Refresh
-            </button>
+            </SpecularButton>
           </div>
         </div>
       ) : (

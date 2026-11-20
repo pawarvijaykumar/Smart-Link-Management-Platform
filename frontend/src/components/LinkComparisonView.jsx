@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
+import SpecularButton from "./SpecularButton";
 
 export const LINK_COLORS = [
   "#8B5CF6", // 0: Violet
@@ -177,14 +178,16 @@ function LinkSelector({
 
         {/* Add Link Dropdown Trigger */}
         <div className="add-link-dropdown-wrapper" ref={dropdownRef}>
-          <button
+          <SpecularButton
             type="button"
+            variant="cyan"
+            size="sm"
             className="add-link-trigger-btn"
             onClick={() => setIsOpen((prev) => !prev)}
             aria-expanded={isOpen}
           >
             <span>+</span> Add Link to Compare
-          </button>
+          </SpecularButton>
 
           {isOpen && (
             <div className="add-link-dropdown-menu">
@@ -1285,8 +1288,10 @@ export default function LinkComparisonView({
             </button>
           </div>
 
-          <button
+          <SpecularButton
             type="button"
+            variant="secondary"
+            size="md"
             className="traffic-refresh-btn"
             onClick={() => fetchComparison(range, selectedIds)}
             disabled={loading || selectedIds.length < 2}
@@ -1300,7 +1305,7 @@ export default function LinkComparisonView({
               ↻
             </span>
             <span>Refresh</span>
-          </button>
+          </SpecularButton>
         </div>
       </div>
 

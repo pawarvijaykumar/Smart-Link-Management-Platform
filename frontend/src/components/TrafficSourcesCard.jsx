@@ -2,6 +2,8 @@
 import { useMemo } from "react";
 import { Globe, ExternalLink, Compass, Radio, ArrowUpRight, ShieldCheck } from "lucide-react";
 import CountUp from "./CountUp";
+import SpotlightCard from "./SpotlightCard";
+import SpecularButton from "./SpecularButton";
 
 const getSourceIcon = (sourceName = "") => {
   const s = sourceName.toLowerCase();
@@ -49,7 +51,12 @@ export default function TrafficSourcesCard({
   }, [sources]);
 
   return (
-    <div className="traffic-sources-card">
+    <SpotlightCard
+      className="traffic-sources-card"
+      spotlightColor="rgba(168, 85, 247, 0.28)"
+      borderColor="rgba(192, 132, 252, 0.70)"
+      radius={320}
+    >
       <div className="traffic-sources-header">
         <div className="traffic-sources-title-group">
           <div className="sources-header-icon-box">
@@ -176,16 +183,17 @@ export default function TrafficSourcesCard({
             Visitor clicks with UTM parameters (e.g. <code>?utm_source=twitter</code>) or inbound referrers will appear here automatically.
           </p>
           {onCreateUtmLink && (
-            <button
-              type="button"
+            <SpecularButton
+              variant="primary"
+              size="sm"
               className="btn-create-utm-link"
               onClick={onCreateUtmLink}
             >
               <span>+ Create Link with UTM Tags</span>
-            </button>
+            </SpecularButton>
           )}
         </div>
       )}
-    </div>
+    </SpotlightCard>
   );
 }

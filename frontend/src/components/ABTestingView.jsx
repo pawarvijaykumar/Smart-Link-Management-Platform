@@ -9,6 +9,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import axios from "axios";
 // CHANGE: Integrated React Bits SplitText component — 2026-11-19
 import SplitText from "./SplitText";
+import SpecularButton from "./SpecularButton";
 
 import {
   DRAFT_STORAGE_KEY,
@@ -603,13 +604,14 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
         {/* Back & Title Header */}
         <div className="ab-header-row">
           <div className="ab-header-left">
-            <button
-              type="button"
+            <SpecularButton
+              variant="ghost"
+              size="sm"
               className="ab-btn-back"
               onClick={() => setSelectedExperimentId(null)}
             >
               ← Back to All Experiments
-            </button>
+            </SpecularButton>
             <div className="ab-title-line">
               <h1 className="ab-title">{exp?.name || "Experiment Details"}</h1>
               {exp && renderStatusBadge(exp.status)}
@@ -629,13 +631,14 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
 
           {/* Quick Lifecycle Controls */}
           <div className="ab-header-actions">
-            <button
-              type="button"
+            <SpecularButton
+              variant="secondary"
+              size="sm"
               className="ab-btn-secondary"
               onClick={() => copyShortUrl(exp?.shortCode, exp?._id)}
             >
               {copiedId === exp?._id ? "✓ Copied!" : "📋 Copy Short Link"}
-            </button>
+            </SpecularButton>
             <a
               href={`${apiBaseUrl}/${exp?.shortCode}`}
               target="_blank"
@@ -647,28 +650,33 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
 
             {/* Lifecycle transitions */}
             {exp?.status === "draft" && (
-              <button
-                type="button"
+              <SpecularButton
+                variant="success"
+                size="sm"
                 className="ab-btn-primary success"
                 disabled={actionLoading}
                 onClick={() => handleUpdateStatus(exp._id, "active")}
               >
                 ▶ Start Experiment
-              </button>
+              </SpecularButton>
             )}
 
             {exp?.status === "active" && (
               <>
-                <button
+                <SpecularButton
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   className="ab-btn-secondary warning"
                   disabled={actionLoading}
                   onClick={() => handleUpdateStatus(exp._id, "paused")}
                 >
                   ⏸ Pause
-                </button>
-                <button
+                </SpecularButton>
+                <SpecularButton
                   type="button"
+                  variant="danger"
+                  size="sm"
                   className="ab-btn-secondary danger"
                   disabled={actionLoading}
                   onClick={() => {
@@ -678,22 +686,26 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                   }}
                 >
                   ⏹ Complete
-                </button>
+                </SpecularButton>
               </>
             )}
 
             {exp?.status === "paused" && (
               <>
-                <button
+                <SpecularButton
                   type="button"
+                  variant="success"
+                  size="sm"
                   className="ab-btn-primary success"
                   disabled={actionLoading}
                   onClick={() => handleUpdateStatus(exp._id, "active")}
                 >
                   ▶ Resume
-                </button>
-                <button
+                </SpecularButton>
+                <SpecularButton
                   type="button"
+                  variant="danger"
+                  size="sm"
                   className="ab-btn-secondary danger"
                   disabled={actionLoading}
                   onClick={() => {
@@ -703,19 +715,21 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                   }}
                 >
                   ⏹ Complete
-                </button>
+                </SpecularButton>
               </>
             )}
 
             {exp?.status === "completed" && (
-              <button
+              <SpecularButton
                 type="button"
+                variant="secondary"
+                size="sm"
                 className="ab-btn-secondary"
                 disabled={actionLoading}
                 onClick={() => handleUpdateStatus(exp._id, "active")}
               >
                 ↺ Re-open Experiment
-              </button>
+              </SpecularButton>
             )}
           </div>
         </div>
@@ -773,15 +787,16 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 All Time
               </button>
             </div>
-            <button
-              type="button"
+            <SpecularButton
+              variant="secondary"
+              size="sm"
               className="ab-btn-refresh"
               onClick={() => fetchAnalytics(exp._id, range)}
               disabled={loadingAnalytics}
               title="Refresh Analytics"
             >
               ↻ Refresh
-            </button>
+            </SpecularButton>
           </div>
         </div>
 
@@ -1212,22 +1227,26 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
           </p>
         </div>
         <div className="ab-header-actions">
-          <button
+          <SpecularButton
             type="button"
+            variant="primary"
+            size="md"
             className="ab-btn-primary"
             onClick={handleOpenModal}
           >
             {hasDraft ? "📝 Resume Draft Experiment" : "+ New Experiment"}
-          </button>
-          <button
+          </SpecularButton>
+          <SpecularButton
             type="button"
+            variant="secondary"
+            size="md"
             className="ab-btn-refresh"
             onClick={fetchExperiments}
             disabled={loadingList}
             title="Refresh List"
           >
             ↻ Refresh
-          </button>
+          </SpecularButton>
         </div>
       </div>
 
@@ -1301,7 +1320,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
       ) : errorMsg ? (
         <div className="ab-error-banner">
           <span>⚠️ {errorMsg}</span>
-          <button type="button" onClick={fetchExperiments}>Try Again</button>
+          <SpecularButton variant="danger" size="xs" onClick={fetchExperiments}>Try Again</SpecularButton>
         </div>
       ) : filteredExperiments.length === 0 ? (
         <div className="ab-empty-state-card">
@@ -1313,13 +1332,15 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
               : "No experiments matched your search filter."}
           </p>
           {experiments.length === 0 && (
-            <button
+            <SpecularButton
               type="button"
+              variant="primary"
+              size="md"
               className="ab-btn-primary"
               onClick={handleOpenModal}
             >
               {hasDraft ? "📝 Resume Draft Experiment" : "+ Create Your First Experiment"}
-            </button>
+            </SpecularButton>
           )}
         </div>
       ) : (
@@ -1349,14 +1370,15 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 <div className="exp-short-bar">
                   <span className="short-label">Short Link:</span>
                   <span className="short-code-pill">s/{exp.shortCode}</span>
-                  <button
-                    type="button"
+                  <SpecularButton
+                    variant={copiedId === exp._id ? "success" : "secondary"}
+                    size="xs"
                     className="copy-btn"
                     onClick={() => copyShortUrl(exp.shortCode, exp._id)}
                     title="Copy full short URL"
                   >
                     {copiedId === exp._id ? "✓ Copied" : "📋 Copy"}
-                  </button>
+                  </SpecularButton>
                   <a
                     href={shortUrl}
                     target="_blank"
@@ -1414,13 +1436,14 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
 
                 {/* Card Action Buttons */}
                 <div className="exp-card-actions">
-                  <button
-                    type="button"
+                  <SpecularButton
+                    variant="primary"
+                    size="md"
                     className="ab-btn-primary full-width"
                     onClick={() => setSelectedExperimentId(exp._id)}
                   >
                     📊 View Analytics & Controls
-                  </button>
+                  </SpecularButton>
                 </div>
               </div>
             );
@@ -1494,8 +1517,9 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                       required
                     />
                     {/* CHANGE: Stage 13 Select from My Links Button for Variant A — 2026-11-18 */}
-                    <button
-                      type="button"
+                    <SpecularButton
+                      variant="secondary"
+                      size="xs"
                       className="ab-btn-select-link"
                       onClick={() => {
                         setLinkPickerTarget("A");
@@ -1504,7 +1528,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                       title="Select URL from your existing links"
                     >
                       🔗 Select from My Links
-                    </button>
+                    </SpecularButton>
                   </div>
                   <span className="form-hint">
                     Baseline original page or control landing destination.
@@ -1528,8 +1552,9 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                       required
                     />
                     {/* CHANGE: Stage 13 Select from My Links Button for Variant B — 2026-11-18 */}
-                    <button
-                      type="button"
+                    <SpecularButton
+                      variant="secondary"
+                      size="xs"
                       className="ab-btn-select-link"
                       onClick={() => {
                         setLinkPickerTarget("B");
@@ -1538,7 +1563,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                       title="Select URL from your existing links"
                     >
                       🔗 Select from My Links
-                    </button>
+                    </SpecularButton>
                   </div>
                   <span className="form-hint">
                     Challenger or alternative landing destination.
@@ -1615,33 +1640,40 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
               <div className="modal-actions ab-modal-footer">
                 <div className="modal-actions-left">
                   {hasDraft && (
-                    <button
-                      type="button"
+                    <SpecularButton
+                      variant="ghost"
+                      size="sm"
                       className="ab-btn-reset-draft"
                       onClick={handleResetDraft}
                       disabled={creating}
                       title="Discard current draft values and reset form"
                     >
                       Reset Form
-                    </button>
+                    </SpecularButton>
                   )}
                 </div>
                 <div className="modal-actions-right">
-                  <button
+                  <SpecularButton
                     type="button"
+                    variant="ghost"
+                    size="md"
                     className="ab-btn-secondary"
                     onClick={handleCloseModal}
                     disabled={creating}
                   >
                     Cancel
-                  </button>
-                  <button
+                  </SpecularButton>
+                  <SpecularButton
                     type="submit"
+                    variant="primary"
+                    size="md"
                     className="ab-btn-primary"
                     disabled={creating}
+                    loading={creating}
+                    loadingText="Creating…"
                   >
-                    {creating ? "Creating…" : "Create & Deploy Experiment"}
-                  </button>
+                    Create & Deploy Experiment
+                  </SpecularButton>
                 </div>
               </div>
             </form>
@@ -1760,13 +1792,14 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                       </div>
 
                       <div className="ab-picker-link-action">
-                        <button
-                          type="button"
+                        <SpecularButton
+                          variant="primary"
+                          size="xs"
                           className="ab-btn-use-url"
                           onClick={() => handleSelectLinkUrl(link.originalUrl)}
                         >
                           Use This URL
-                        </button>
+                        </SpecularButton>
                       </div>
                     </div>
                   );
@@ -1778,8 +1811,9 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
               <span className="ab-picker-count">
                 Showing {filteredLinks.length} of {availableLinks.length} links
               </span>
-              <button
-                type="button"
+              <SpecularButton
+                variant="secondary"
+                size="sm"
                 className="ab-btn-secondary"
                 onClick={() => {
                   setLinkPickerTarget(null);
@@ -1787,7 +1821,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 }}
               >
                 Close
-              </button>
+              </SpecularButton>
             </div>
           </div>
         </div>

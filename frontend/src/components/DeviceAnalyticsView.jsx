@@ -6,6 +6,7 @@
 // =============================================================================
 
 import { useState, useMemo } from "react";
+import SpecularButton from "./SpecularButton";
 
 // Helper icon renderers for Operating Systems
 function getOsIcon(name = "") {
@@ -379,8 +380,10 @@ export default function DeviceAnalyticsView({
               ))}
             </div>
 
-            <button
+            <SpecularButton
               type="button"
+              variant="secondary"
+              size="md"
               className="campaign-refresh-btn"
               onClick={onRefresh}
               disabled={deviceLoading}
@@ -401,7 +404,7 @@ export default function DeviceAnalyticsView({
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
               </svg>
               <span>{deviceLoading ? "Updating..." : "Refresh"}</span>
-            </button>
+            </SpecularButton>
           </div>
         </div>
       </div>
@@ -413,9 +416,15 @@ export default function DeviceAnalyticsView({
             <span>⚠️</span>
             <span>{deviceError}</span>
           </div>
-          <button type="button" onClick={onRefresh} className="btn-retry">
+          <SpecularButton
+            type="button"
+            variant="danger"
+            size="sm"
+            onClick={onRefresh}
+            className="btn-retry"
+          >
             Retry
-          </button>
+          </SpecularButton>
         </div>
       )}
 

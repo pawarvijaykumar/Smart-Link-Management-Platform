@@ -3,6 +3,7 @@
 // Reusable, responsive QR code component built with qrcode.react (QRCodeCanvas)
 import { useState, useRef } from "react";
 import { QRCodeCanvas } from "qrcode.react";
+import SpecularButton from "./components/SpecularButton";
 
 // Default public base URL with environment override support
 export const DEFAULT_API_BASE_URL =
@@ -222,8 +223,9 @@ export default function QRCodeCard({
       {(showDownload || showCopy) && (
         <div className="qr-card-actions">
           {showCopy && (
-            <button
-              type="button"
+            <SpecularButton
+              variant={copied ? "success" : "secondary"}
+              size="sm"
               className={`qr-btn-action ${copied ? "copied" : ""}`}
               onClick={handleCopyUrl}
               title="Copy short link to clipboard"
@@ -246,12 +248,13 @@ export default function QRCodeCard({
                 )}
               </svg>
               <span>{copied ? "Copied!" : "Copy URL"}</span>
-            </button>
+            </SpecularButton>
           )}
 
           {showDownload && (
-            <button
-              type="button"
+            <SpecularButton
+              variant="primary"
+              size="sm"
               className="qr-btn-action qr-btn-primary"
               onClick={handleDownloadPNG}
               disabled={downloading}
@@ -270,7 +273,7 @@ export default function QRCodeCard({
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
               <span>{downloading ? "Saving..." : "Download PNG"}</span>
-            </button>
+            </SpecularButton>
           )}
         </div>
       )}

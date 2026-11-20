@@ -1,32 +1,149 @@
-/* CHANGE: React Bits SpotlightCard Styling — 2026-11-19 */
+/* =============================================================================
+   CHANGE: React Bits SpotlightCard Component Styling — 2026-11-20
+   Official React Bits SpotlightCard with dynamic cursor-following surface & border glow
+   ============================================================================= */
+
 .card-spotlight {
   position: relative;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(12px);
-  padding: 1.5rem;
+  border-radius: var(--radius-lg, 16px);
+  background: var(--bg-card, rgba(13, 20, 38, 0.38));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
   overflow: hidden;
-  transition: border-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.card-spotlight:hover {
-  border-color: rgba(124, 58, 237, 0.35);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(124, 58, 237, 0.15);
+.card-spotlight.spotlight-active {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 24px -4px var(--spotlight-color, rgba(139, 92, 246, 0.35));
 }
 
-.spotlight-overlay {
+/* 1. Dynamic Cursor-Tracking Border Illumination */
+.spotlight-border-layer {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
   pointer-events: none;
-  transition: opacity 0.35s ease;
-  z-index: 1;
+  z-index: 10;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card-spotlight > * {
+/* 2. Dynamic Cursor-Tracking Surface Illumination */
+.spotlight-surface-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  mix-blend-mode: screen;
+}
+
+/* 3. Card Content Wrapper */
+.card-spotlight-inner {
   position: relative;
   z-index: 2;
+  width: 100%;
+  height: 100%;
+}
+
+/* =============================================================================
+   Card-Specific Inner Flex & Layout Adjustments
+   Ensure wrapped cards maintain identical internal layouts, gaps, and heights
+   ============================================================================= */
+
+/* Donut & Traffic Source Cards */
+.card-spotlight.donut-card > .card-spotlight-inner,
+.card-spotlight.traffic-sources-card > .card-spotlight-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+}
+
+/* Smart Traffic Intelligence Cards */
+.card-spotlight.intel-card {
+  border-radius: var(--radius-md, 10px);
+  background: rgba(13, 20, 38, 0.38);
+}
+
+.card-spotlight.intel-card > .card-spotlight-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  flex: 1;
+}
+
+/* Yearly Activity Summary Metric Cards */
+.card-spotlight.summary-metric-card {
+  border-radius: 8px;
+  background: rgba(13, 20, 38, 0.38);
+}
+
+.card-spotlight.summary-metric-card.spotlight-active {
+  transform: translateY(-1px);
+}
+
+.card-spotlight.summary-metric-card > .card-spotlight-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 100%;
+  flex: 1;
+}
+
+/* Yearly Monthly Activity Chart Box */
+.card-spotlight.yearly-monthly-chart-box {
+  border-radius: 10px;
+  background: rgba(13, 20, 38, 0.32);
+}
+
+.card-spotlight.yearly-monthly-chart-box > .card-spotlight-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  height: 100%;
+}
+
+/* Yearly Left-Column Sub-Blocks (Calendar, Weekly Activity, Day of Week) */
+.card-spotlight.yearly-panel-block {
+  border-radius: 12px;
+  background: rgba(13, 20, 38, 0.38);
+}
+
+.card-spotlight.yearly-panel-block.spotlight-active {
+  transform: translateY(-1px);
+}
+
+.card-spotlight.yearly-panel-block > .card-spotlight-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+/* Default hover border fallback */
+.card-spotlight:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .card-spotlight {
+    transition: none !important;
+    transform: none !important;
+  }
+  .spotlight-border-layer,
+  .spotlight-surface-layer {
+    display: none !important;
+  }
 }

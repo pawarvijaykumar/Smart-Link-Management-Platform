@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 // CHANGE: Main Dashboard + Sidebar UI Redesign (Dashboard 6 Comparison Mode) — 2026-11-19
 import { ArrowRightLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import SpecularButton from "./components/SpecularButton";
 
 // -----------------------------------------------------------------------------
 // Date Calculation Helpers in Indian Standard Time (IST, UTC+05:30)
@@ -633,8 +634,9 @@ function ClicksOverviewChart({
           )}
 
           {activeTimeRange !== "all" && (
-            <button
-              type="button"
+            <SpecularButton
+              variant={comparisonMode ? "primary" : "secondary"}
+              size="xs"
               className={`comparison-mode-toggle ${comparisonMode ? "active" : ""}`}
               onClick={() => setComparisonMode((prev) => !prev)}
               title="Toggle previous period comparison mode"
@@ -642,7 +644,7 @@ function ClicksOverviewChart({
             >
               <ArrowRightLeft size={13} />
               <span>Compare</span>
-            </button>
+            </SpecularButton>
           )}
 
           <div className="time-filter-pills" role="radiogroup" aria-label="Time period">

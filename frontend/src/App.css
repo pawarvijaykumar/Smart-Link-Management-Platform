@@ -1,44 +1,56 @@
 /* ==========================================================================
-   SmartLink Platform — Dribbble AI Analytics Dashboard Design System
-   Theme: Near-Black (#0B0F17), Charcoal Cards (#131B2E), Violet/Purple Accents
+   SmartLink Platform — Premium Dark Aurora SaaS UI Design System
+   Design: Dark Aurora (#080B16) + Glassmorphism + Subtle Ambient Lighting
+   Tokens: Primary (#8B5CF6), Secondary (#6366F1), Cyan (#22D3EE), Cards (rgba(17,24,39,0.72))
    ========================================================================== */
 
 :root {
-  --bg-page: #0B0F17;
-  --bg-sidebar: #0D131F;
-  --bg-card: #131B2E;
-  --bg-card-hover: #18233C;
-  --bg-input: #0F1626;
-  --bg-modal: rgba(11, 15, 23, 0.85);
+  --bg-page: #080B16;
+  --bg-secondary: #0D1222;
+  --bg-sidebar: #0D1222;
+  --bg-card: rgba(13, 20, 38, 0.38);
+  --bg-card-hover: rgba(19, 28, 54, 0.55);
+  --bg-card-solid: #0F172A;
+  --bg-input: rgba(15, 23, 42, 0.65);
+  --bg-modal: rgba(8, 11, 22, 0.88);
+  --bg-modal-panel: rgba(13, 18, 34, 0.94);
 
-  --border-subtle: #1F2C47;
-  --border-hover: #2E4166;
-  --border-active: #6366F1;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.12);
+  --border-hover: rgba(139, 92, 246, 0.35);
+  --border-active: #8B5CF6;
 
-  --accent-purple: #7C3AED;
-  --accent-purple-light: #8B5CF6;
-  --accent-violet: #A78BFA;
+  --accent-purple: #8B5CF6;
+  --accent-purple-light: #A78BFA;
+  --accent-violet: #C4B5FD;
   --accent-indigo: #6366F1;
-  --accent-cyan: #06B6D4;
+  --accent-cyan: #22D3EE;
+  --accent-cyan-light: #67E8F9;
   --accent-emerald: #10B981;
   --accent-amber: #F59E0B;
   --accent-rose: #F43F5E;
 
-  --text-primary: #FFFFFF;
-  --text-secondary: #CBD5E1;
-  --text-muted: #94A3B8;
-  --text-dim: #64748B;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-dim: #475569;
 
-  --glow-purple: rgba(124, 58, 237, 0.25);
-  --glow-emerald: rgba(16, 185, 129, 0.2);
-  --glow-cyan: rgba(6, 182, 212, 0.2);
+  --glow-purple: rgba(139, 92, 246, 0.22);
+  --glow-indigo: rgba(99, 102, 241, 0.18);
+  --glow-cyan: rgba(34, 211, 238, 0.18);
+  --glow-emerald: rgba(16, 185, 129, 0.18);
 
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-glass-lg: 0 20px 48px 0 rgba(0, 0, 0, 0.55);
+
+  --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-pill: 9999px;
 
-  --font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 * {
@@ -71,7 +83,7 @@ button {
 .dashboard-root {
   display: flex;
   min-height: 100vh;
-  background: var(--bg-page);
+  background: transparent !important;
 }
 
 /* CHANGE: Main Dashboard + Sidebar UI Redesign (Dashboard 6) — 2026-11-19 */
@@ -9402,7 +9414,8 @@ button {
 }
 
 .sources-table-wrapper {
-  overflow-x: auto;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .sources-table {
@@ -9411,14 +9424,15 @@ button {
 }
 
 .sources-table th {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5px;
   color: var(--text-dim);
-  padding: 8px 12px;
+  padding: 8px 6px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   text-align: left;
+  white-space: nowrap;
 }
 
 .sources-table th.text-right,
@@ -9435,31 +9449,37 @@ button {
 }
 
 .source-row td {
-  padding: 12px;
+  padding: 8px 6px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .source-name-cell {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .source-icon-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
   background: rgba(255, 255, 255, 0.05);
   display: grid;
   place-items: center;
   flex-shrink: 0;
 }
 
+.source-icon-badge svg,
+.source-icon-badge .source-icon-svg {
+  width: 13px !important;
+  height: 13px !important;
+}
+
 .source-name-text {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: #F8FAFC;
-  max-width: 180px;
+  max-width: 95px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -9467,8 +9487,9 @@ button {
 
 .source-progress-track {
   width: 100%;
-  min-width: 120px;
-  height: 7px;
+  min-width: 45px;
+  max-width: 85px;
+  height: 6px;
   background: rgba(255, 255, 255, 0.06);
   border-radius: 9999px;
   overflow: hidden;
@@ -9483,18 +9504,18 @@ button {
 }
 
 .source-pct-pill {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #C4B5FD;
 }
 
 .source-trend-pill {
   display: inline-block;
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 700;
-  padding: 2.5px 8.5px;
+  padding: 2px 6px;
   border-radius: 9999px;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   white-space: nowrap;
 }
 
@@ -9523,7 +9544,7 @@ button {
 }
 
 .source-clicks-num {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #FFFFFF;
 }
@@ -9872,7 +9893,7 @@ button {
 /* Section 4: Three sections in one row (Device Donut, Browser Donut, Traffic Sources Table) */
 .three-analytics-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.35fr;
+  grid-template-columns: 1fr 1fr 1.4fr;
   gap: 20px;
   align-items: stretch;
   margin-bottom: 24px;
@@ -9891,6 +9912,10 @@ button {
   display: flex;
   flex-direction: column;
   margin-bottom: 0;
+}
+
+.three-col-item > .traffic-sources-card {
+  padding: 18px 16px;
 }
 
 .three-col-item.source-col-item .sources-table-wrapper {
@@ -10753,4 +10778,29 @@ button {
   font-size: 0.62rem;
   color: #64748b;
   margin-top: 1px;
+}
+
+.dow-floating-tooltip {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #090d16;
+  border: 1px solid #38bdf8;
+  color: #38bdf8;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 480px) {
+  .sources-table th.th-trend,
+  .sources-table td.td-trend {
+    display: none;
+  }
 }

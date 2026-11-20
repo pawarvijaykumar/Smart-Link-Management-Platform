@@ -26,7 +26,8 @@ import ABTestingView from "./components/ABTestingView";
 import ReportsView from "./components/ReportsView";
 // CHANGE: Integrated React Bits SplitText component — 2026-11-19
 import SplitText from "./components/SplitText";
-// CHANGE: React Bits & Lucide Icons Integration — 2026-11-19
+// CHANGE: React Bits Specular Button & SpotlightCard Integration
+import SpecularButton from "./components/SpecularButton";
 import SpotlightCard from "./components/SpotlightCard";
 import CountUp from "./components/CountUp";
 import AnimatedContent from "./components/AnimatedContent";
@@ -58,6 +59,7 @@ import {
   Zap,
 } from "lucide-react";
 import "./App.css";
+import "./AuroraTheme.css";
 
 // CHANGE: QR Code Feature Stage 2 — 2026-11-05
 // Support environment-configured public base URL for short link redirection and QR code generation
@@ -166,7 +168,7 @@ const NOTIFICATION_TYPE_CONFIG = {
 };
 
 // -----------------------------------------------------------------------------
-// Component: MetricCards (React Bits SpotlightCard + CountUp) — 2026-11-19
+// Component: MetricCards (React Bits SpotlightCard + CountUp) — 2026-11-20
 // -----------------------------------------------------------------------------
 function MetricCards({
   totalLinks = 0,
@@ -190,7 +192,8 @@ function MetricCards({
       icon: <Link2 size={20} />,
       iconBg: "rgba(124, 58, 237, 0.15)",
       iconColor: "#8B5CF6",
-      spotlightColor: "rgba(124, 58, 237, 0.22)",
+      spotlightColor: "rgba(168, 85, 247, 0.40)",
+      borderColor: "rgba(192, 132, 252, 0.85)",
       sub: totalLinks > 0 ? `${activeLinks} active • ${inactiveLinks} paused` : "Create your first short link",
     },
     {
@@ -202,7 +205,8 @@ function MetricCards({
       icon: <MousePointerClick size={20} />,
       iconBg: "rgba(99, 102, 241, 0.15)",
       iconColor: "#6366F1",
-      spotlightColor: "rgba(99, 102, 241, 0.22)",
+      spotlightColor: "rgba(99, 102, 241, 0.42)",
+      borderColor: "rgba(129, 140, 248, 0.85)",
       sub: todayClicks > 0 ? `${todayClicks} clicks recorded today (IST)` : "All-time recorded visitor hits",
     },
     {
@@ -215,7 +219,8 @@ function MetricCards({
       icon: <TrendingUp size={20} />,
       iconBg: "rgba(6, 182, 212, 0.15)",
       iconColor: "#06B6D4",
-      spotlightColor: "rgba(6, 182, 212, 0.22)",
+      spotlightColor: "rgba(6, 182, 212, 0.40)",
+      borderColor: "rgba(56, 189, 248, 0.85)",
       sub: totalLinks > 0 ? `${clicksPerActive} avg per active link` : "Mean click density",
     },
     {
@@ -227,7 +232,8 @@ function MetricCards({
       icon: <Zap size={20} />,
       iconBg: "rgba(16, 185, 129, 0.15)",
       iconColor: "#10B981",
-      spotlightColor: "rgba(16, 185, 129, 0.22)",
+      spotlightColor: "rgba(16, 185, 129, 0.38)",
+      borderColor: "rgba(52, 211, 153, 0.85)",
       sub: `${activePercent}% fleet routing capacity`,
     },
   ];
@@ -239,6 +245,7 @@ function MetricCards({
           key={card.id}
           className="metric-card metric-spotlight-card"
           spotlightColor={card.spotlightColor}
+          borderColor={card.borderColor}
         >
           <div className="metric-card-top">
             <div className="metric-icon-badge" style={{ background: card.iconBg, color: card.iconColor }}>
@@ -297,8 +304,26 @@ function DonutChart({ title, icon, data = [], emptyMessage = "No data recorded y
 
   const activeSlice = hoveredIdx !== null ? slices[hoveredIdx] : null;
 
+  const isDevice = typeof title === "string" && title.toLowerCase().includes("device");
+  const isBrowser = typeof title === "string" && title.toLowerCase().includes("browser");
+  const spotlightColor = isDevice
+    ? "rgba(99, 102, 241, 0.32)"
+    : isBrowser
+    ? "rgba(6, 182, 212, 0.32)"
+    : "rgba(168, 85, 247, 0.30)";
+  const borderColor = isDevice
+    ? "rgba(129, 140, 248, 0.75)"
+    : isBrowser
+    ? "rgba(56, 189, 248, 0.75)"
+    : "rgba(192, 132, 252, 0.75)";
+
   return (
-    <div className="donut-card">
+    <SpotlightCard
+      className="donut-card"
+      spotlightColor={spotlightColor}
+      borderColor={borderColor}
+      radius={280}
+    >
       <div className="donut-card-top">
         <h4>
           <span style={{ marginRight: "8px" }}>{icon}</span>
@@ -398,7 +423,7 @@ function DonutChart({ title, icon, data = [], emptyMessage = "No data recorded y
       ) : (
         <p className="donut-empty-text">{emptyMessage}</p>
       )}
-    </div>
+    </SpotlightCard>
   );
 }
 
@@ -857,6 +882,41 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
     };
   }, [weeks]);
 
+  // 6. X-Axis Week Ticks for Weekly Click Activity (Week 1–53)
+  const weekTicks = useMemo(() => {
+    if (!weeklyData.list || weeklyData.list.length === 0) return [];
+    const totalWeeks = weeklyData.list.length;
+    const lastIdx = totalWeeks - 1;
+    // Step by 5 weeks: Week 1 (idx 0), Week 5 (idx 4), Week 10 (idx 9)... up to end
+    const tickIndices = [0];
+    for (let w = 5; w < totalWeeks; w += 5) {
+      tickIndices.push(w - 1);
+    }
+    if (!tickIndices.includes(lastIdx)) {
+      if (lastIdx - tickIndices[tickIndices.length - 1] < 2) {
+        tickIndices[tickIndices.length - 1] = lastIdx;
+      } else {
+        tickIndices.push(lastIdx);
+      }
+    }
+
+    return tickIndices.map((idx) => {
+      const w = weeklyData.list[idx];
+      const xPos = 36 + (idx / Math.max(1, totalWeeks - 1)) * 709;
+      const isFirst = idx === 0;
+      const isLast = idx === lastIdx;
+      return {
+        idx,
+        weekNum: idx + 1,
+        label: `W${idx + 1}`,
+        fullLabel: `Week ${idx + 1}`,
+        rangeLabel: w ? w.rangeLabel : `Week ${idx + 1}`,
+        xPos,
+        textAnchor: isFirst ? "start" : isLast ? "end" : "middle",
+      };
+    });
+  }, [weeklyData.list]);
+
   // Intensity level calculation (0 to 4)
   const getIntensityLevel = (count) => {
     if (count === 0) return 0;
@@ -907,7 +967,12 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
         {/* LEFT COLUMN: Contribution Calendar + Weekly Click Activity + Day-of-Week Analysis */}
         <div className="yearly-calendar-panel">
           {/* Block 1: Contribution Calendar (Top) */}
-          <div className="yearly-panel-block calendar-sub-block">
+          <SpotlightCard
+            className="yearly-panel-block calendar-sub-block"
+            spotlightColor="rgba(168, 85, 247, 0.22)"
+            borderColor="rgba(192, 132, 252, 0.65)"
+            radius={340}
+          >
             <div className="yearly-panel-title">
               <span>Contribution Calendar</span>
               <span className="yearly-sub-hint">53 Weeks · Monday to Sunday (IST)</span>
@@ -1005,10 +1070,15 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                 <span className="yearly-legend-text">More</span>
               </div>
             </div>
-          </div>
+          </SpotlightCard>
 
           {/* Block 2: Weekly Click Activity (Middle) */}
-          <div className="yearly-panel-block weekly-chart-block">
+          <SpotlightCard
+            className="yearly-panel-block weekly-chart-block"
+            spotlightColor="rgba(56, 189, 248, 0.24)"
+            borderColor="rgba(56, 189, 248, 0.70)"
+            radius={340}
+          >
             <div className="weekly-chart-header">
               <div className="weekly-title-group">
                 <h5>
@@ -1045,15 +1115,29 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                 <text x="30" y="55" fill="#64748b" fontSize="9" textAnchor="end">{weeklyData.maxClicks > 0 ? Math.round(weeklyData.maxClicks / 2) : "-"}</text>
                 <text x="30" y="91" fill="#64748b" fontSize="9" textAnchor="end">0</text>
 
-                {/* X-axis Month Markers */}
-                {monthHeaders.map((m, mIdx) => {
-                  const xPos = 36 + (m.weekColIndex / Math.max(1, weeklyData.list.length - 1)) * 709;
-                  return (
-                    <text key={mIdx} x={xPos} y="104" fill="#94a3b8" fontSize="8.5" fontWeight="500">
-                      {m.name}
+                {/* X-axis Week Markers (Week 1–53) */}
+                {weekTicks.map((tick) => (
+                  <g key={tick.idx}>
+                    <line
+                      x1={tick.xPos}
+                      y1="88"
+                      x2={tick.xPos}
+                      y2="92"
+                      stroke="rgba(255,255,255,0.22)"
+                      strokeWidth="1"
+                    />
+                    <text
+                      x={tick.xPos}
+                      y="103"
+                      fill="#94a3b8"
+                      fontSize="8.5"
+                      fontWeight="500"
+                      textAnchor={tick.textAnchor}
+                    >
+                      {tick.label}
                     </text>
-                  );
-                })}
+                  </g>
+                ))}
 
                 {/* Area and Line Path */}
                 {weeklyData.maxClicks > 0 ? (
@@ -1095,7 +1179,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                   </text>
                 )}
 
-                {/* Interactive Hover Guideline */}
+                {/* Interactive Hover Guideline & Tooltip Tag */}
                 {hoveredWeek && (
                   <>
                     <line
@@ -1115,6 +1199,12 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                       stroke="#ffffff"
                       strokeWidth="2"
                     />
+                    <g transform={`translate(${Math.min(680, Math.max(70, hoveredWeek.x))}, ${hoveredWeek.y > 45 ? hoveredWeek.y - 18 : hoveredWeek.y + 20})`}>
+                      <rect x="-46" y="-11" width="92" height="19" rx="4" fill="#090d16" stroke="#38bdf8" strokeWidth="1" />
+                      <text x="0" y="2" fill="#38bdf8" fontSize="9" fontWeight="700" textAnchor="middle" dominantBaseline="middle">
+                        W{hoveredWeek.weekIndex}: {hoveredWeek.clicks} {hoveredWeek.clicks === 1 ? "click" : "clicks"}
+                      </text>
+                    </g>
                   </>
                 )}
 
@@ -1153,10 +1243,15 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                 </span>
               )}
             </div>
-          </div>
+          </SpotlightCard>
 
           {/* Block 3: Day-of-Week Analysis (Bottom) */}
-          <div className="yearly-panel-block dow-chart-block">
+          <SpotlightCard
+            className="yearly-panel-block dow-chart-block"
+            spotlightColor="rgba(168, 85, 247, 0.24)"
+            borderColor="rgba(192, 132, 252, 0.70)"
+            radius={340}
+          >
             <div className="dow-chart-header">
               <div className="dow-title-group">
                 <h5>
@@ -1189,7 +1284,13 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                     className={`dow-bar-col ${day.isBusiest ? "busiest-dow-col" : ""}`}
                     onMouseEnter={() => setHoveredDow(day)}
                     onMouseLeave={() => setHoveredDow(null)}
+                    title={`${day.name}: ${day.clicks} clicks (${day.percent}%)`}
                   >
+                    {hoveredDow && hoveredDow.name === day.name && (
+                      <div className="dow-floating-tooltip">
+                        {day.clicks} {day.clicks === 1 ? "click" : "clicks"} ({day.percent}%)
+                      </div>
+                    )}
                     <div className="dow-bar-val">
                       {day.clicks > 0 ? day.clicks : ""}
                     </div>
@@ -1225,7 +1326,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                 </span>
               )}
             </div>
-          </div>
+          </SpotlightCard>
         </div>
 
         {/* RIGHT PANEL: Yearly Activity Summary */}
@@ -1241,17 +1342,27 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
           {/* 5 KPI Metric Cards */}
           <div className="yearly-summary-metrics-grid">
             {/* Metric 1: Total Clicks */}
-            <div className="summary-metric-card">
+            <SpotlightCard
+              className="summary-metric-card"
+              spotlightColor="rgba(99, 102, 241, 0.30)"
+              borderColor="rgba(129, 140, 248, 0.75)"
+              radius={190}
+            >
               <div className="metric-card-header">
                 <span className="metric-card-label">Total Clicks</span>
                 <span className="metric-card-icon" aria-hidden="true">🎯</span>
               </div>
               <div className="metric-card-value">{summaryStats.totalYearClicks.toLocaleString()}</div>
               <div className="metric-card-subtext">in {selectedYear}</div>
-            </div>
+            </SpotlightCard>
 
             {/* Metric 2: Active Days */}
-            <div className="summary-metric-card">
+            <SpotlightCard
+              className="summary-metric-card"
+              spotlightColor="rgba(168, 85, 247, 0.30)"
+              borderColor="rgba(192, 132, 252, 0.75)"
+              radius={190}
+            >
               <div className="metric-card-header">
                 <span className="metric-card-label">Active Days</span>
                 <span className="metric-card-icon" aria-hidden="true">📅</span>
@@ -1260,10 +1371,15 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                 {summaryStats.activeDaysCount} <span className="metric-unit">{summaryStats.activeDaysCount === 1 ? "day" : "days"}</span>
               </div>
               <div className="metric-card-subtext">with &ge;1 recorded click</div>
-            </div>
+            </SpotlightCard>
 
             {/* Metric 3: Avg Clicks / Active Day */}
-            <div className="summary-metric-card">
+            <SpotlightCard
+              className="summary-metric-card"
+              spotlightColor="rgba(6, 182, 212, 0.30)"
+              borderColor="rgba(56, 189, 248, 0.75)"
+              radius={190}
+            >
               <div className="metric-card-header">
                 <span className="metric-card-label">Avg / Active Day</span>
                 <span className="metric-card-icon" aria-hidden="true">⚡</span>
@@ -1272,10 +1388,15 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                 {summaryStats.avgClicksPerActiveDay}
               </div>
               <div className="metric-card-subtext">clicks per active day</div>
-            </div>
+            </SpotlightCard>
 
             {/* Metric 4: Busiest Month */}
-            <div className="summary-metric-card">
+            <SpotlightCard
+              className="summary-metric-card"
+              spotlightColor="rgba(245, 158, 11, 0.28)"
+              borderColor="rgba(251, 191, 36, 0.75)"
+              radius={190}
+            >
               <div className="metric-card-header">
                 <span className="metric-card-label">Busiest Month</span>
                 <span className="metric-card-icon" aria-hidden="true">🏆</span>
@@ -1286,10 +1407,15 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
               <div className="metric-card-subtext">
                 {summaryStats.busiestMonth ? `${summaryStats.busiestMonth.clicks} clicks` : "No clicks recorded"}
               </div>
-            </div>
+            </SpotlightCard>
 
             {/* Metric 5: Busiest Day */}
-            <div className="summary-metric-card summary-metric-card-wide">
+            <SpotlightCard
+              className="summary-metric-card summary-metric-card-wide"
+              spotlightColor="rgba(244, 63, 94, 0.28)"
+              borderColor="rgba(251, 113, 133, 0.75)"
+              radius={240}
+            >
               <div className="metric-card-header">
                 <span className="metric-card-label">Busiest Day</span>
                 <span className="metric-card-icon" aria-hidden="true">🔥</span>
@@ -1300,11 +1426,16 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
               <div className="metric-card-subtext">
                 {summaryStats.busiestDay ? `${summaryStats.busiestDay.clicks} clicks recorded (IST)` : "No clicks recorded in " + selectedYear}
               </div>
-            </div>
+            </SpotlightCard>
           </div>
 
           {/* Metric 6: Monthly Activity Chart comparing all 12 months */}
-          <div className="yearly-monthly-chart-box">
+          <SpotlightCard
+            className="yearly-monthly-chart-box"
+            spotlightColor="rgba(168, 85, 247, 0.24)"
+            borderColor="rgba(192, 132, 252, 0.65)"
+            radius={280}
+          >
             <div className="monthly-chart-header">
               <span className="monthly-chart-title">Monthly Activity (12 Months)</span>
               <span className="monthly-chart-legend">
@@ -1365,7 +1496,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                 </span>
               )}
             </div>
-          </div>
+          </SpotlightCard>
         </div>
       </div>
     </div>
@@ -1470,16 +1601,31 @@ function SmartTrafficSection({ intelligence }) {
 
       {/* 4 Actionable Insight Cards */}
       <div className="intel-cards-grid">
-        {displayCards.map((card) => (
-          <div className="intel-card" key={card.id}>
-            <div className="intel-card-top">
-              <span className="intel-card-icon" aria-hidden="true">{card.icon}</span>
-              <span className="intel-card-title">{card.title}</span>
-            </div>
-            <div className="intel-card-headline">{card.headline}</div>
-            <p className="intel-card-detail">{card.detail}</p>
-          </div>
-        ))}
+        {displayCards.map((card) => {
+          const cardThemes = {
+            traffic_status: { spotlight: "rgba(99, 102, 241, 0.32)", border: "rgba(129, 140, 248, 0.75)" },
+            audience_platform: { spotlight: "rgba(6, 182, 212, 0.32)", border: "rgba(56, 189, 248, 0.75)" },
+            peak_window: { spotlight: "rgba(168, 85, 247, 0.32)", border: "rgba(192, 132, 252, 0.75)" },
+            action_tip: { spotlight: "rgba(16, 185, 129, 0.30)", border: "rgba(52, 211, 153, 0.75)" },
+          };
+          const theme = cardThemes[card.id] || { spotlight: "rgba(168, 85, 247, 0.30)", border: "rgba(192, 132, 252, 0.75)" };
+          return (
+            <SpotlightCard
+              key={card.id}
+              className="intel-card"
+              spotlightColor={theme.spotlight}
+              borderColor={theme.border}
+              radius={240}
+            >
+              <div className="intel-card-top">
+                <span className="intel-card-icon" aria-hidden="true">{card.icon}</span>
+                <span className="intel-card-title">{card.title}</span>
+              </div>
+              <div className="intel-card-headline">{card.headline}</div>
+              <p className="intel-card-detail">{card.detail}</p>
+            </SpotlightCard>
+          );
+        })}
       </div>
     </div>
   );
@@ -1723,14 +1869,15 @@ function RecentLinksTable({
                         >
                           /{link.shortCode}
                         </a>
-                        <button
-                          type="button"
+                        <SpecularButton
+                          variant={isCopied ? "success" : "secondary"}
+                          size="xs"
                           className={`copy-mini-btn ${isCopied ? "copied" : ""}`}
                           onClick={() => onCopy(link)}
                           title="Copy short link"
                         >
                           {isCopied ? "✓" : "Copy"}
-                        </button>
+                        </SpecularButton>
                       </div>
                     </td>
                     <td>
@@ -1780,8 +1927,9 @@ function RecentLinksTable({
                     <td style={{ textAlign: "right" }}>
                       <div className="table-actions-cell" style={{ justifyContent: "flex-end" }}>
                         {/* CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07 */}
-                        <button
-                          type="button"
+                        <SpecularButton
+                          variant={link.isPaused ? "secondary" : "ghost"}
+                          size="xs"
                           className={`btn-action-view ${link.isPaused ? "btn-action-resume" : "btn-action-pause"}`}
                           onClick={() => onTogglePause?.(link)}
                           disabled={isToggling}
@@ -1801,9 +1949,10 @@ function RecentLinksTable({
                               <span>Pause</span>
                             </>
                           )}
-                        </button>
-                        <button
-                          type="button"
+                        </SpecularButton>
+                        <SpecularButton
+                          variant="ghost"
+                          size="xs"
                           className="btn-action-view btn-action-access"
                           onClick={() => onOpenAccessModal?.(link)}
                           title="Configure access rules, expiration date & click limits"
@@ -1811,10 +1960,11 @@ function RecentLinksTable({
                         >
                           <span aria-hidden="true">⚙️</span>
                           <span>Access</span>
-                        </button>
+                        </SpecularButton>
                         {/* CHANGE: QR Code Feature Stage 4 — 2026-11-05 */}
-                        <button
-                          type="button"
+                        <SpecularButton
+                          variant="ghost"
+                          size="xs"
                           className="btn-action-view"
                           onClick={() => onOpenQRCode?.(link)}
                           title={`View QR Code for /${link.shortCode}`}
@@ -1835,15 +1985,16 @@ function RecentLinksTable({
                             <line x1="9" y1="9" x2="15" y2="15" />
                           </svg>
                           <span>QR</span>
-                        </button>
-                        <button
-                          type="button"
+                        </SpecularButton>
+                        <SpecularButton
+                          variant="ghost"
+                          size="xs"
                           className="btn-action-view"
                           onClick={() => onOpenAnalytics(link)}
                           title="View deep-dive analytics"
                         >
                           <span>📊 Stats</span>
-                        </button>
+                        </SpecularButton>
                         <a
                           href={shortUrl}
                           target="_blank"
@@ -2115,21 +2266,24 @@ function AccessSettingsModal({
           </div>
 
           <div className="modal-footer">
-            <button
-              type="button"
+            <SpecularButton
+              variant="secondary"
+              size="md"
               className="btn-secondary"
               onClick={onClose}
               disabled={loading}
             >
               Cancel
-            </button>
-            <button
+            </SpecularButton>
+            <SpecularButton
+              variant="primary"
+              size="md"
               type="submit"
               className="btn-create-primary"
               disabled={loading}
             >
               {loading ? "Saving..." : "Save Changes"}
-            </button>
+            </SpecularButton>
           </div>
         </form>
       </div>
@@ -2776,8 +2930,9 @@ function CampaignAnalyticsView({
               ))}
             </div>
 
-            <button
-              type="button"
+            <SpecularButton
+              variant="secondary"
+              size="sm"
               className="btn-refresh-campaigns"
               onClick={onRefresh}
               disabled={campaignLoading}
@@ -2785,7 +2940,7 @@ function CampaignAnalyticsView({
             >
               <span className={campaignLoading ? "spinning" : ""}>🔄</span>
               <span>{campaignLoading ? "Refreshing..." : "Refresh"}</span>
-            </button>
+            </SpecularButton>
           </div>
         </div>
       </div>
@@ -2797,9 +2952,14 @@ function CampaignAnalyticsView({
             <span className="error-icon">⚠️</span>
             <span>{campaignError}</span>
           </div>
-          <button type="button" onClick={onRefresh} className="btn-retry">
+          <SpecularButton
+            variant="danger"
+            size="sm"
+            onClick={onRefresh}
+            className="btn-retry"
+          >
             Retry
-          </button>
+          </SpecularButton>
         </div>
       )}
 
@@ -3154,8 +3314,9 @@ function QRLinksTable({
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <div className="table-actions-cell" style={{ justifyContent: "flex-end" }}>
-                        <button
-                          type="button"
+                        <SpecularButton
+                          variant="ghost"
+                          size="xs"
                           className="btn-action-view"
                           onClick={() => onOpenQRCode?.({
                             _id: link.linkId || link._id,
@@ -3180,7 +3341,7 @@ function QRLinksTable({
                             <line x1="9" y1="9" x2="15" y2="15" />
                           </svg>
                           <span>QR Code</span>
-                        </button>
+                        </SpecularButton>
                       </div>
                     </td>
                   </tr>
@@ -3260,16 +3421,18 @@ function QRScanInsights({
                 >
                   /{bestLink.shortCode}
                 </a>
-                <button
-                  type="button"
+                <SpecularButton
+                  variant={copiedLinkId === (bestLink.linkId || bestLink._id) ? "success" : "secondary"}
+                  size="xs"
                   className={`copy-mini-btn ${copiedLinkId === (bestLink.linkId || bestLink._id) ? "copied" : ""}`}
                   onClick={() => onCopy?.({ _id: bestLink.linkId || bestLink._id, shortCode: bestLink.shortCode })}
                   title="Copy short link"
                 >
                   {copiedLinkId === (bestLink.linkId || bestLink._id) ? "✓ Copied" : "Copy"}
-                </button>
-                <button
-                  type="button"
+                </SpecularButton>
+                <SpecularButton
+                  variant="ghost"
+                  size="xs"
                   className="btn-action-view"
                   style={{ height: "26px", padding: "0 8px", fontSize: "11px" }}
                   onClick={() => onOpenQRCode?.({
@@ -3280,7 +3443,7 @@ function QRScanInsights({
                   title="View QR Code"
                 >
                   QR Code
-                </button>
+                </SpecularButton>
               </div>
 
               <div className="qr-best-url-text" title={bestLink.originalUrl}>
@@ -3547,8 +3710,9 @@ function QRAnalyticsView({
               ))}
             </div>
 
-            <button
-              type="button"
+            <SpecularButton
+              variant="secondary"
+              size="sm"
               className="btn-refresh-campaigns"
               onClick={onRefresh}
               disabled={qrLoading}
@@ -3556,7 +3720,7 @@ function QRAnalyticsView({
             >
               <span className={qrLoading ? "spinning" : ""}>🔄</span>
               <span>{qrLoading ? "Refreshing..." : "Refresh"}</span>
-            </button>
+            </SpecularButton>
           </div>
         </div>
       </div>
@@ -3568,9 +3732,14 @@ function QRAnalyticsView({
             <span className="error-icon">⚠️</span>
             <span>{qrError}</span>
           </div>
-          <button type="button" onClick={onRefresh} className="btn-retry">
+          <SpecularButton
+            variant="danger"
+            size="sm"
+            onClick={onRefresh}
+            className="btn-retry"
+          >
             Retry
-          </button>
+          </SpecularButton>
         </div>
       )}
 
@@ -5939,14 +6108,15 @@ function App() {
                     </div>
                     {/* CHANGE: Notifications Step 4D — 2026-11-05 */}
                     {unreadCount > 0 && (
-                      <button
-                        type="button"
+                      <SpecularButton
+                        variant="ghost"
+                        size="xs"
                         className="btn-mark-all-read"
                         onClick={handleMarkAllAsRead}
                         title="Mark all notifications as read"
                       >
                         Mark all as read
-                      </button>
+                      </SpecularButton>
                     )}
                   </div>
 
@@ -5962,13 +6132,14 @@ function App() {
                         <span className="notifications-empty-icon">⚠️</span>
                         <p className="notifications-empty-title">Unable to load</p>
                         <p className="notifications-empty-desc">{notificationsError}</p>
-                        <button
-                          type="button"
+                        <SpecularButton
+                          variant="danger"
+                          size="xs"
                           className="btn-retry-notifications"
                           onClick={fetchNotifications}
                         >
                           Retry
-                        </button>
+                        </SpecularButton>
                       </div>
                     ) : notifications.length === 0 ? (
                       <div className="notifications-empty-state">
@@ -6016,8 +6187,9 @@ function App() {
 
                                   <div className="notification-item-actions">
                                     {!n.isRead && (
-                                      <button
-                                        type="button"
+                                      <SpecularButton
+                                        variant="ghost"
+                                        size="xs"
                                         className="btn-action-read"
                                         onClick={() => handleMarkAsRead(n._id)}
                                         title="Mark as read"
@@ -6034,11 +6206,12 @@ function App() {
                                           <polyline points="20 6 9 17 4 12" />
                                         </svg>
                                         <span>Mark read</span>
-                                      </button>
+                                      </SpecularButton>
                                     )}
 
-                                    <button
-                                      type="button"
+                                    <SpecularButton
+                                      variant="danger"
+                                      size="xs"
                                       className="btn-action-delete"
                                       onClick={() => handleDeleteNotification(n._id)}
                                       title="Delete notification"
@@ -6055,7 +6228,7 @@ function App() {
                                         <polyline points="3 6 5 6 21 6" />
                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                       </svg>
-                                    </button>
+                                    </SpecularButton>
                                   </div>
                                 </div>
                               </div>
@@ -6076,8 +6249,9 @@ function App() {
               <span className="topbar-profile-name">{user?.username || "Vijay"}</span>
             </div>
 
-            <button
-              type="button"
+            <SpecularButton
+              variant="primary"
+              size="md"
               className="btn-create-primary"
               onClick={() => {
                 setShowCreateModal(true);
@@ -6093,7 +6267,7 @@ function App() {
             >
               <Plus size={16} />
               <span>Create Link</span>
-            </button>
+            </SpecularButton>
           </div>
         </header>
 
@@ -6401,8 +6575,9 @@ function App() {
                           </span>
                         </a>
 
-                        <button
-                          type="button"
+                        <SpecularButton
+                          variant={copiedLinkId === createSuccessLink._id ? "success" : "primary"}
+                          size="sm"
                           className={`btn-create-primary success-copy-btn ${
                             copiedLinkId === createSuccessLink._id ? "copied" : ""
                           }`}
@@ -6410,7 +6585,7 @@ function App() {
                           title="Copy short link"
                         >
                           {copiedLinkId === createSuccessLink._id ? "✓ Copied" : "Copy"}
-                        </button>
+                        </SpecularButton>
                       </div>
 
                       {createSuccessLink.originalUrl && (
@@ -6645,37 +6820,42 @@ function App() {
               <div className="modal-footer">
                 {createSuccessLink ? (
                   <>
-                    <button
-                      type="button"
+                    <SpecularButton
+                      variant="secondary"
+                      size="md"
                       className="btn-secondary"
                       onClick={handleCreateAnother}
                     >
                       + Create Another Link
-                    </button>
-                    <button
-                      type="button"
+                    </SpecularButton>
+                    <SpecularButton
+                      variant="primary"
+                      size="md"
                       className="btn-create-primary"
                       onClick={resetCreateModal}
                     >
                       Done
-                    </button>
+                    </SpecularButton>
                   </>
                 ) : (
                   <>
-                    <button
-                      type="button"
+                    <SpecularButton
+                      variant="secondary"
+                      size="md"
                       className="btn-secondary"
                       onClick={resetCreateModal}
                     >
                       Cancel
-                    </button>
-                    <button
+                    </SpecularButton>
+                    <SpecularButton
+                      variant="primary"
+                      size="md"
                       type="submit"
                       className="btn-create-primary"
                       disabled={createLoading}
                     >
                       {createLoading ? "Creating..." : "Create Short Link →"}
-                    </button>
+                    </SpecularButton>
                   </>
                 )}
               </div>
@@ -6787,13 +6967,14 @@ function App() {
             </div>
 
             <div className="modal-footer">
-              <button
-                type="button"
+              <SpecularButton
+                variant="secondary"
+                size="md"
                 className="btn-secondary"
                 onClick={() => setShowDetailModal(false)}
               >
                 Close
-              </button>
+              </SpecularButton>
             </div>
           </div>
         </div>
@@ -6843,13 +7024,14 @@ function App() {
             </div>
 
             <div className="modal-footer">
-              <button
-                type="button"
+              <SpecularButton
+                variant="secondary"
+                size="md"
                 className="btn-secondary"
                 onClick={handleCloseQrModal}
               >
                 Close
-              </button>
+              </SpecularButton>
             </div>
           </div>
         </div>
