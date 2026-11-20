@@ -7,9 +7,26 @@
 
 import React, { useState, useMemo } from "react";
 import axios from "axios";
-// CHANGE: Integrated React Bits SplitText component — 2026-11-19
-import SplitText from "./SplitText";
 import SpecularButton from "./SpecularButton";
+import {
+  LayoutDashboard,
+  Link2,
+  QrCode,
+  Globe,
+  Smartphone,
+  Megaphone,
+  Activity,
+  ShieldAlert,
+  GitFork,
+  FileText,
+  CheckCircle2,
+  AlertTriangle,
+  X,
+  Check,
+  Download,
+  BarChart3,
+  ShieldCheck,
+} from "lucide-react";
 
 // -----------------------------------------------------------------------------
 // Report Categories Configuration
@@ -18,7 +35,7 @@ export const REPORT_CATEGORIES = [
   {
     id: "overall",
     title: "Overall Dashboard Report",
-    icon: "▦",
+    icon: <LayoutDashboard size={18} style={{ color: "var(--accent)" }} />,
     tag: "Executive Summary",
     description:
       "Platform-wide executive overview with total short link volume, cumulative clicks, QR scan rates, and international geographic reach.",
@@ -32,7 +49,7 @@ export const REPORT_CATEGORIES = [
   {
     id: "links",
     title: "Individual Link Performance Report",
-    icon: "🔗",
+    icon: <Link2 size={18} style={{ color: "var(--accent)" }} />,
     tag: "Deep-Dive Audit",
     description:
       "Comprehensive link audit report detailing destination URLs, security access controls (password, expiration, max clicks), and visitor audit trails.",
@@ -46,7 +63,7 @@ export const REPORT_CATEGORIES = [
   {
     id: "qr",
     title: "QR Analytics Report",
-    icon: "📱",
+    icon: <QrCode size={18} style={{ color: "var(--accent)" }} />,
     tag: "Mobile & Physical Media",
     description:
       "Detailed analysis of QR code scans versus direct web clicks, physical media campaign adoption, and daily scan timelines.",
@@ -60,7 +77,7 @@ export const REPORT_CATEGORIES = [
   {
     id: "geo",
     title: "Geo-Location Analytics Report",
-    icon: "🌍",
+    icon: <Globe size={18} style={{ color: "var(--accent)" }} />,
     tag: "Global Audience",
     description:
       "Worldwide audience geographic reach identifying top visitor countries, ISO country codes, and metropolitan cities driving platform traffic.",
@@ -74,7 +91,7 @@ export const REPORT_CATEGORIES = [
   {
     id: "devices",
     title: "Device & Browser Intelligence Report",
-    icon: "💻",
+    icon: <Smartphone size={18} style={{ color: "var(--accent)" }} />,
     tag: "Hardware & Platform",
     description:
       "Granular breakdown of visitor hardware platforms, including mobile, desktop, and tablet distribution, operating systems, and web browsers.",
@@ -88,7 +105,7 @@ export const REPORT_CATEGORIES = [
   {
     id: "campaigns",
     title: "Campaign Analytics Report",
-    icon: "📣",
+    icon: <Megaphone size={18} style={{ color: "var(--accent)" }} />,
     tag: "Marketing & Attribution",
     description:
       "Marketing campaign performance evaluation tracking standard UTM tags (utm_campaign, utm_source, utm_medium) across acquisition channels.",
@@ -102,7 +119,7 @@ export const REPORT_CATEGORIES = [
   {
     id: "traffic",
     title: "Traffic Analytics Report",
-    icon: "📈",
+    icon: <Activity size={18} style={{ color: "var(--accent)" }} />,
     tag: "Time & Peak Trends",
     description:
       "Temporal traffic pattern analysis tracking 24-hour hourly distributions in Indian Standard Time (IST) and historical volume trajectories.",
@@ -116,7 +133,7 @@ export const REPORT_CATEGORIES = [
   {
     id: "anomalies",
     title: "Anomaly Detection Report",
-    icon: "⚠️",
+    icon: <ShieldAlert size={18} style={{ color: "var(--accent)" }} />,
     tag: "Threat & Spike Surveillance",
     description:
       "Statistical fleet health audit recording traffic surge spikes, sudden cliff drops, baseline deviations, and surveillance incident logs.",
@@ -130,7 +147,7 @@ export const REPORT_CATEGORIES = [
   {
     id: "experiments",
     title: "A/B Experiment Performance Report",
-    icon: "⚖️",
+    icon: <GitFork size={18} style={{ color: "var(--accent)" }} />,
     tag: "Optimization & Testing",
     description:
       "Statistical split testing report evaluating 50/50 Variant A and Variant B traffic distribution, lead margins, and winning variants.",
@@ -239,23 +256,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
       {/* CHANGE: Automated Reports page heading animated with SplitText — 2026-11-19 */}
       <div className="reports-header-row">
         <div>
-          <h1 className="reports-page-title">
-            <span className="reports-title-icon" aria-hidden="true">📊</span>
-            <SplitText
-              text="Automated Reports & Exports"
-              tag="span"
-              effect="rise"
-              splitType="chars"
-              trigger="load"
-              delay={35}
-              duration={0.8}
-              staggerFrom="start"
-              loop={false}
-              hoverEffect="none"
-              mask={false}
-              textAlign="left"
-            />
-          </h1>
+          <h1 className="reports-page-title">Automated Reports & Exports</h1>
           <p className="reports-page-subtitle">
             Generate and export presentation-ready PDF reports and Excel-compatible
             CSV datasets from actual MongoDB analytics.
@@ -266,14 +267,14 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
       {/* Success Notification Banner */}
       {successToast && (
         <div className="reports-toast success" role="alert">
-          <span className="reports-toast-icon">✓</span>
+          <Check size={14} style={{ color: "var(--success)" }} />
           <span>{successToast}</span>
           <button
             type="button"
             className="reports-toast-close"
             onClick={() => setSuccessToast("")}
           >
-            ✕
+            <X size={14} />
           </button>
         </div>
       )}
@@ -281,14 +282,14 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
       {/* Error Notification Banner */}
       {errorMsg && (
         <div className="reports-toast error" role="alert">
-          <span className="reports-toast-icon">⚠️</span>
+          <AlertTriangle size={14} style={{ color: "var(--danger)" }} />
           <span>{errorMsg}</span>
           <button
             type="button"
             className="reports-toast-close"
             onClick={() => setErrorMsg("")}
           >
-            ✕
+            <X size={14} />
           </button>
         </div>
       )}
@@ -357,7 +358,10 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
                 <span className="reports-features-label">Included in Report:</span>
                 <ul>
                   {currentCategory.features.map((f, idx) => (
-                    <li key={idx}>✓ {f}</li>
+                    <li key={idx} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Check size={12} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                      <span>{f}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -460,7 +464,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
                     </>
                   ) : (
                     <>
-                      <span className="reports-btn-icon">📄</span>
+                      <span className="reports-btn-icon"><FileText size={16} /></span>
                       <div className="reports-btn-text">
                         <strong>Download PDF Report</strong>
                         <small>Formatted A4 document with KPI cards & tables</small>
@@ -486,7 +490,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
                     </>
                   ) : (
                     <>
-                      <span className="reports-btn-icon">📊</span>
+                      <span className="reports-btn-icon"><Download size={16} /></span>
                       <div className="reports-btn-text">
                         <strong>Download CSV Dataset</strong>
                         <small>Excel-compatible UTF-8 raw analytics export</small>
@@ -498,7 +502,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
 
               {/* Data & Security Notice */}
               <div className="reports-security-note">
-                <span className="note-icon">🔒</span>
+                <span className="note-icon"><ShieldCheck size={15} style={{ color: "var(--accent)" }} /></span>
                 <span>
                   Reports strictly reflect your authenticated account data. Clicks
                   are deduplicated and verified. Formula injection protection is

@@ -687,18 +687,9 @@ function ClicksOverviewChart({
           <svg viewBox={`0 0 ${width} ${height}`} className="chart-svg" preserveAspectRatio="none">
             <defs>
               <linearGradient id="chartAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.35" />
-                <stop offset="60%" stopColor="#06B6D4" stopOpacity="0.08" />
-                <stop offset="100%" stopColor="#06B6D4" stopOpacity="0.0" />
+                <stop offset="0%" stopColor="#6C7CFF" stopOpacity="0.20" />
+                <stop offset="100%" stopColor="#6C7CFF" stopOpacity="0.0" />
               </linearGradient>
-              <linearGradient id="chartLineGradient" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#7C3AED" />
-                <stop offset="50%" stopColor="#8B5CF6" />
-                <stop offset="100%" stopColor="#06B6D4" />
-              </linearGradient>
-              <filter id="purpleGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="2" stdDeviation="3.5" floodColor="#8B5CF6" floodOpacity="0.45" />
-              </filter>
             </defs>
 
             {/* Horizontal Grid Lines & Readable Integer Y-Axis */}
@@ -712,17 +703,18 @@ function ClicksOverviewChart({
                     y1={yPos}
                     x2={width - padRight}
                     y2={yPos}
-                    stroke={isBaseline ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.04)"}
-                    strokeDasharray={isBaseline ? undefined : "4 4"}
+                    stroke={isBaseline ? "#232A34" : "#1B212A"}
+                    strokeDasharray={isBaseline ? undefined : "3 3"}
                   />
                   <text
                     x={padLeft - 10}
                     y={yPos + 3.5}
-                    fill="#64748B"
+                    fill="#8B95A5"
                     fontSize="10"
                     fontWeight="500"
                     textAnchor="end"
-                    fontFamily="Inter, sans-serif"
+                    fontFamily="var(--font-mono)"
+                    className="tabular-nums"
                   >
                     {tickVal.toLocaleString()}
                   </text>
@@ -738,9 +730,9 @@ function ClicksOverviewChart({
               <path
                 d={prevLinePath}
                 fill="none"
-                stroke="rgba(148, 163, 184, 0.55)"
-                strokeWidth="2.2"
-                strokeDasharray="5 4"
+                stroke="#606B7D"
+                strokeWidth="1.8"
+                strokeDasharray="4 4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -750,11 +742,10 @@ function ClicksOverviewChart({
             <path
               d={linePath}
               fill="none"
-              stroke="url(#chartLineGradient)"
-              strokeWidth="2.8"
+              stroke="#6C7CFF"
+              strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              filter="url(#purpleGlow)"
             />
 
             {/* Hover Crosshair Line */}
@@ -764,7 +755,7 @@ function ClicksOverviewChart({
                 y1={padTop}
                 x2={currentHovered.x}
                 y2={zeroY}
-                stroke="rgba(167, 139, 250, 0.45)"
+                stroke="#2E3846"
                 strokeWidth="1.5"
                 strokeDasharray="3 3"
               />
@@ -815,31 +806,31 @@ function ClicksOverviewChart({
                     <circle
                       cx={pt.x}
                       cy={pt.y}
-                      r="9"
-                      fill="#8B5CF6"
-                      fillOpacity="0.25"
-                      stroke="#A78BFA"
+                      r="8"
+                      fill="#6C7CFF"
+                      fillOpacity="0.2"
+                      stroke="#6C7CFF"
                       strokeWidth="1"
                     />
                   )}
                   <circle
                     cx={pt.x}
                     cy={pt.y}
-                    r={isHovered ? "5" : points.length <= 10 ? "3.5" : "2.6"}
-                    fill={isHovered ? "#FFFFFF" : "#0B0F19"}
-                    stroke={isHovered ? "#8B5CF6" : "#A78BFA"}
-                    strokeWidth={isHovered ? "2.5" : "1.8"}
+                    r={isHovered ? "5" : points.length <= 10 ? "3.5" : "2.5"}
+                    fill={isHovered ? "#FFFFFF" : "#161B22"}
+                    stroke={isHovered ? "#6C7CFF" : "#6C7CFF"}
+                    strokeWidth={isHovered ? "2.2" : "1.5"}
                   />
                   {/* Date labels along bottom */}
                   {showDateLabel && !isNearClash && (
                     <text
                       x={pt.x}
                       y={zeroY + 18}
-                      fill={isHovered ? "#DDD6FE" : "#94A3B8"}
+                      fill={isHovered ? "#E6EAF0" : "#8B95A5"}
                       fontWeight={isHovered ? "600" : "500"}
                       fontSize="10"
                       textAnchor="middle"
-                      fontFamily="Inter, sans-serif"
+                      fontFamily="var(--font-ui)"
                     >
                       {pt.date}
                     </text>

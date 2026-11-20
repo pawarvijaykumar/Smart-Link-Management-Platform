@@ -7,9 +7,25 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
-// CHANGE: Integrated React Bits SplitText component — 2026-11-19
-import SplitText from "./SplitText";
 import SpecularButton from "./SpecularButton";
+import {
+  TrendingUp,
+  Trophy,
+  Copy,
+  Check,
+  Search,
+  X,
+  AlertTriangle,
+  GitFork,
+  BarChart3,
+  Link2,
+  ExternalLink,
+  Plus,
+  RefreshCw,
+  FileEdit,
+  ArrowLeft,
+  Star,
+} from "lucide-react";
 
 import {
   DRAFT_STORAGE_KEY,
@@ -597,7 +613,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
         {/* Toast Alert */}
         {successToast && (
           <div className="ab-toast-banner">
-            <span>✓</span> {successToast}
+            <Check size={14} style={{ marginRight: "6px" }} /> {successToast}
           </div>
         )}
 
@@ -637,7 +653,15 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
               className="ab-btn-secondary"
               onClick={() => copyShortUrl(exp?.shortCode, exp?._id)}
             >
-              {copiedId === exp?._id ? "✓ Copied!" : "📋 Copy Short Link"}
+              {copiedId === exp?._id ? (
+                <>
+                  <Check size={14} style={{ marginRight: "5px" }} /> Copied!
+                </>
+              ) : (
+                <>
+                  <Copy size={14} style={{ marginRight: "5px" }} /> Copy Short Link
+                </>
+              )}
             </SpecularButton>
             <a
               href={`${apiBaseUrl}/${exp?.shortCode}`}
@@ -795,7 +819,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
               disabled={loadingAnalytics}
               title="Refresh Analytics"
             >
-              ↻ Refresh
+              <RefreshCw size={13} style={{ marginRight: "5px" }} /> Refresh
             </SpecularButton>
           </div>
         </div>
@@ -806,7 +830,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
           <div className="ab-kpi-card">
             <div className="ab-kpi-header">
               <span className="ab-kpi-title">Total Period Clicks</span>
-              <span className="ab-kpi-icon total">📈</span>
+              <span className="ab-kpi-icon total"><TrendingUp size={16} /></span>
             </div>
             <div className="ab-kpi-value">{summary.totalClicks.toLocaleString()}</div>
             <div className="ab-kpi-subtitle">
@@ -850,7 +874,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
           <div className="ab-kpi-card winner">
             <div className="ab-kpi-header">
               <span className="ab-kpi-title">Winning Status</span>
-              <span className="ab-kpi-icon trophy">🏆</span>
+              <span className="ab-kpi-icon trophy"><Trophy size={16} /></span>
             </div>
             <div className="ab-kpi-winner-status">
               {summary.winningVariant === "A" && (
@@ -1131,7 +1155,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 <span className="variant-share">{summary.variantAPercentage}% Traffic</span>
               </div>
               {exp?.fallbackVariant === "A" && (
-                <span className="fallback-badge">★ Configured Fallback</span>
+                <span className="fallback-badge"><Star size={11} fill="currentColor" style={{ marginRight: "4px" }} /> Configured Fallback</span>
               )}
             </div>
             <div className="variant-url-box">
@@ -1158,7 +1182,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 <span className="variant-share">{summary.variantBPercentage}% Traffic</span>
               </div>
               {exp?.fallbackVariant === "B" && (
-                <span className="fallback-badge">★ Configured Fallback</span>
+                <span className="fallback-badge"><Star size={11} fill="currentColor" style={{ marginRight: "4px" }} /> Configured Fallback</span>
               )}
             </div>
             <div className="variant-url-box">
@@ -1180,7 +1204,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
 
         {/* Statistical Winner Disclaimer */}
         <div className="ab-disclaimer-box">
-          <div className="disclaimer-icon">ℹ️</div>
+          <div className="disclaimer-icon"><AlertTriangle size={15} style={{ color: "var(--accent)" }} /></div>
           <div className="disclaimer-content">
             <strong>Statistical Measurement Disclaimer:</strong>
             <p>{summary.disclaimer}</p>
@@ -1198,30 +1222,14 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
       {/* Toast Alert */}
       {successToast && (
         <div className="ab-toast-banner">
-          <span>✓</span> {successToast}
+          <Check size={14} style={{ marginRight: "6px" }} /> {successToast}
         </div>
       )}
 
       {/* Page Title & Main Header */}
       <div className="ab-header-row">
         <div>
-          {/* CHANGE: A/B Testing page heading animated with SplitText — 2026-11-19 */}
-          <h1 className="ab-title">
-            <SplitText
-              text="Smart A/B Link Testing"
-              tag="span"
-              effect="rise"
-              splitType="chars"
-              trigger="load"
-              delay={35}
-              duration={0.8}
-              staggerFrom="start"
-              loop={false}
-              hoverEffect="none"
-              mask={false}
-              textAlign="left"
-            />
-          </h1>
+          <h1 className="ab-title">Smart A/B Link Testing</h1>
           <p className="ab-subtitle">
             Split visitor traffic evenly across two destination URLs to evaluate which variant drives more recorded clicks.
           </p>
@@ -1234,7 +1242,15 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
             className="ab-btn-primary"
             onClick={handleOpenModal}
           >
-            {hasDraft ? "📝 Resume Draft Experiment" : "+ New Experiment"}
+            {hasDraft ? (
+              <>
+                <FileEdit size={14} style={{ marginRight: "6px" }} /> Resume Draft Experiment
+              </>
+            ) : (
+              <>
+                <Plus size={14} style={{ marginRight: "6px" }} /> New Experiment
+              </>
+            )}
           </SpecularButton>
           <SpecularButton
             type="button"
@@ -1245,7 +1261,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
             disabled={loadingList}
             title="Refresh List"
           >
-            ↻ Refresh
+            <RefreshCw size={13} style={{ marginRight: "6px" }} /> Refresh
           </SpecularButton>
         </div>
       </div>
@@ -1253,7 +1269,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
       {/* Filter and Search Bar */}
       <div className="ab-filter-bar">
         <div className="ab-search-input-wrapper">
-          <span className="search-icon">🔍</span>
+          <span className="search-icon"><Search size={14} /></span>
           <input
             type="text"
             className="ab-search-input"
@@ -1267,7 +1283,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
               className="clear-search"
               onClick={() => setSearchQuery("")}
             >
-              ✕
+              <X size={14} />
             </button>
           )}
         </div>
@@ -1319,12 +1335,14 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
         </div>
       ) : errorMsg ? (
         <div className="ab-error-banner">
-          <span>⚠️ {errorMsg}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <AlertTriangle size={14} /> {errorMsg}
+          </span>
           <SpecularButton variant="danger" size="xs" onClick={fetchExperiments}>Try Again</SpecularButton>
         </div>
       ) : filteredExperiments.length === 0 ? (
         <div className="ab-empty-state-card">
-          <div className="empty-icon">⚖️</div>
+          <div className="empty-icon"><GitFork size={36} style={{ color: "var(--accent)" }} /></div>
           <h3>No A/B Experiments Found</h3>
           <p>
             {experiments.length === 0
@@ -1339,7 +1357,15 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
               className="ab-btn-primary"
               onClick={handleOpenModal}
             >
-              {hasDraft ? "📝 Resume Draft Experiment" : "+ Create Your First Experiment"}
+              {hasDraft ? (
+                <>
+                  <FileEdit size={14} style={{ marginRight: "6px" }} /> Resume Draft Experiment
+                </>
+              ) : (
+                <>
+                  <Plus size={14} style={{ marginRight: "6px" }} /> Create Your First Experiment
+                </>
+              )}
             </SpecularButton>
           )}
         </div>
@@ -1377,7 +1403,15 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                     onClick={() => copyShortUrl(exp.shortCode, exp._id)}
                     title="Copy full short URL"
                   >
-                    {copiedId === exp._id ? "✓ Copied" : "📋 Copy"}
+                    {copiedId === exp._id ? (
+                      <>
+                        <Check size={12} style={{ marginRight: "3px" }} /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={12} style={{ marginRight: "3px" }} /> Copy
+                      </>
+                    )}
                   </SpecularButton>
                   <a
                     href={shortUrl}
@@ -1442,7 +1476,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                     className="ab-btn-primary full-width"
                     onClick={() => setSelectedExperimentId(exp._id)}
                   >
-                    📊 View Analytics & Controls
+                    <BarChart3 size={14} style={{ marginRight: "6px" }} /> View Analytics & Controls
                   </SpecularButton>
                 </div>
               </div>
@@ -1471,7 +1505,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 className="close-button"
                 onClick={handleCloseModal}
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
@@ -1479,7 +1513,10 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
             <form onSubmit={handleCreateSubmit} className="ab-form">
               <div className="modal-body ab-modal-body">
                 {createError && (
-                  <div className="ab-form-error">⚠️ {createError}</div>
+                  <div className="ab-form-error">
+                    <AlertTriangle size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />
+                    {createError}
+                  </div>
                 )}
 
                 {/* Experiment Name */}
@@ -1527,7 +1564,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                       }}
                       title="Select URL from your existing links"
                     >
-                      🔗 Select from My Links
+                      <Link2 size={13} style={{ marginRight: "4px" }} /> Select from My Links
                     </SpecularButton>
                   </div>
                   <span className="form-hint">
@@ -1562,7 +1599,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                       }}
                       title="Select URL from your existing links"
                     >
-                      🔗 Select from My Links
+                      <Link2 size={13} style={{ marginRight: "4px" }} /> Select from My Links
                     </SpecularButton>
                   </div>
                   <span className="form-hint">
@@ -1711,12 +1748,12 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                   setLinkSearchTerm("");
                 }}
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
             <div className="ab-picker-search-bar">
-              <span className="search-icon">🔍</span>
+              <span className="search-icon"><Search size={14} /></span>
               <input
                 type="text"
                 className="ab-picker-search-input"
@@ -1731,7 +1768,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                   className="clear-search"
                   onClick={() => setLinkSearchTerm("")}
                 >
-                  ✕
+                  <X size={14} />
                 </button>
               )}
             </div>

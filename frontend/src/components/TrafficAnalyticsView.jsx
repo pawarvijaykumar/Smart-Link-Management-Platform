@@ -11,9 +11,8 @@
 // =============================================================================
 
 import { useState, useMemo } from "react";
-// CHANGE: Integrated React Bits SplitText component — 2026-11-19
-import SplitText from "./SplitText";
 import SpecularButton from "./SpecularButton";
+import { Activity, AlertTriangle, Smartphone, Monitor, Tablet, HardDrive } from "lucide-react";
 
 // -----------------------------------------------------------------------------
 // Format Helpers in Indian Standard Time (IST)
@@ -243,7 +242,7 @@ function DailyTrafficTrendChart({ dailyTrends = [], totalClicks = 0 }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>📈</span> Daily Traffic Trend
+            Daily Traffic Trend
           </h3>
           <p className="traffic-chart-subtitle">
             Daily visitor volume trajectory in Indian Standard Time (IST)
@@ -648,7 +647,7 @@ function QRvsDirectComparisonChart({ data = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>🔄</span> QR vs Direct Traffic
+            QR vs Direct Traffic
           </h3>
           <p className="traffic-chart-subtitle">
             Channel acquisition velocity over time
@@ -819,17 +818,17 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
   };
 
   const icons = {
-    mobile: "📱",
-    desktop: "🖥️",
-    tablet: "📟",
-    unknown: "🔌",
+    mobile: <Smartphone size={14} />,
+    desktop: <Monitor size={14} />,
+    tablet: <Tablet size={14} />,
+    unknown: <HardDrive size={14} />,
   };
 
   const items = useMemo(() => {
     return (deviceDistribution || []).map((d) => ({
       ...d,
       color: colors[d.deviceType] || "#94A3B8",
-      icon: icons[d.deviceType] || "📱",
+      icon: icons[d.deviceType] || <Smartphone size={14} />,
       percentage: d.percentage !== undefined ? d.percentage : (totalClicks > 0 ? Math.round((d.count / totalClicks) * 100) : 0),
     }));
   }, [deviceDistribution, totalClicks]);
@@ -896,7 +895,7 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>📱</span> Device Traffic Distribution
+            Device Traffic Distribution
           </h3>
           <p className="traffic-chart-subtitle">
             Click any category to filter and inspect distribution
@@ -911,7 +910,7 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
               onClick={() => setSelectedCategory(null)}
               aria-label="Reset device category filter"
             >
-              <span>✕</span> Reset
+              Reset
             </SpecularButton>
           )}
           <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
@@ -1086,7 +1085,7 @@ function CampaignTrafficChart({ campaignTrends = {}, totalClicks = 0 }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>📣</span> Campaign Traffic Trends
+            Campaign Traffic Trends
           </h3>
           <p className="traffic-chart-subtitle">
             Performance across tagged UTM marketing campaigns
@@ -1212,7 +1211,7 @@ function TrafficHeatmapChart({ heatmapData = {}, totalClicks = 0 }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>🔥</span> Traffic Activity Heatmap (Days vs Hours in IST)
+            Traffic Activity Heatmap (Days vs Hours in IST)
           </h3>
           <p className="traffic-chart-subtitle">
             Visitor density matrix by day of the week and hour of day (UTC+05:30)
@@ -1366,23 +1365,8 @@ export default function TrafficAnalyticsView({
         <div className="campaigns-title-row">
           <div>
             {/* CHANGE: Traffic Analytics heading animated with SplitText — 2026-11-19 */}
-            <h1 style={{ display: "flex", alignItems: "center", gap: "10px", margin: 0, flexWrap: "wrap" }}>
-              <SplitText
-                text="Traffic Analytics"
-                tag="span"
-                className="analytics-heading-text"
-                effect="rise"
-                splitType="chars"
-                trigger="load"
-                delay={35}
-                duration={0.8}
-                staggerFrom="start"
-                loop={false}
-                hoverEffect="none"
-                mask={false}
-                textAlign="left"
-              />
-              <span aria-hidden="true">📈</span>
+            <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "var(--text-primary)" }}>
+              Traffic Analytics
             </h1>
             <p style={{ margin: "6px 0 0", color: "var(--text-muted)", fontSize: "13.5px" }}>
               Deep dive into daily velocity, hourly density, QR vs direct channel dynamics, device footprint, campaign ROI, and time-of-day heatmaps.
@@ -1438,7 +1422,7 @@ export default function TrafficAnalyticsView({
       {trafficError && (
         <div className="auth-alert error" style={{ marginBottom: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span>⚠️</span>
+            <AlertTriangle size={16} />
             <span>{trafficError}</span>
           </div>
           <SpecularButton
@@ -1461,7 +1445,7 @@ export default function TrafficAnalyticsView({
       ) : isZeroState ? (
         // 4. Empty State
         <div className="card-box empty-state-card" style={{ textAlign: "center", padding: "48px 24px" }}>
-          <div style={{ fontSize: "44px", marginBottom: "14px" }}>📊📈</div>
+          <div style={{ marginBottom: "14px", color: "var(--accent)" }}><Activity size={40} /></div>
           <h3 style={{ color: "var(--text-primary)", fontSize: "18px", fontWeight: "700", marginBottom: "8px" }}>
             No Traffic Recorded Yet
           </h3>

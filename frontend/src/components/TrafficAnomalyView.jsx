@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
 import SpecularButton from "./SpecularButton";
+import { ShieldAlert, AlertTriangle, RefreshCw, CheckCircle2, TrendingUp, TrendingDown, Info, X } from "lucide-react";
 
 // -----------------------------------------------------------------------------
 // Helper: Shorten Long URLs cleanly
@@ -89,7 +90,15 @@ function AnomalyDetailModal({
     ? "Insufficient Data"
     : "Inactive Link";
 
-  const icon = isSpike ? "📈" : isDrop ? "📉" : isHealthy ? "🟢" : isInsufficient ? "ℹ️" : "⚪";
+  const icon = isSpike ? (
+    <TrendingUp size={20} style={{ color: "var(--accent)" }} />
+  ) : isDrop ? (
+    <TrendingDown size={20} style={{ color: "var(--danger)" }} />
+  ) : isHealthy ? (
+    <CheckCircle2 size={20} style={{ color: "var(--success)" }} />
+  ) : (
+    <Info size={20} style={{ color: "var(--text-muted)" }} />
+  );
 
   return (
     <div className="anomaly-modal-overlay" onClick={onClose}>
@@ -117,7 +126,7 @@ function AnomalyDetailModal({
             onClick={onClose}
             aria-label="Close modal"
           >
-            ✕
+            <X size={16} />
           </button>
         </div>
 
@@ -238,7 +247,7 @@ function AnomalyDetailModal({
           {/* Baseline Calculation & Historical Period Section */}
           <div className="anomaly-modal-section">
             <span className="anomaly-modal-section-title">
-              <span>📐</span> Baseline Calculation & Historical Period
+              Baseline Calculation & Historical Period
             </span>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px" }}>
               <div>
@@ -259,7 +268,7 @@ function AnomalyDetailModal({
           {/* Statistical Baseline / Description Section */}
           <div className="anomaly-modal-section">
             <span className="anomaly-modal-section-title">
-              <span>📊</span> Statistical Baseline Assessment
+              Statistical Baseline Assessment
             </span>
             <p className="anomaly-modal-section-text">
               {isAnomalyEvent
@@ -280,7 +289,7 @@ function AnomalyDetailModal({
             <>
               <div className="anomaly-modal-section">
                 <span className="anomaly-modal-section-title">
-                  <span>🔍</span> Algorithmic Root Cause (Unverified Hypothesis)
+                  Algorithmic Root Cause (Unverified Hypothesis)
                 </span>
                 <p className="anomaly-modal-section-text">
                   {item.rootCause ||
@@ -292,7 +301,7 @@ function AnomalyDetailModal({
 
               <div className="anomaly-modal-section">
                 <span className="anomaly-modal-section-title">
-                  <span>💡</span> Recommended Action
+                  Recommended Action
                 </span>
                 <p className="anomaly-modal-section-text">
                   {item.recommendation ||
@@ -318,7 +327,7 @@ function AnomalyDetailModal({
                   disabled={actionLoading}
                   onClick={() => onAcknowledge(item.id)}
                 >
-                  ✓ Acknowledge
+                  Acknowledge
                 </SpecularButton>
               )}
               {item.status !== "resolved" && (
@@ -330,7 +339,7 @@ function AnomalyDetailModal({
                   disabled={actionLoading}
                   onClick={() => onResolve(item.id)}
                 >
-                  ★ Mark Resolved
+                  Mark Resolved
                 </SpecularButton>
               )}
             </>
@@ -440,7 +449,7 @@ function AnomalyTimelineChart({ timeline = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>📈</span> Dynamic Statistical Threshold Band & Anomalies
+            Dynamic Statistical Threshold Band & Anomalies
           </h3>
           <p className="traffic-chart-subtitle">
             Historical baseline (mean) with dynamic ±2σ confidence bounds against observed click traffic
@@ -710,7 +719,7 @@ function AnomalyAlertsFeed({
       <div className="anomaly-alerts-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>🚨</span> Active Anomaly Detections ({anomalyEvents.length})
+            Active Anomaly Detections ({anomalyEvents.length})
           </h3>
           <p className="traffic-chart-subtitle">
             Statistically significant traffic deviations identified by the surveillance engine
@@ -782,14 +791,14 @@ function AnomalyAlertsFeed({
                       {evt.severity}
                     </span>
                     <span className="anomaly-type-pill">
-                      {isSpike ? "📈 Traffic Spike" : "📉 Traffic Drop"}
+                      {isSpike ? "Traffic Spike" : "Traffic Drop"}
                     </span>
                     <span
                       className={`anomaly-status-tag ${
                         isResolved ? "resolved" : isAcknowledged ? "acknowledged" : "new"
                       }`}
                     >
-                      {isResolved ? "✓ Resolved" : isAcknowledged ? "👁 Acknowledged" : "● New"}
+                      {isResolved ? "Resolved" : isAcknowledged ? "Acknowledged" : "New"}
                     </span>
                     <strong style={{ fontSize: "14px", color: "#ffffff" }}>
                       s/{evt.shortCode}
@@ -844,11 +853,11 @@ function AnomalyAlertsFeed({
 
                 <div className="anomaly-analysis-box">
                   <div className="analysis-row">
-                    <strong>🔍 Root Cause:</strong>
+                    <strong>Root Cause:</strong>
                     <span>{evt.rootCause}</span>
                   </div>
                   <div className="analysis-row">
-                    <strong>💡 Recommendation:</strong>
+                    <strong>Recommendation:</strong>
                     <span>{evt.recommendation}</span>
                   </div>
                 </div>
@@ -862,7 +871,7 @@ function AnomalyAlertsFeed({
                       disabled={actionLoading}
                       onClick={() => onAcknowledge(evt.id)}
                     >
-                      ✓ Acknowledge
+                      Acknowledge
                     </button>
                   )}
                   {!isResolved && (
@@ -872,7 +881,7 @@ function AnomalyAlertsFeed({
                       disabled={actionLoading}
                       onClick={() => onResolve(evt.id)}
                     >
-                      ★ Mark Resolved
+                      Mark Resolved
                     </button>
                   )}
                   <button
@@ -889,7 +898,7 @@ function AnomalyAlertsFeed({
         </div>
       ) : (
         <div className="anomaly-empty-state-box">
-          <span style={{ fontSize: "28px" }}>✅</span>
+          <CheckCircle2 size={28} style={{ color: "var(--success)" }} />
           <strong style={{ color: "#ffffff", fontSize: "14px" }}>
             No Anomalies in this Category
           </strong>
@@ -930,7 +939,7 @@ function LinkSurveillanceTable({ linkHealth = [], onOpenModal }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>🛡️</span> Link Traffic Surveillance Roster
+            Link Traffic Surveillance Roster
           </h3>
           <p className="traffic-chart-subtitle">
             Monitored links with baseline click rates, daily activity, and interactive health status badges
@@ -1051,7 +1060,7 @@ function LinkSurveillanceTable({ linkHealth = [], onOpenModal }) {
                           style={{ background: "none", border: "none", padding: 0 }}
                         >
                           <span className="status-badge-chip spike">
-                            <span>📈</span> Spike Alert
+                            Spike Alert
                           </span>
                         </button>
                       )}
@@ -1064,7 +1073,7 @@ function LinkSurveillanceTable({ linkHealth = [], onOpenModal }) {
                           style={{ background: "none", border: "none", padding: 0 }}
                         >
                           <span className="status-badge-chip drop">
-                            <span>📉</span> Drop Alert
+                            Drop Alert
                           </span>
                         </button>
                       )}
@@ -1077,7 +1086,7 @@ function LinkSurveillanceTable({ linkHealth = [], onOpenModal }) {
                           style={{ background: "none", border: "none", padding: 0 }}
                         >
                           <span className="status-badge-chip healthy">
-                            <span>🟢</span> Healthy
+                            Healthy
                           </span>
                         </button>
                       )}
@@ -1090,7 +1099,7 @@ function LinkSurveillanceTable({ linkHealth = [], onOpenModal }) {
                           style={{ background: "none", border: "none", padding: 0 }}
                         >
                           <span className="status-badge-chip insufficient">
-                            <span>ℹ️</span> Insufficient Data
+                            Insufficient Data
                           </span>
                         </button>
                       )}
@@ -1103,7 +1112,7 @@ function LinkSurveillanceTable({ linkHealth = [], onOpenModal }) {
                           style={{ background: "none", border: "none", padding: 0 }}
                         >
                           <span className="status-badge-chip inactive">
-                            <span>⚪</span> Inactive
+                            Inactive
                           </span>
                         </button>
                       )}
@@ -1322,7 +1331,7 @@ export default function TrafficAnomalyView({
       <div className="traffic-analytics-header">
         <div>
           <h2 className="traffic-analytics-title">
-            <span>🛡️</span> Smart Traffic Intelligence & Anomaly Surveillance
+            Traffic Intelligence
           </h2>
           <p className="traffic-analytics-subtitle">
             Dynamic statistical threshold surveillance across click history detecting traffic spikes and cliff drops
@@ -1353,7 +1362,7 @@ export default function TrafficAnomalyView({
             disabled={loading}
             title="Recalculate statistical anomalies"
           >
-            <span className={loading ? "spin" : ""}>🔄</span> Refresh
+            <RefreshCw size={14} className={loading ? "spin" : ""} /> Refresh
           </SpecularButton>
         </div>
       </div>
@@ -1361,7 +1370,7 @@ export default function TrafficAnomalyView({
       {/* Error Banner */}
       {error && (
         <div className="traffic-error-banner">
-          <span>⚠️ {error}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><AlertTriangle size={15} /> {error}</span>
           <button type="button" onClick={() => fetchAnomalies(range)}>
             Retry
           </button>

@@ -33,6 +33,19 @@ import CountUp from "./components/CountUp";
 import AnimatedContent from "./components/AnimatedContent";
 import TrafficSourcesCard from "./components/TrafficSourcesCard";
 import {
+  Button,
+  Card,
+  StatCard,
+  Badge,
+  SegmentedControl,
+  Input,
+  Table,
+  EmptyState,
+  Skeleton,
+  Tooltip,
+  Modal,
+} from "./components/ui";
+import {
   LayoutDashboard,
   Megaphone,
   QrCode,
@@ -57,6 +70,12 @@ import {
   CheckCircle2,
   TrendingUp,
   Zap,
+  Calendar,
+  Trophy,
+  Copy,
+  Check,
+  RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import "./App.css";
 import "./AuroraTheme.css";
@@ -241,24 +260,16 @@ function MetricCards({
   return (
     <div className="metrics-grid">
       {cards.map((card) => (
-        <SpotlightCard
+        <StatCard
           key={card.id}
-          className="metric-card metric-spotlight-card"
-          spotlightColor={card.spotlightColor}
-          borderColor={card.borderColor}
-        >
-          <div className="metric-card-top">
-            <div className="metric-icon-badge" style={{ background: card.iconBg, color: card.iconColor }}>
-              {card.icon}
-            </div>
-            <span className={`metric-trend-pill ${card.badgeType}`}>{card.badgeText}</span>
-          </div>
-          <div className="metric-card-val">
-            <CountUp to={card.value} decimals={card.decimals || 0} duration={1.2} />
-          </div>
-          <div className="metric-card-label">{card.label}</div>
-          <div className="metric-card-sub">{card.sub}</div>
-        </SpotlightCard>
+          label={card.label}
+          value={card.value}
+          decimals={card.decimals || 0}
+          delta={card.badgeText}
+          trend={card.badgeType === "positive" ? "up" : "neutral"}
+          helper={card.sub}
+          icon={card.icon}
+        />
       ))}
     </div>
   );
@@ -936,7 +947,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
       <div className="yearly-graph-topbar">
         <div className="yearly-graph-title-group">
           <h3>
-            <span style={{ marginRight: "8px" }}>📅</span>
+            <Calendar size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "8px", color: "var(--accent)" }} />
             Click Activity Graph ({selectedYear})
           </h3>
           <p>Daily interaction density and audience contribution frequency in Indian Standard Time (IST)</p>
@@ -1082,7 +1093,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
             <div className="weekly-chart-header">
               <div className="weekly-title-group">
                 <h5>
-                  <span aria-hidden="true">📈</span>
+                  <TrendingUp size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px", color: "var(--accent)" }} />
                   Weekly Click Activity ({selectedYear})
                 </h5>
                 <p>Aggregated weekly interaction totals across 52 weeks in Indian Standard Time (IST)</p>
@@ -1255,7 +1266,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
             <div className="dow-chart-header">
               <div className="dow-title-group">
                 <h5>
-                  <span aria-hidden="true">📊</span>
+                  <BarChart3 size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px", color: "var(--accent)" }} />
                   Day-of-Week Analysis
                 </h5>
                 <p>Recorded audience interaction distribution from Monday through Sunday in IST</p>
@@ -1263,7 +1274,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
               <div className="dow-peak-pill">
                 {dowData.busiestDay ? (
                   <>
-                    <span aria-hidden="true">🏆</span> Peak Day: <strong>{dowData.busiestDay.name} ({dowData.busiestDay.clicks} clicks)</strong>
+                    <Trophy size={13} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "4px", color: "var(--warning)" }} /> Peak Day: <strong>{dowData.busiestDay.name} ({dowData.busiestDay.clicks} clicks)</strong>
                   </>
                 ) : (
                   <>No weekday activity in {selectedYear}</>
@@ -1333,7 +1344,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
         <div className="yearly-summary-panel">
           <div className="yearly-summary-top">
             <div className="yearly-summary-title">
-              <span className="summary-title-icon" aria-hidden="true">📈</span>
+              <BarChart3 size={15} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px", color: "var(--accent)" }} />
               <h4>Yearly Activity Summary</h4>
             </div>
             <span className="summary-year-tag">{selectedYear}</span>
@@ -1350,7 +1361,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
             >
               <div className="metric-card-header">
                 <span className="metric-card-label">Total Clicks</span>
-                <span className="metric-card-icon" aria-hidden="true">🎯</span>
+                <MousePointerClick size={14} style={{ color: "var(--accent)" }} />
               </div>
               <div className="metric-card-value">{summaryStats.totalYearClicks.toLocaleString()}</div>
               <div className="metric-card-subtext">in {selectedYear}</div>
@@ -1365,7 +1376,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
             >
               <div className="metric-card-header">
                 <span className="metric-card-label">Active Days</span>
-                <span className="metric-card-icon" aria-hidden="true">📅</span>
+                <Calendar size={14} style={{ color: "var(--accent)" }} />
               </div>
               <div className="metric-card-value">
                 {summaryStats.activeDaysCount} <span className="metric-unit">{summaryStats.activeDaysCount === 1 ? "day" : "days"}</span>
@@ -1382,7 +1393,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
             >
               <div className="metric-card-header">
                 <span className="metric-card-label">Avg / Active Day</span>
-                <span className="metric-card-icon" aria-hidden="true">⚡</span>
+                <Zap size={14} style={{ color: "var(--accent)" }} />
               </div>
               <div className="metric-card-value">
                 {summaryStats.avgClicksPerActiveDay}
@@ -1399,7 +1410,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
             >
               <div className="metric-card-header">
                 <span className="metric-card-label">Busiest Month</span>
-                <span className="metric-card-icon" aria-hidden="true">🏆</span>
+                <Trophy size={14} style={{ color: "var(--warning)" }} />
               </div>
               <div className="metric-card-value" title={summaryStats.busiestMonth ? summaryStats.busiestMonth.name : "None"}>
                 {summaryStats.busiestMonth ? summaryStats.busiestMonth.nameShort : "None"}
@@ -1418,7 +1429,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
             >
               <div className="metric-card-header">
                 <span className="metric-card-label">Busiest Day</span>
-                <span className="metric-card-icon" aria-hidden="true">🔥</span>
+                <TrendingUp size={14} style={{ color: "var(--danger)" }} />
               </div>
               <div className="metric-card-value">
                 {summaryStats.busiestDay ? summaryStats.busiestDay.formattedDate : "None"}
@@ -1511,7 +1522,7 @@ function SmartTrafficSection({ intelligence }) {
     {
       id: "traffic_status",
       title: "Traffic Trend",
-      icon: "📊",
+      icon: <Activity size={14} style={{ color: "var(--accent)" }} />,
       headline: "Baseline Forming",
       detail: "Share your short link to start gathering automated visitor trends and spike detection.",
       type: "info",
@@ -1519,7 +1530,7 @@ function SmartTrafficSection({ intelligence }) {
     {
       id: "audience_platform",
       title: "Audience Platform",
-      icon: "🖥️",
+      icon: <Smartphone size={14} style={{ color: "var(--accent)" }} />,
       headline: "Audience Platform",
       detail: "Visitor device and browser breakdowns will appear automatically once clicked.",
       type: "neutral",
@@ -1527,7 +1538,7 @@ function SmartTrafficSection({ intelligence }) {
     {
       id: "peak_window",
       title: "Peak Engagement (IST)",
-      icon: "⏰",
+      icon: <Calendar size={14} style={{ color: "var(--accent)" }} />,
       headline: "Timing Unidentified",
       detail: "Active engagement hours in Indian Standard Time will be calculated with incoming traffic.",
       type: "neutral",
@@ -1535,7 +1546,7 @@ function SmartTrafficSection({ intelligence }) {
     {
       id: "action_tip",
       title: "Actionable Strategy",
-      icon: "💡",
+      icon: <TrendingUp size={14} style={{ color: "var(--accent)" }} />,
       headline: "Optimal Sharing Window",
       detail: "Distribute your short link across channels to generate actionable engagement insights.",
       type: "tip",
@@ -1568,7 +1579,7 @@ function SmartTrafficSection({ intelligence }) {
       {intelligence?.hasSpike && spikeAlert && (
         <div className={`intelligence-spike-banner severity-${spikeAlert.severity || "moderate"}`} role="alert">
           <div className="spike-banner-content">
-            <span className="spike-icon" aria-hidden="true">⚡</span>
+            <Zap size={15} style={{ color: "var(--warning)" }} />
             <div className="spike-text">
               <h4>
                 {spikeAlert.severity === "high" ? "High Traffic Surge Detected!" : "Traffic Spike Detected!"}
@@ -1585,7 +1596,9 @@ function SmartTrafficSection({ intelligence }) {
       {/* Header with Momentum Badge */}
       <div className="intelligence-header">
         <div className="intel-heading-group">
-          <div className="intel-icon-box" aria-hidden="true">🧠</div>
+          <div className="intel-icon-box" aria-hidden="true">
+            <ShieldAlert size={16} />
+          </div>
           <div>
             <h3>Smart Traffic Intelligence</h3>
             <p>Automated spike detection, peak window in IST, and audience strategy</p>
@@ -1643,7 +1656,7 @@ function getLinkStatus(link) {
       status: "Paused",
       label: "Paused",
       className: "paused",
-      icon: "⏸",
+      icon: "●",
       desc: "Link is temporarily paused by owner",
     };
   }
@@ -1652,7 +1665,7 @@ function getLinkStatus(link) {
       status: "Expired",
       label: "Expired",
       className: "expired",
-      icon: "⏱",
+      icon: "●",
       desc: "Link has reached its expiration date and time",
     };
   }
@@ -1665,7 +1678,7 @@ function getLinkStatus(link) {
       status: "Limit Reached",
       label: "Limit Reached",
       className: "limit-reached",
-      icon: "🚫",
+      icon: "●",
       desc: "Link has reached its maximum click limit",
     };
   }
@@ -1839,11 +1852,13 @@ function RecentLinksTable({
                         <div className="link-title-row">
                           {link.utmCampaign ? (
                             <span className="link-campaign-tag" title={`Campaign: ${link.utmCampaign}`}>
-                              🏷️ {link.utmCampaign}
+                              <Megaphone size={12} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "4px" }} />
+                              {link.utmCampaign}
                             </span>
                           ) : (
                             <span className="link-domain-badge" title={domainName}>
-                              🌐 {domainName}
+                              <Globe size={12} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "4px" }} />
+                              {domainName}
                             </span>
                           )}
                         </div>
@@ -1876,7 +1891,7 @@ function RecentLinksTable({
                           onClick={() => onCopy(link)}
                           title="Copy short link"
                         >
-                          {isCopied ? "✓" : "Copy"}
+                          {isCopied ? "Copied" : "Copy"}
                         </SpecularButton>
                       </div>
                     </td>
@@ -1908,7 +1923,7 @@ function RecentLinksTable({
                           className={`expiry-badge-inline ${expiryInfo.isExpired ? "expired" : "scheduled"}`}
                           title={expiryInfo.fullTitle}
                         >
-                          <span className="expiry-icon">⏱</span>
+                          <Clock size={11} style={{ marginRight: "4px", verticalAlign: "middle" }} />
                           <span>{expiryInfo.badgeText}</span>
                         </div>
                       ) : (
@@ -1958,7 +1973,6 @@ function RecentLinksTable({
                           title="Configure access rules, expiration date & click limits"
                           aria-label={`Access settings for ${link.shortCode}`}
                         >
-                          <span aria-hidden="true">⚙️</span>
                           <span>Access</span>
                         </SpecularButton>
                         {/* CHANGE: QR Code Feature Stage 4 — 2026-11-05 */}
@@ -1993,7 +2007,7 @@ function RecentLinksTable({
                           onClick={() => onOpenAnalytics(link)}
                           title="View deep-dive analytics"
                         >
-                          <span>📊 Stats</span>
+                          <span>Stats</span>
                         </SpecularButton>
                         <a
                           href={shortUrl}
@@ -2696,7 +2710,7 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
       <div className="chart-card-header">
         <div className="chart-title-group">
           <div className="campaign-chart-title-row">
-            <h3>Campaign Clicks Over Time 📈</h3>
+            <h3>Campaign Clicks Over Time</h3>
             <span className="campaign-tag-source" style={{ fontSize: "11px", padding: "2px 8px" }}>
               Attributed Clicks Only
             </span>
@@ -2906,7 +2920,7 @@ function CampaignAnalyticsView({
       <div className="page-greeting">
         <div className="campaigns-title-row">
           <div>
-            <h1>Campaign & UTM Analytics 📣</h1>
+            <h1>Campaign & UTM Analytics</h1>
             <p>Monitor campaign attribution, inbound traffic sources, and marketing channels.</p>
           </div>
 
@@ -2938,7 +2952,7 @@ function CampaignAnalyticsView({
               disabled={campaignLoading}
               title="Refresh campaign analytics"
             >
-              <span className={campaignLoading ? "spinning" : ""}>🔄</span>
+              <RefreshCw size={14} className={campaignLoading ? "spinning" : ""} />
               <span>{campaignLoading ? "Refreshing..." : "Refresh"}</span>
             </SpecularButton>
           </div>
@@ -2949,7 +2963,7 @@ function CampaignAnalyticsView({
       {campaignError && (
         <div className="campaign-error-banner">
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span className="error-icon">⚠️</span>
+            <span className="error-icon"><AlertTriangle size={16} /></span>
             <span>{campaignError}</span>
           </div>
           <SpecularButton
@@ -2986,13 +3000,13 @@ function CampaignAnalyticsView({
           <div className={`donuts-grid ${campaignLoading ? "data-refreshing" : ""}`}>
             <DonutChart
               title="Traffic Sources (utm_source)"
-              icon="🌐"
+              icon={<Globe size={16} />}
               data={sources}
               emptyMessage="No traffic source data recorded yet. Share links with utm_source to view visitor sources."
             />
             <DonutChart
               title="Traffic Mediums (utm_medium)"
-              icon="📡"
+              icon={<Activity size={16} />}
               data={mediums}
               emptyMessage="No traffic medium data recorded yet. Tag links with utm_medium to categorize channels."
             />
@@ -3007,7 +3021,7 @@ function CampaignAnalyticsView({
           {/* 4. Empty state or attribution explainer */}
           {isZeroState ? (
             <div className="campaign-empty-banner">
-              <div className="campaign-empty-icon">🚀</div>
+              <div className="campaign-empty-icon"><Megaphone size={32} style={{ color: "var(--accent)" }} /></div>
               <div className="campaign-empty-text">
                 <h4>No campaign activity recorded yet</h4>
                 <p>
@@ -3018,7 +3032,7 @@ function CampaignAnalyticsView({
             </div>
           ) : (
             <div className="campaign-info-card">
-              <div className="campaign-info-icon">💡</div>
+              <div className="campaign-info-icon"><TrendingUp size={20} style={{ color: "var(--accent)" }} /></div>
               <div className="campaign-info-content">
                 <h4>Campaign Attribution & UTM Tracking</h4>
                 <p>
@@ -3403,7 +3417,8 @@ function QRScanInsights({
       <div className="qr-best-performer-card">
         <div className="qr-best-card-badge-row">
           <span className="qr-trophy-badge">
-            <span role="img" aria-label="Trophy">🏆</span> Best Performing QR Link
+            <Trophy size={14} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px", color: "var(--warning)" }} />
+            Best Performing QR Link
           </span>
           <span className="qr-range-tag">{rangeLabel}</span>
         </div>
@@ -3428,7 +3443,7 @@ function QRScanInsights({
                   onClick={() => onCopy?.({ _id: bestLink.linkId || bestLink._id, shortCode: bestLink.shortCode })}
                   title="Copy short link"
                 >
-                  {copiedLinkId === (bestLink.linkId || bestLink._id) ? "✓ Copied" : "Copy"}
+                  {copiedLinkId === (bestLink.linkId || bestLink._id) ? "Copied" : "Copy"}
                 </SpecularButton>
                 <SpecularButton
                   variant="ghost"
@@ -3476,7 +3491,7 @@ function QRScanInsights({
           </div>
         ) : (
           <div className="qr-best-zero-state">
-            <span className="qr-zero-icon">🎯</span>
+            <QrCode size={24} style={{ color: "var(--accent)" }} />
             <div>
               <p className="qr-zero-title">No QR scans recorded for the {rangeLabel}</p>
               <p className="qr-zero-desc">
@@ -3492,7 +3507,7 @@ function QRScanInsights({
         <div className="table-topbar">
           <div className="table-topbar-title">
             <h3>
-              <span style={{ marginRight: "6px" }}>🔥</span>
+              <TrendingUp size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px", color: "var(--accent)" }} />
               Top Performing QR Links
             </h3>
             <p>
@@ -3536,7 +3551,7 @@ function QRScanInsights({
                     <tr key={linkKey} className={rank === 1 ? "qr-top-row-first" : ""}>
                       <td style={{ textAlign: "center" }}>
                         <span className={`qr-rank-pill rank-${rank}`}>
-                          {rank === 1 ? "🥇 #1" : rank === 2 ? "🥈 #2" : rank === 3 ? "🥉 #3" : `#${rank}`}
+                          #{rank}
                         </span>
                       </td>
                       <td>
@@ -3687,7 +3702,7 @@ function QRAnalyticsView({
       <div className="page-greeting">
         <div className="campaigns-title-row">
           <div>
-            <h1>QR Code Scan Analytics 📱</h1>
+            <h1>QR Analytics</h1>
             <p>Track QR code engagement, compare scans against direct link visits, and monitor per-link conversion.</p>
           </div>
 
@@ -3718,7 +3733,7 @@ function QRAnalyticsView({
               disabled={qrLoading}
               title="Refresh QR analytics"
             >
-              <span className={qrLoading ? "spinning" : ""}>🔄</span>
+              <RefreshCw size={14} className={qrLoading ? "spinning" : ""} />
               <span>{qrLoading ? "Refreshing..." : "Refresh"}</span>
             </SpecularButton>
           </div>
@@ -3729,7 +3744,7 @@ function QRAnalyticsView({
       {qrError && (
         <div className="campaign-error-banner">
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span className="error-icon">⚠️</span>
+            <span className="error-icon"><AlertTriangle size={16} /></span>
             <span>{qrError}</span>
           </div>
           <SpecularButton
@@ -3758,7 +3773,7 @@ function QRAnalyticsView({
           <div className={`donuts-grid ${qrLoading ? "data-refreshing" : ""}`}>
             <DonutChart
               title="Traffic Channel (QR Scans vs Direct Clicks)"
-              icon="📱"
+              icon={<QrCode size={16} />}
               data={[
                 { name: "QR Scans", count: summary?.qrClicks || 0, color: "#8B5CF6" },
                 { name: "Direct Clicks", count: summary?.directClicks || 0, color: "#06B6D4" },
@@ -3769,7 +3784,7 @@ function QRAnalyticsView({
             <div className="donut-card qr-summary-card">
               <div className="donut-card-top">
                 <h4>
-                  <span style={{ marginRight: "8px" }}>📊</span>
+                  <BarChart3 size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px", color: "var(--accent)" }} />
                   Channel Engagement Summary
                 </h4>
                 <span className="donut-total-count">
@@ -3820,10 +3835,10 @@ function QRAnalyticsView({
 
                 <p className="qr-insight-description">
                   {summary?.qrClicks > summary?.directClicks
-                    ? "🎉 QR scans account for the majority of your traffic! Your physical, print, or presentation materials are performing strongly."
+                    ? "QR scans account for the majority of your traffic. Physical, print, and presentation materials are performing strongly."
                     : summary?.qrClicks > 0
-                    ? "💡 QR codes are actively driving visits alongside direct digital links. Use the QR Code button to download print-ready codes."
-                    : "🚀 No QR scans recorded yet. Use the 'QR Code' action on any link below to download and distribute your QR code!"}
+                    ? "QR codes are actively driving visits alongside direct digital links. Use the QR Code button to download print-ready codes."
+                    : "No QR scans recorded yet. Use the 'QR Code' action on any link below to download and distribute your QR code."}
                 </p>
               </div>
             </div>
@@ -3851,7 +3866,7 @@ function QRAnalyticsView({
           {/* 4. Empty State Banner if user has 0 total clicks */}
           {isZeroState && (
             <div className="campaign-empty-banner">
-              <div className="campaign-empty-icon">📱</div>
+              <div className="campaign-empty-icon"><QrCode size={32} style={{ color: "var(--accent)" }} /></div>
               <div className="campaign-empty-text">
                 <h4>Awaiting first QR scan or click</h4>
                 <p>
@@ -4051,8 +4066,8 @@ function GeoQRComparisonChart({ qrVsDirect = [] }) {
               </div>
 
               <div className="geo-bar-stats">
-                <span className="geo-qr-stat">📱 {item.qrClicks} QR</span>
-                <span className="geo-direct-stat">🌐 {item.directClicks} Direct</span>
+                <span className="geo-qr-stat">{item.qrClicks} QR</span>
+                <span className="geo-direct-stat">{item.directClicks} Direct</span>
               </div>
             </div>
           );
@@ -4141,12 +4156,12 @@ function TopCountriesTable({ countries = [], onSelectCountry }) {
                     </td>
                     <td>
                       <span className="geo-channel-pill qr">
-                        📱 {c.qrClicks} ({c.qrPercentage}%)
+                        {c.qrClicks} ({c.qrPercentage}%)
                       </span>
                     </td>
                     <td>
                       <span className="geo-channel-pill direct">
-                        🌐 {c.directClicks}
+                        {c.directClicks}
                       </span>
                     </td>
                     <td>
@@ -4254,10 +4269,10 @@ function TopCitiesTable({ cities = [], onSelectCity }) {
                       <span className="clicks-badge">{c.totalClicks}</span>
                     </td>
                     <td>
-                      <span className="geo-channel-pill qr">📱 {c.qrClicks}</span>
+                      <span className="geo-channel-pill qr">{c.qrClicks}</span>
                     </td>
                     <td>
-                      <span className="geo-channel-pill direct">🌐 {c.directClicks}</span>
+                      <span className="geo-channel-pill direct">{c.directClicks}</span>
                     </td>
                     <td>
                       <span className="geo-percentage-text" style={{ fontWeight: 650 }}>
@@ -4326,7 +4341,7 @@ function GeoAnalyticsView({
       <div className="page-greeting">
         <div className="campaigns-title-row">
           <div>
-            <h1>Geo-Location Analytics 🌍</h1>
+            <h1>Geo Analytics</h1>
             <p>
               Track approximate visitor country and city locations, comparing physical QR scans with digital visits globally.
             </p>
@@ -4407,7 +4422,7 @@ function GeoAnalyticsView({
           {/* 2. Zero Traffic State */}
           {isZeroState ? (
             <div className="campaign-empty-card">
-              <div className="campaign-empty-icon" style={{ fontSize: "42px" }}>🌍</div>
+              <div className="campaign-empty-icon"><Globe size={36} style={{ color: "var(--accent)" }} /></div>
               <div className="campaign-empty-text">
                 <h4>No geographic traffic recorded yet</h4>
                 <p>
@@ -5810,7 +5825,60 @@ function App() {
               </span>
               <span className="nav-item-text">Dashboard</span>
             </button>
+          </nav>
+        </div>
 
+        {/* 2. LINKS Group */}
+        <div className="sidebar-nav-group">
+          <p className="sidebar-nav-heading">LINKS</p>
+          <nav className="sidebar-nav">
+            <button
+              type="button"
+              className="nav-item quick-action"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                if (activeView !== "dashboard") {
+                  setActiveView("dashboard");
+                  setTimeout(() => {
+                    const tableEl = document.querySelector(".links-table-card");
+                    if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
+                  }, 60);
+                } else {
+                  const tableEl = document.querySelector(".links-table-card");
+                  if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              title="My Links"
+              data-tooltip="My Links"
+            >
+              <span className="nav-item-icon">
+                <Link2 size={18} />
+              </span>
+              <span className="nav-item-text">My Links</span>
+            </button>
+
+            <button
+              type="button"
+              className={`nav-item ${activeView === "qr-analytics" ? "active" : ""}`}
+              onClick={() => {
+                setActiveView("qr-analytics");
+                setIsMobileMenuOpen(false);
+              }}
+              title="QR Analytics"
+              data-tooltip="QR Analytics"
+            >
+              <span className="nav-item-icon">
+                <QrCode size={18} />
+              </span>
+              <span className="nav-item-text">QR Analytics</span>
+            </button>
+          </nav>
+        </div>
+
+        {/* 3. ANALYTICS Group */}
+        <div className="sidebar-nav-group">
+          <p className="sidebar-nav-heading">ANALYTICS</p>
+          <nav className="sidebar-nav">
             <button
               type="button"
               className={`nav-item ${activeView === "campaigns" ? "active" : ""}`}
@@ -5829,22 +5897,6 @@ function App() {
 
             <button
               type="button"
-              className={`nav-item ${activeView === "qr-analytics" ? "active" : ""}`}
-              onClick={() => {
-                setActiveView("qr-analytics");
-                setIsMobileMenuOpen(false);
-              }}
-              title="QR Analytics"
-              data-tooltip="QR Analytics"
-            >
-              <span className="nav-item-icon">
-                <QrCode size={18} />
-              </span>
-              <span className="nav-item-text">QR Analytics</span>
-            </button>
-
-            <button
-              type="button"
               className={`nav-item ${activeView === "geo-analytics" ? "active" : ""}`}
               onClick={() => {
                 setActiveView("geo-analytics");
@@ -5858,13 +5910,7 @@ function App() {
               </span>
               <span className="nav-item-text">Geo Analytics</span>
             </button>
-          </nav>
-        </div>
 
-        {/* 2. INTELLIGENCE Group */}
-        <div className="sidebar-nav-group">
-          <p className="sidebar-nav-heading">INTELLIGENCE</p>
-          <nav className="sidebar-nav">
             <button
               type="button"
               className={`nav-item ${activeView === "device-analytics" ? "active" : ""}`}
@@ -5920,8 +5966,8 @@ function App() {
                 setActiveView("anomaly-detection");
                 setIsMobileMenuOpen(false);
               }}
-              title="Smart Traffic Intelligence"
-              data-tooltip="Smart Traffic Intelligence"
+              title="Traffic Intelligence"
+              data-tooltip="Traffic Intelligence"
             >
               <span className="nav-item-icon">
                 <ShieldAlert size={18} />
@@ -5931,9 +5977,9 @@ function App() {
           </nav>
         </div>
 
-        {/* 3. MANAGEMENT & TOOLS Group */}
+        {/* 4. SETTINGS Group */}
         <div className="sidebar-nav-group">
-          <p className="sidebar-nav-heading">MANAGEMENT & TOOLS</p>
+          <p className="sidebar-nav-heading">SETTINGS</p>
           <nav className="sidebar-nav">
             <button
               type="button"
@@ -5958,38 +6004,13 @@ function App() {
                 setActiveView("reports");
                 setIsMobileMenuOpen(false);
               }}
-              title="Automated Reports"
-              data-tooltip="Automated Reports"
+              title="Reports & Export"
+              data-tooltip="Reports & Export"
             >
               <span className="nav-item-icon">
                 <FileText size={18} />
               </span>
               <span className="nav-item-text">Reports & Export</span>
-            </button>
-
-            <button
-              type="button"
-              className="nav-item quick-action"
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                if (activeView !== "dashboard") {
-                  setActiveView("dashboard");
-                  setTimeout(() => {
-                    const tableEl = document.querySelector(".links-table-card");
-                    if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
-                  }, 60);
-                } else {
-                  const tableEl = document.querySelector(".links-table-card");
-                  if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
-                }
-              }}
-              title="My Links"
-              data-tooltip="My Links"
-            >
-              <span className="nav-item-icon">
-                <Link2 size={18} />
-              </span>
-              <span className="nav-item-text">My Links</span>
             </button>
 
             <button
@@ -6007,8 +6028,8 @@ function App() {
                   handleOpenAnalytics(target);
                 }
               }}
-              title="Link Analytics Modal"
-              data-tooltip="Link Analytics Modal"
+              title="Quick Analytics"
+              data-tooltip="Quick Analytics"
             >
               <span className="nav-item-icon">
                 <BarChart3 size={18} />
@@ -6058,17 +6079,16 @@ function App() {
               <Menu size={20} />
             </button>
 
-            <div className="topbar-search-box">
-              <Search className="topbar-search-icon" size={16} />
-              <input
-                type="search"
-                className="topbar-search-input"
-                placeholder="Search links..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                aria-label="Search links"
-              />
-            </div>
+            <Input
+              icon={Search}
+              shortcut="Ctrl+K"
+              type="search"
+              placeholder="Search links..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ width: "260px" }}
+              aria-label="Search links"
+            />
           </div>
 
           <div className="topbar-actions">
@@ -6129,7 +6149,7 @@ function App() {
                       </div>
                     ) : notificationsError ? (
                       <div className="notifications-empty-state error">
-                        <span className="notifications-empty-icon">⚠️</span>
+                        <span className="notifications-empty-icon"><AlertTriangle size={24} style={{ color: "var(--warning)" }} /></span>
                         <p className="notifications-empty-title">Unable to load</p>
                         <p className="notifications-empty-desc">{notificationsError}</p>
                         <SpecularButton
@@ -6143,7 +6163,7 @@ function App() {
                       </div>
                     ) : notifications.length === 0 ? (
                       <div className="notifications-empty-state">
-                        <span className="notifications-empty-icon">🔔</span>
+                        <span className="notifications-empty-icon"><Bell size={24} style={{ color: "var(--text-muted)" }} /></span>
                         <p className="notifications-empty-title">No notifications yet</p>
                         <p className="notifications-empty-desc">
                           We&apos;ll notify you when your links get clicks or reach milestones.
@@ -6249,9 +6269,10 @@ function App() {
               <span className="topbar-profile-name">{user?.username || "Vijay"}</span>
             </div>
 
-            <SpecularButton
+            <Button
               variant="primary"
               size="md"
+              icon={Plus}
               className="btn-create-primary"
               onClick={() => {
                 setShowCreateModal(true);
@@ -6265,9 +6286,8 @@ function App() {
                 setShowAccessSection(false);
               }}
             >
-              <Plus size={16} />
-              <span>Create Link</span>
-            </SpecularButton>
+              Create link
+            </Button>
           </div>
         </header>
 
@@ -6280,23 +6300,8 @@ function App() {
             <AnimatedContent distance={20} delay={0.05}>
               <div className="page-greeting">
                 <div className="page-greeting-text">
-                  <h1 style={{ margin: "0 0 6px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                    <SplitText
-                      text={`Welcome back, ${user?.username || "Vijay"}!`}
-                      tag="span"
-                      className="dashboard-heading-text"
-                      effect="rise"
-                      splitType="chars"
-                      trigger="load"
-                      delay={35}
-                      duration={0.8}
-                      staggerFrom="start"
-                      loop={false}
-                      hoverEffect="none"
-                      mask={false}
-                      textAlign="left"
-                    />
-                    <span aria-hidden="true">👋</span>
+                  <h1 style={{ margin: "0 0 6px", fontSize: "20px", fontWeight: "600", color: "var(--text)" }}>
+                    Welcome back, {user?.username || "Vijay"}!
                   </h1>
                   <p>Here&apos;s an overview of your links and performance.</p>
                 </div>
@@ -6304,22 +6309,25 @@ function App() {
                 {/* Section A: Compact Global Date-Range Selector */}
                 <div className="header-range-controls">
                   <span className="header-range-label">Timeframe:</span>
-                  <div className="header-time-pills" role="radiogroup" aria-label="Global Time Period">
-                    {[
-                      { id: "7d", label: "7D" },
-                      { id: "30d", label: "30D" },
-                      { id: "all", label: "All Time" },
-                    ].map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        className={`header-time-pill-btn ${timeRange === t.id ? "active" : ""}`}
-                        onClick={() => handleGlobalRangeChange(t.id)}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
+                  <SegmentedControl
+                    options={[
+                      { value: "7d", label: "7D" },
+                      { value: "30d", label: "30D" },
+                      { value: "all", label: "All Time" },
+                    ]}
+                    value={timeRange}
+                    onChange={handleGlobalRangeChange}
+                  />
+                  <Button
+                    variant="glass"
+                    size="sm"
+                    icon={RefreshCw}
+                    onClick={() => {
+                      fetchDashboardAnalytics(timeRange);
+                    }}
+                    title="Refresh data"
+                    aria-label="Refresh data"
+                  />
                 </div>
               </div>
             </AnimatedContent>
@@ -6358,7 +6366,7 @@ function App() {
                 <div className="three-col-item">
                   <DonutChart
                     title="Device Breakdown"
-                    icon="📱"
+                    icon={<Smartphone size={16} />}
                     data={dashboardAnalytics?.devices || []}
                     emptyMessage="No device data recorded yet. Share your short link to view visitor platforms."
                   />
@@ -6366,7 +6374,7 @@ function App() {
                 <div className="three-col-item">
                   <DonutChart
                     title="Browser Breakdown"
-                    icon="🌐"
+                    icon={<Globe size={16} />}
                     data={dashboardAnalytics?.browsers || []}
                     emptyMessage="No browser data recorded yet. Visitor browsers will appear after clicks."
                   />
@@ -6904,12 +6912,12 @@ function App() {
                   <div className="donuts-grid">
                     <DonutChart
                       title="Device Breakdown"
-                      icon="📱"
+                      icon={<Smartphone size={16} />}
                       data={detailAnalytics?.devices || []}
                     />
                     <DonutChart
                       title="Browser Breakdown"
-                      icon="🌐"
+                      icon={<Globe size={16} />}
                       data={detailAnalytics?.browsers || []}
                     />
                   </div>

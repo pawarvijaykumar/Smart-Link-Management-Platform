@@ -231,7 +231,8 @@ const loginUser = async (req, res) => {
         message: "Authentication service misconfiguration",
       });
     }
-
+    console.log("LOGIN TRY:", JSON.stringify(email), "DB:", User.db.name, "HOST:", User.db.host);
+console.log("USERS IN DB:", await User.find({}, { email: 1, username: 1 }).lean());
     const user = await User.findOne({ email: email.trim().toLowerCase() });
 
     if (!user) {

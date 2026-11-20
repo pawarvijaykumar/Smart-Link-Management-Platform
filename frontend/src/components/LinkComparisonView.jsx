@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
 import SpecularButton from "./SpecularButton";
+import { ArrowRightLeft, Trophy, AlertTriangle, Info, X, Smartphone, Monitor, Tablet, HardDrive, QrCode, Globe } from "lucide-react";
 
 export const LINK_COLORS = [
   "#8B5CF6", // 0: Violet
@@ -99,7 +100,7 @@ function LinkSelector({
       <div className="comparison-selector-header">
         <div>
           <h3 className="comparison-selector-title">
-            <span>🔗</span> Compare Short Links
+            Compare Short Links
           </h3>
           <p className="comparison-selector-subtitle">
             Select 2 or more short links from your account to benchmark performance side by side.
@@ -170,7 +171,7 @@ function LinkSelector({
                 aria-label={`Remove s/${link.shortCode} from comparison`}
                 title="Remove link"
               >
-                ✕
+                <X size={12} />
               </button>
             </div>
           );
@@ -238,7 +239,7 @@ function LinkSelector({
 
       {selectedIds.length < 2 && (
         <div className="comparison-warning-banner">
-          <span>💡</span>
+          <Info size={15} style={{ color: "var(--accent)" }} />
           <span>
             Please select at least <strong>2 links</strong> to enable side-by-side performance comparison.
             ({selectedIds.length} of 2 selected)
@@ -256,7 +257,7 @@ function BestPerformerBanner({ bestPerformer, totalClicksCombined = 0 }) {
   if (!bestPerformer) {
     return (
       <div className="comparison-best-performer-card empty">
-        <div className="best-performer-icon">⚖️</div>
+        <div className="best-performer-icon"><ArrowRightLeft size={16} /></div>
         <div>
           <h4 className="best-performer-title">No Clicks Recorded</h4>
           <p className="best-performer-subtext">
@@ -270,7 +271,7 @@ function BestPerformerBanner({ bestPerformer, totalClicksCombined = 0 }) {
   return (
     <div className="comparison-best-performer-card">
       <div className="best-performer-left">
-        <div className="best-performer-trophy">🏆</div>
+        <div className="best-performer-trophy"><Trophy size={16} /></div>
         <div>
           <div className="best-performer-badge">Top Performing Link</div>
           <h4 className="best-performer-title">
@@ -348,10 +349,16 @@ function ComparisonKPICards({ links = [], summary = {}, range = "7d" }) {
             <span className="metric-card-label">Primary Channel</span>
             <span className="channel-badge live">Insight</span>
           </div>
-          <div className="campaign-metric-value" style={{ fontSize: "20px" }}>
-            {(summary.totalQRCombined || 0) >= (summary.totalDirectCombined || 0)
-              ? "📱 QR Scans"
-              : "🌐 Direct Visits"}
+          <div className="campaign-metric-value" style={{ fontSize: "18px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            {(summary.totalQRCombined || 0) >= (summary.totalDirectCombined || 0) ? (
+              <>
+                <QrCode size={18} style={{ color: "var(--accent)" }} /> QR Scans
+              </>
+            ) : (
+              <>
+                <Globe size={18} style={{ color: "var(--accent)" }} /> Direct Visits
+              </>
+            )}
           </div>
           <p className="campaign-metric-subtext">Leading traffic acquisition source</p>
         </div>
@@ -469,7 +476,7 @@ function TotalClicksBarChart({ links = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>📊</span> Total Click Comparison
+            Total Click Comparison
           </h3>
           <p className="traffic-chart-subtitle">
             Relative click volume across selected short links
@@ -554,7 +561,7 @@ function QRvsDirectGroupedChart({ links = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>📱</span> QR Scans vs. Direct Visits Comparison
+            QR Scans vs. Direct Visits Comparison
           </h3>
           <p className="traffic-chart-subtitle">
             Channel acquisition split across compared links
@@ -664,10 +671,10 @@ function DeviceDistributionComparison({ links = [] }) {
   };
 
   const deviceIcons = {
-    mobile: "📱",
-    desktop: "🖥️",
-    tablet: "📟",
-    unknown: "🔌",
+    mobile: <Smartphone size={13} />,
+    desktop: <Monitor size={13} />,
+    tablet: <Tablet size={13} />,
+    unknown: <HardDrive size={13} />,
   };
 
   return (
@@ -675,7 +682,7 @@ function DeviceDistributionComparison({ links = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>💻</span> Device Category Breakdown
+            Device Category Breakdown
           </h3>
           <p className="traffic-chart-subtitle">
             Visitor hardware segmentation comparison per link
@@ -769,7 +776,7 @@ function GeographicComparison({ links = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>🌍</span> Geographic Traffic Comparison
+            Geographic Traffic Comparison
           </h3>
           <p className="traffic-chart-subtitle">
             Top countries and cities driving visitors to each link
@@ -917,7 +924,7 @@ function MultiLineDailyTrendChart({ links = [], dates = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>📈</span> Daily Traffic Trend Comparison
+            Daily Traffic Trend Comparison
           </h3>
           <p className="traffic-chart-subtitle">
             Daily visitor trajectories across compared links (IST Timezone)
@@ -1252,7 +1259,7 @@ export default function LinkComparisonView({
               gap: "8px",
             }}
           >
-            <span>⚖️</span> Link Performance Comparison
+            Link Comparison
           </h2>
           <p style={{ margin: 0, fontSize: "13px", color: "var(--text-muted)" }}>
             Side-by-side performance benchmarking across short links, channels, devices & regions
@@ -1320,8 +1327,8 @@ export default function LinkComparisonView({
 
       {/* Error Banner */}
       {error && (
-        <div className="analytics-error-banner" style={{ margin: "16px 0" }}>
-          <span>⚠️</span> {error}
+        <div className="analytics-error-banner" style={{ margin: "16px 0", display: "flex", alignItems: "center", gap: "8px" }}>
+          <AlertTriangle size={15} style={{ color: "var(--danger)" }} /> <span>{error}</span>
         </div>
       )}
 
@@ -1374,7 +1381,7 @@ export default function LinkComparisonView({
       {/* Empty State when fewer than 2 links selected */}
       {!loading && selectedIds.length < 2 && (
         <div className="comparison-empty-selection-card">
-          <div style={{ fontSize: "42px", marginBottom: "12px" }}>📊</div>
+          <div style={{ marginBottom: "12px", color: "var(--accent)" }}><ArrowRightLeft size={36} /></div>
           <h3 style={{ color: "#ffffff", fontSize: "17px", margin: "0 0 6px 0" }}>
             Select Links to Benchmark
           </h3>

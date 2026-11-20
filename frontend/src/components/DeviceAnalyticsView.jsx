@@ -7,59 +7,40 @@
 
 import { useState, useMemo } from "react";
 import SpecularButton from "./SpecularButton";
+import { Smartphone, Laptop, Monitor, Globe, Cpu, AlertTriangle } from "lucide-react";
 
 // Helper icon renderers for Operating Systems
 function getOsIcon(name = "") {
   const lower = name.toLowerCase();
-  if (lower.includes("android")) return "🤖";
-  if (lower.includes("ios") || lower.includes("iphone") || lower.includes("ipad")) return "🍏";
-  if (lower.includes("windows")) return "🪟";
-  if (lower.includes("macos") || lower.includes("mac")) return "💻";
-  if (lower.includes("linux")) return "🐧";
-  if (lower.includes("chromeos")) return "🌐";
-  return "💻";
+  if (lower.includes("android") || lower.includes("ios") || lower.includes("iphone") || lower.includes("ipad")) {
+    return <Smartphone size={15} style={{ color: "var(--accent)" }} />;
+  }
+  return <Laptop size={15} style={{ color: "var(--accent)" }} />;
 }
 
 // Helper icon renderers for Browsers
 function getBrowserIcon(name = "") {
-  const lower = name.toLowerCase();
-  if (lower.includes("chrome")) return "🌐";
-  if (lower.includes("safari")) return "🧭";
-  if (lower.includes("firefox")) return "🦊";
-  if (lower.includes("edge")) return "🌊";
-  if (lower.includes("opera")) return "🔴";
-  if (lower.includes("samsung")) return "🌌";
-  if (lower.includes("brave")) return "🦁";
-  if (lower.includes("uc")) return "🐿️";
-  if (lower.includes("curl") || lower.includes("postman")) return "⚡";
-  return "🌐";
+  return <Globe size={15} style={{ color: "var(--accent)" }} />;
 }
 
 // Helper icon renderers for Device Types
 function getDeviceTypeIcon(type = "") {
   const lower = type.toLowerCase();
-  if (lower === "mobile") return "📱";
-  if (lower === "desktop") return "🖥️";
-  if (lower === "tablet") return "📟";
-  return "🔌";
+  if (lower === "mobile" || lower === "tablet") {
+    return <Smartphone size={15} style={{ color: "var(--accent)" }} />;
+  }
+  return <Monitor size={15} style={{ color: "var(--accent)" }} />;
 }
 
 // Helper icon renderers for Hardware Vendors
 function getVendorIcon(vendor = "") {
-  const lower = vendor.toLowerCase();
-  if (lower.includes("apple")) return "🍏";
-  if (lower.includes("samsung")) return "📱";
-  if (lower.includes("google")) return "🇬";
-  if (lower.includes("xiaomi") || lower.includes("redmi") || lower.includes("poco")) return "🟠";
-  if (lower.includes("oneplus")) return "🔴";
-  if (lower.includes("motorola") || lower.includes("moto")) return "Ⓜ️";
-  return "🏷️";
+  return <Cpu size={15} style={{ color: "var(--accent)" }} />;
 }
 
 // -----------------------------------------------------------------------------
 // Sub-component: Device Donut Chart
 // -----------------------------------------------------------------------------
-function DeviceDonutChart({ data = [], title = "Device Category Split", icon = "📊" }) {
+function DeviceDonutChart({ data = [], title = "Device Category Split", icon = null }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
   const activeItems = useMemo(() => {
@@ -355,7 +336,7 @@ export default function DeviceAnalyticsView({
       <div className="page-greeting">
         <div className="campaigns-title-row">
           <div>
-            <h1>Devices & Operating Systems 📱💻</h1>
+            <h1>Devices & Operating Systems</h1>
             <p>
               Monitor visitor device hardware, operating system distribution, browser engines, and version adoption across direct links and QR scans.
             </p>
@@ -413,7 +394,7 @@ export default function DeviceAnalyticsView({
       {deviceError && (
         <div className="auth-alert error" style={{ marginBottom: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span>⚠️</span>
+            <AlertTriangle size={16} />
             <span>{deviceError}</span>
           </div>
           <SpecularButton
@@ -437,7 +418,7 @@ export default function DeviceAnalyticsView({
       ) : isZeroState ? (
         // 4. Zero State
         <div className="card-box empty-state-card" style={{ textAlign: "center", padding: "48px 24px" }}>
-          <div style={{ fontSize: "44px", marginBottom: "14px" }}>📱💻</div>
+          <div style={{ marginBottom: "14px", color: "var(--accent)" }}><Smartphone size={40} /></div>
           <h3 style={{ color: "var(--text-primary)", fontSize: "18px", fontWeight: "700", marginBottom: "8px" }}>
             No Device Traffic Recorded Yet
           </h3>
@@ -470,12 +451,12 @@ export default function DeviceAnalyticsView({
           <div className={`donuts-grid ${deviceLoading ? "data-refreshing" : ""}`}>
             <DeviceDonutChart
               title="Device Category Split"
-              icon="📱"
+              icon={<Smartphone size={16} />}
               data={deviceDonutData}
             />
             <DeviceDonutChart
               title="Operating System Split"
-              icon="💻"
+              icon={<Laptop size={16} />}
               data={osDonutData}
             />
           </div>
@@ -484,7 +465,7 @@ export default function DeviceAnalyticsView({
           <div className={`card-box ${deviceLoading ? "data-refreshing" : ""}`} style={{ padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h3 style={{ fontSize: "15px", fontWeight: "700", color: "#fff", display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
-                <span>📲</span> Device Category Attribution (QR Scans vs Direct Visits)
+                Device Category Attribution (QR Scans vs Direct Visits)
               </h3>
               <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                 Total: {(summary?.totalClicks || 0).toLocaleString()} clicks
@@ -573,7 +554,7 @@ export default function DeviceAnalyticsView({
             <div className="geo-table-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#fff", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span>💻</span> Operating Systems & Versions
+                  Operating Systems & Versions
                 </h4>
                 <span style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
                   {operatingSystems.length} detected
@@ -670,7 +651,7 @@ export default function DeviceAnalyticsView({
             <div className="geo-table-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#fff", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span>🌐</span> Web Browsers & Versions
+                  Web Browsers & Versions
                 </h4>
                 <span style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
                   {browsers.length} detected
@@ -770,7 +751,7 @@ export default function DeviceAnalyticsView({
             <div className="geo-table-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#fff", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span>🏭</span> Hardware Manufacturers
+                  Hardware Manufacturers
                 </h4>
                 <span style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
                   {vendors.length} detected
@@ -844,7 +825,7 @@ export default function DeviceAnalyticsView({
             <div className="geo-table-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#fff", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span>📱</span> Detected Device Models
+                  Detected Device Models
                 </h4>
                 <span style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
                   {models.length} recognized

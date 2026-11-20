@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import SpecularButton from "./SpecularButton";
+import { Globe, Map as MapIcon, Building2, Info } from "lucide-react";
 import * as d3 from "d3";
 import * as topojson from "topojson-client";
 import worldData from "world-atlas/countries-110m.json";
@@ -628,8 +629,9 @@ export default function RotatingDottedGlobe({
               type="button"
               className={`crumb-btn ${drillLevel === "world" ? "active" : ""}`}
               onClick={handleBackToWorld}
+              style={{ display: "inline-flex", alignItems: "center" }}
             >
-              🌍 World Map
+              <Globe size={13} style={{ marginRight: "5px" }} /> World Map
             </button>
 
             {selectedCountry && (
@@ -661,7 +663,9 @@ export default function RotatingDottedGlobe({
             {selectedCity && (
               <>
                 <span className="crumb-separator">/</span>
-                <span className="crumb-current">🏙️ {selectedCity.city}</span>
+                <span className="crumb-current" style={{ display: "inline-flex", alignItems: "center" }}>
+                  <Building2 size={13} style={{ marginRight: "4px" }} /> {selectedCity.city}
+                </span>
               </>
             )}
           </div>
@@ -714,16 +718,18 @@ export default function RotatingDottedGlobe({
                   className={`map-toggle-btn ${viewMode === "2d" ? "active" : ""}`}
                   onClick={() => setViewMode("2d")}
                   title="Switch to 2D Flat World Map"
+                  style={{ display: "inline-flex", alignItems: "center" }}
                 >
-                  🗺️ 2D Map
+                  <MapIcon size={13} style={{ marginRight: "5px" }} /> 2D Map
                 </button>
                 <button
                   type="button"
                   className={`map-toggle-btn ${viewMode === "3d" ? "active" : ""}`}
                   onClick={() => setViewMode("3d")}
                   title="Switch to 3D Rotating Globe"
+                  style={{ display: "inline-flex", alignItems: "center" }}
                 >
-                  🌐 3D Globe
+                  <Globe size={13} style={{ marginRight: "5px" }} /> 3D Globe
                 </button>
               </div>
 
@@ -1029,8 +1035,8 @@ export default function RotatingDottedGlobe({
                         </div>
                         <div className="region-card-name">{displayName}</div>
                         <div className="region-card-metrics">
-                          <span>📱 {r.qrClicks} QR ({r.qrPercentage}%)</span>
-                          <span>🌐 {r.directClicks} Direct</span>
+                          <span>QR: {r.qrClicks} ({r.qrPercentage}%)</span>
+                          <span>Direct: {r.directClicks}</span>
                         </div>
                       </div>
                     );
@@ -1069,8 +1075,8 @@ export default function RotatingDottedGlobe({
                         <span className="city-pill">{c.totalClicks} {c.totalClicks === 1 ? "visit" : "visits"}</span>
                       </div>
                       <div className="city-card-breakdown">
-                        <span className="city-qr">📱 {c.qrClicks} QR ({c.qrPercentage}%)</span>
-                        <span className="city-direct">🌐 {c.directClicks} Direct</span>
+                        <span className="city-qr">QR: {c.qrClicks} ({c.qrPercentage}%)</span>
+                        <span className="city-direct">Direct: {c.directClicks}</span>
                       </div>
                     </div>
                   ))}
@@ -1118,15 +1124,15 @@ export default function RotatingDottedGlobe({
                     </div>
                   </div>
                   <div className="city-channel-legend">
-                    <span>📱 QR Scans: <strong>{selectedCity.qrClicks}</strong></span>
-                    <span>🌐 Direct Visits: <strong>{selectedCity.directClicks}</strong></span>
+                    <span>QR Scans: <strong>{selectedCity.qrClicks}</strong></span>
+                    <span>Direct Visits: <strong>{selectedCity.directClicks}</strong></span>
                     <span>Total Visits: <strong>{selectedCity.totalClicks}</strong></span>
                   </div>
                 </div>
 
                 {/* Requirement 3: Clearly label city information as approximate because IP geolocation is not GPS */}
                 <div className="city-geo-accuracy-notice">
-                  <span className="notice-icon" style={{ fontSize: "16px" }}>ℹ️</span>
+                  <span className="notice-icon" style={{ display: "inline-flex", alignItems: "center" }}><Info size={16} /></span>
                   <div className="notice-content">
                     <strong>Approximate Location Notice:</strong>
                     <span>
