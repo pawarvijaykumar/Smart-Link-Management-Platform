@@ -1,0 +1,106 @@
+/* =============================================================================
+   AnnouncementBanner.css - Subtle Dismissible Notification Strip
+   Styled with --surface-2, 1px border, responsive flex wrapping
+   ============================================================================= */
+
+.announcement-banner {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  position: relative;
+  z-index: 50;
+  transition: all 0.2s ease;
+}
+
+.announcement-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.announcement-pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.announcement-text {
+  color: var(--text);
+  font-weight: 400;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.announcement-action {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.announcement-action:hover {
+  color: var(--accent-hover);
+}
+
+.announcement-close {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.announcement-close:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.announcement-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (max-width: 768px) {
+  .announcement-banner {
+    padding: 10px 14px;
+    align-items: flex-start;
+  }
+  .announcement-main {
+    gap: 8px;
+    padding-right: 20px;
+  }
+  .announcement-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+}

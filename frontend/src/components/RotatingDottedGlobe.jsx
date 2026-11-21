@@ -362,7 +362,7 @@ export default function RotatingDottedGlobe({
       .attr("stroke", (d) => {
         const data = getFeatureCountryData(d);
         if (data && data.totalClicks > 0) return "rgba(52, 211, 153, 0.7)";
-        return "rgba(255, 255, 255, 0.12)";
+        return "var(--border)";
       })
       .attr("stroke-width", (d) => {
         const data = getFeatureCountryData(d);
@@ -405,7 +405,7 @@ export default function RotatingDottedGlobe({
         setHoveredCountry(null);
         const data = getFeatureCountryData(d);
         d3.select(event.currentTarget)
-          .attr("stroke", data && data.totalClicks > 0 ? "rgba(52, 211, 153, 0.7)" : "rgba(255, 255, 255, 0.12)")
+          .attr("stroke", data && data.totalClicks > 0 ? "rgba(52, 211, 153, 0.7)" : "var(--border)")
           .attr("stroke-width", data && data.totalClicks > 0 ? 1.4 : 0.6);
       })
       .on("click", (event, d) => {
@@ -825,7 +825,7 @@ export default function RotatingDottedGlobe({
                 height="440"
                 rx="12"
                 fill="url(#ocean2D)"
-                stroke="rgba(255, 255, 255, 0.08)"
+                stroke="var(--border)"
                 strokeWidth="1"
               />
 
@@ -866,10 +866,10 @@ export default function RotatingDottedGlobe({
                         isSelected
                           ? "#38BDF8"
                           : isHovered
-                          ? "#FFFFFF"
+                          ? "var(--text)"
                           : hasData
-                          ? "rgba(255, 255, 255, 0.45)"
-                          : "rgba(255, 255, 255, 0.1)"
+                          ? "var(--accent)"
+                          : "var(--border)"
                       }
                       strokeWidth={isSelected ? 2.5 : isHovered ? 2 : hasData ? 1 : 0.6}
                       filter={hasData && (isHovered || isSelected) ? "url(#countryGlow2D)" : "none"}
@@ -1208,7 +1208,7 @@ function USStatesVectorMap({ regions = [], onSelectRegion }) {
       .attr("stroke", (d) => {
         const code = fipsToCode[d.id];
         const data = code ? regionClicksMap.get(code) : null;
-        return data && data.totalClicks > 0 ? "#10B981" : "rgba(255, 255, 255, 0.15)";
+        return data && data.totalClicks > 0 ? "#10B981" : "var(--border)";
       })
       .attr("stroke-width", 1)
       .style("cursor", "pointer")
@@ -1219,7 +1219,7 @@ function USStatesVectorMap({ regions = [], onSelectRegion }) {
         const code = fipsToCode[d.id];
         const data = code ? regionClicksMap.get(code) : null;
         d3.select(this)
-          .attr("stroke", data && data.totalClicks > 0 ? "#10B981" : "rgba(255, 255, 255, 0.15)")
+          .attr("stroke", data && data.totalClicks > 0 ? "#10B981" : "var(--border)")
           .attr("stroke-width", 1);
       })
       .on("click", (event, d) => {

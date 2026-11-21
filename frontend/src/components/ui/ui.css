@@ -55,8 +55,8 @@
 }
 
 .ui-btn--glass:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.20);
+  background: var(--surface-hover);
+  border-color: var(--border);
 }
 
 /* Primary Glass Button */
@@ -111,9 +111,12 @@
 
 .ui-btn:disabled,
 .ui-btn--disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
   pointer-events: none;
+  background: var(--surface-2) !important;
+  border-color: var(--border) !important;
+  color: var(--text-dim) !important;
 }
 
 /* Loading Spinner */
@@ -160,7 +163,7 @@
 
 .ui-card-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
   letter-spacing: -0.01em;
@@ -217,11 +220,24 @@
 }
 
 .ui-stat-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
   color: var(--text-muted);
+}
+
+.ui-stat-icon {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-stat-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--text-muted);
 }
 
 .ui-stat-sparkline {
@@ -231,11 +247,11 @@
 .ui-stat-value {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 600;
-  line-height: 1.15;
+  line-height: 1.2;
   color: var(--text);
-  letter-spacing: -0.02em;
+  letter-spacing: normal;
 }
 
 .ui-stat-bottom {
@@ -337,7 +353,7 @@
 }
 
 .ui-badge--muted {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-2);
   color: var(--text-dim);
   border: 1px solid transparent;
 }
@@ -384,7 +400,7 @@
 
 .ui-segmented-item:hover:not(.ui-segmented-item--active) {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-2);
 }
 
 .ui-segmented-item--active {
@@ -516,10 +532,10 @@
   padding: 12px 16px;
   background: var(--bg-surface-2);
   color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
@@ -756,7 +772,7 @@
 
 .ui-modal-close:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-hover);
 }
 
 .ui-modal-body {

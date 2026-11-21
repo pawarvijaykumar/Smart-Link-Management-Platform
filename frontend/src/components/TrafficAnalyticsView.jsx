@@ -12,7 +12,9 @@
 
 import { useState, useMemo } from "react";
 import SpecularButton from "./SpecularButton";
-import { Activity, AlertTriangle, Smartphone, Monitor, Tablet, HardDrive } from "lucide-react";
+import { SegmentedControl } from "./ui/SegmentedControl";
+import StatCard from "./ui/StatCard";
+import { Activity, AlertTriangle, Smartphone, Monitor, Tablet, HardDrive, TrendingUp, QrCode, Clock, Calendar } from "lucide-react";
 
 // -----------------------------------------------------------------------------
 // Format Helpers in Indian Standard Time (IST)
@@ -44,104 +46,33 @@ function formatHour12(h) {
 // -----------------------------------------------------------------------------
 function TrafficMetricCards({ summary, loading = false }) {
   const totalClicks = summary?.totalClicks ?? 0;
-  const qrClicks = summary?.qrClicks ?? 0;
-  const directClicks = summary?.directClicks ?? 0;
   const qrPct = summary?.qrPercentage ?? 0;
   const directPct = summary?.directPercentage ?? 0;
   const peakHour = summary?.peakHour;
-  const peakHourLabel = summary?.peakHourLabel || "N/A";
-  const peakHourClicks = summary?.peakHourClicks ?? 0;
   const topDayOfWeek = summary?.topDayOfWeek || "N/A";
-  const topDayClicks = summary?.topDayClicks ?? 0;
-
-  const cards = [
-    {
-      id: "total_clicks",
-      label: "Total Traffic",
-      value: totalClicks.toLocaleString(),
-      subtext: totalClicks > 0 ? `${totalClicks.toLocaleString()} total recorded clicks` : "No clicks recorded in range",
-      badgeText: totalClicks > 0 ? "Live Traffic" : "0 clicks",
-      badgeType: totalClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-          <polyline points="17 6 23 6 23 12" />
-        </svg>
-      ),
-      iconBg: "rgba(16, 185, 129, 0.15)",
-      iconColor: "#10B981",
-    },
-    {
-      id: "qr_direct_split",
-      label: "Channel Split",
-      value: totalClicks > 0 ? `${qrPct}% QR • ${directPct}% Dir` : "0% QR • 0% Dir",
-      subtext: `${qrClicks.toLocaleString()} QR scans • ${directClicks.toLocaleString()} Direct visits`,
-      badgeText: qrClicks > 0 ? `${qrClicks} QR scans` : "Direct dominant",
-      badgeType: qrClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <rect x="3" y="3" width="7" height="7" />
-          <rect x="14" y="3" width="7" height="7" />
-          <rect x="14" y="14" width="7" height="7" />
-          <rect x="3" y="14" width="7" height="7" />
-        </svg>
-      ),
-      iconBg: "rgba(168, 85, 247, 0.15)",
-      iconColor: "#A855F7",
-    },
-    {
-      id: "peak_hour",
-      label: "Peak Engagement (IST)",
-      value: peakHour !== null && peakHour !== undefined ? formatHour12(peakHour) : "N/A",
-      subtext: peakHourClicks > 0 ? `${peakHourClicks.toLocaleString()} clicks during peak hour` : "No peak window detected",
-      badgeText: peakHour !== null && peakHour !== undefined ? `${String(peakHour).padStart(2, "0")}:00 IST` : "Pending",
-      badgeType: peakHourClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      ),
-      iconBg: "rgba(6, 182, 212, 0.15)",
-      iconColor: "#06B6D4",
-    },
-    {
-      id: "active_day",
-      label: "Most Active Day",
-      value: topDayOfWeek,
-      subtext: topDayClicks > 0 ? `${topDayClicks.toLocaleString()} clicks on this weekday` : "Uniform daily traffic",
-      badgeText: topDayOfWeek !== "N/A" ? "Top Day" : "Pending",
-      badgeType: topDayOfWeek !== "N/A" ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-      ),
-      iconBg: "rgba(245, 158, 11, 0.15)",
-      iconColor: "#F59E0B",
-    },
-  ];
 
   return (
-    <div className={`metrics-grid ${loading ? "data-refreshing" : ""}`}>
-      {cards.map((card) => (
-        <div className="metric-card campaign-metric-card" key={card.id}>
-          <div className="metric-card-top">
-            <div className="metric-icon-badge" style={{ background: card.iconBg, color: card.iconColor }}>
-              {card.icon}
-            </div>
-            <span className={`metric-trend-pill ${card.badgeType}`}>{card.badgeText}</span>
-          </div>
-          <div className="metric-card-val campaign-metric-val" title={card.value}>
-            {card.value}
-          </div>
-          <div className="metric-card-label">{card.label}</div>
-          <div className="campaign-metric-subtext">{card.subtext}</div>
-        </div>
-      ))}
+    <div className={`metrics-grid ${loading ? "data-refreshing" : ""}`} style={{ marginBottom: "16px" }}>
+      <StatCard
+        label="Total traffic"
+        value={totalClicks.toLocaleString()}
+        icon={TrendingUp}
+      />
+      <StatCard
+        label="Channel split"
+        value={totalClicks > 0 ? `${qrPct}% QR • ${directPct}% Dir` : "0% QR • 0% Dir"}
+        icon={QrCode}
+      />
+      <StatCard
+        label="Peak engagement"
+        value={peakHour !== null && peakHour !== undefined ? formatHour12(peakHour) : "N/A"}
+        icon={Clock}
+      />
+      <StatCard
+        label="Most active day"
+        value={topDayOfWeek}
+        icon={Calendar}
+      />
     </div>
   );
 }
@@ -242,16 +173,11 @@ function DailyTrafficTrendChart({ dailyTrends = [], totalClicks = 0 }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            Daily Traffic Trend
+            Daily traffic trend
           </h3>
           <p className="traffic-chart-subtitle">
-            Daily visitor volume trajectory in Indian Standard Time (IST)
+            Daily visitor volume over time.
           </p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span className="geo-channel-pill direct" style={{ fontSize: "11.5px", padding: "4px 10px" }}>
-            Total: {totalClicks.toLocaleString()} visits
-          </span>
         </div>
       </div>
 
@@ -262,13 +188,9 @@ function DailyTrafficTrendChart({ dailyTrends = [], totalClicks = 0 }) {
           style={{ width: "100%", height: "100%", overflow: "visible" }}
         >
           <defs>
-            <linearGradient id="trafficEmeraldGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#10B981" stopOpacity="0.38" />
-              <stop offset="100%" stopColor="#10B981" stopOpacity="0.01" />
-            </linearGradient>
-            <linearGradient id="trafficLineGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#10B981" />
-              <stop offset="100%" stopColor="#34D399" />
+            <linearGradient id="trafficAccentGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
@@ -282,7 +204,7 @@ function DailyTrafficTrendChart({ dailyTrends = [], totalClicks = 0 }) {
                   y1={y}
                   x2={width - padRight}
                   y2={y}
-                  stroke="rgba(255, 255, 255, 0.07)"
+                  stroke="var(--border)"
                   strokeDasharray="4 4"
                 />
                 <text
@@ -300,14 +222,14 @@ function DailyTrafficTrendChart({ dailyTrends = [], totalClicks = 0 }) {
           })}
 
           {/* Area fill */}
-          {areaPath && <path d={areaPath} fill="url(#trafficEmeraldGradient)" />}
+          {areaPath && <path d={areaPath} fill="url(#trafficAccentGradient)" />}
 
           {/* Line */}
           {linePath && (
             <path
               d={linePath}
               fill="none"
-              stroke="url(#trafficLineGrad)"
+              stroke="var(--accent)"
               strokeWidth="2.5"
               strokeLinecap="round"
             />
@@ -322,16 +244,16 @@ function DailyTrafficTrendChart({ dailyTrends = [], totalClicks = 0 }) {
                   <circle
                     cx={p.x}
                     cy={p.y}
-                    r="8"
-                    fill="rgba(16, 185, 129, 0.25)"
+                    r="7"
+                    fill="var(--accent-soft)"
                   />
                 )}
                 <circle
                   cx={p.x}
                   cy={p.y}
-                  r={isHovered ? 4.5 : 2.5}
-                  fill="#10B981"
-                  stroke="#ffffff"
+                  r={isHovered ? 4 : 2.5}
+                  fill="var(--accent)"
+                  stroke="var(--surface)"
                   strokeWidth={isHovered ? 2 : 1}
                   style={{ cursor: "pointer", transition: "r 0.15s ease" }}
                   onMouseEnter={() => setHoveredPoint(p)}
@@ -372,16 +294,16 @@ function DailyTrafficTrendChart({ dailyTrends = [], totalClicks = 0 }) {
           >
             <div className="chart-tooltip-title">{formatShortDate(hoveredPoint.date)}</div>
             <div className="chart-tooltip-row">
-              <span className="tooltip-swatch" style={{ background: "#34D399" }} />
-              <span>Total: <strong style={{ color: "#fff" }}>{hoveredPoint.count.toLocaleString()}</strong></span>
+              <span className="tooltip-swatch" style={{ background: "var(--accent)" }} />
+              <span>Total: <strong style={{ color: "var(--text)" }}>{hoveredPoint.count.toLocaleString()}</strong></span>
             </div>
             <div className="chart-tooltip-row">
-              <span className="tooltip-swatch" style={{ background: "#A855F7" }} />
-              <span>QR Scans: <strong style={{ color: "#fff" }}>{hoveredPoint.qr.toLocaleString()}</strong></span>
+              <span className="tooltip-swatch" style={{ background: "var(--accent)" }} />
+              <span>QR Scans: <strong style={{ color: "var(--text)" }}>{hoveredPoint.qr.toLocaleString()}</strong></span>
             </div>
             <div className="chart-tooltip-row">
-              <span className="tooltip-swatch" style={{ background: "#38BDF8" }} />
-              <span>Direct: <strong style={{ color: "#fff" }}>{hoveredPoint.direct.toLocaleString()}</strong></span>
+              <span className="tooltip-swatch" style={{ background: "#64748B" }} />
+              <span>Direct: <strong style={{ color: "var(--text)" }}>{hoveredPoint.direct.toLocaleString()}</strong></span>
             </div>
           </div>
         )}
@@ -432,26 +354,11 @@ function HourlyTrafficChart({ hourlyData = [], peakHour = null }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            <span>⏰</span> Hourly Traffic Distribution (IST)
+            Hourly traffic distribution
           </h3>
           <p className="traffic-chart-subtitle">
-            24-hour visitor density profile (UTC+05:30)
+            24-hour visitor density profile.
           </p>
-        </div>
-        <div>
-          {peakHour !== null && peakHour !== undefined && (
-            <span
-              className="geo-table-iso-pill"
-              style={{
-                background: "rgba(245, 158, 11, 0.15)",
-                color: "#F59E0B",
-                border: "1px solid rgba(245, 158, 11, 0.35)",
-                fontSize: "11px",
-              }}
-            >
-              Peak: {formatHour12(peakHour)} ({String(peakHour).padStart(2, "0")}:00 IST)
-            </span>
-          )}
         </div>
       </div>
 
@@ -471,7 +378,7 @@ function HourlyTrafficChart({ hourlyData = [], peakHour = null }) {
                   y1={y}
                   x2={width - padRight}
                   y2={y}
-                  stroke="rgba(255, 255, 255, 0.07)"
+                  stroke="var(--border)"
                   strokeDasharray="4 4"
                 />
                 <text
@@ -494,12 +401,7 @@ function HourlyTrafficChart({ hourlyData = [], peakHour = null }) {
             const barH = count > 0 ? Math.max(3, (count / maxVal) * innerH) : 0;
             const x = padLeft + item.hour * barSlot + (barSlot - barWidth) / 2;
             const y = zeroY - barH;
-            const isPeak = count > 0 && item.hour === peakHour;
             const isHovered = hoveredBar?.hour === item.hour;
-
-            let fill = "#06B6D4";
-            if (isPeak) fill = "#F59E0B";
-            if (isHovered) fill = isPeak ? "#FBBF24" : "#22D3EE";
 
             return (
               <g key={item.hour}>
@@ -519,10 +421,10 @@ function HourlyTrafficChart({ hourlyData = [], peakHour = null }) {
                   width={barWidth}
                   height={barH}
                   rx="3"
-                  fill={fill}
-                  opacity={count === 0 ? 0.15 : isHovered ? 1 : 0.85}
+                  fill="var(--accent)"
+                  opacity={count === 0 ? 0.12 : isHovered ? 1 : 0.75}
                   style={{
-                    transition: "fill 0.15s ease, opacity 0.15s ease",
+                    transition: "opacity 0.15s ease",
                     cursor: "pointer",
                   }}
                   onMouseEnter={() => setHoveredBar(item)}
@@ -562,19 +464,19 @@ function HourlyTrafficChart({ hourlyData = [], peakHour = null }) {
             }}
           >
             <div className="chart-tooltip-title">
-              {formatHour12(hoveredBar.hour)} ({hoveredBar.label} IST)
+              {formatHour12(hoveredBar.hour)} ({hoveredBar.label})
             </div>
             <div className="chart-tooltip-row">
-              <span className="tooltip-swatch" style={{ background: "#38BDF8" }} />
-              <span>Total: <strong style={{ color: "#fff" }}>{hoveredBar.count}</strong></span>
+              <span className="tooltip-swatch" style={{ background: "var(--accent)" }} />
+              <span>Total: <strong style={{ color: "var(--text)" }}>{hoveredBar.count}</strong></span>
             </div>
             <div className="chart-tooltip-row">
-              <span className="tooltip-swatch" style={{ background: "#A855F7" }} />
-              <span>QR: <strong style={{ color: "#fff" }}>{hoveredBar.qrClicks || 0}</strong></span>
+              <span className="tooltip-swatch" style={{ background: "var(--accent)" }} />
+              <span>QR: <strong style={{ color: "var(--text)" }}>{hoveredBar.qrClicks || 0}</strong></span>
             </div>
             <div className="chart-tooltip-row">
-              <span className="tooltip-swatch" style={{ background: "#34D399" }} />
-              <span>Direct: <strong style={{ color: "#fff" }}>{hoveredBar.directClicks || 0}</strong></span>
+              <span className="tooltip-swatch" style={{ background: "#64748B" }} />
+              <span>Direct: <strong style={{ color: "var(--text)" }}>{hoveredBar.directClicks || 0}</strong></span>
             </div>
           </div>
         )}
@@ -647,20 +549,20 @@ function QRvsDirectComparisonChart({ data = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            QR vs Direct Traffic
+            QR vs direct traffic
           </h3>
           <p className="traffic-chart-subtitle">
-            Channel acquisition velocity over time
+            Channel acquisition over time.
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11.5px" }}>
-            <span style={{ width: "9px", height: "9px", borderRadius: "2px", background: "#A855F7" }} />
-            <span style={{ color: "var(--text-secondary)" }}>QR ({totalQR})</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: "var(--accent)" }} />
+            <span style={{ color: "var(--text-muted)" }}>QR ({totalQR})</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11.5px" }}>
-            <span style={{ width: "9px", height: "9px", borderRadius: "2px", background: "#06B6D4" }} />
-            <span style={{ color: "var(--text-secondary)" }}>Direct ({totalDirect})</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: "#64748B" }} />
+            <span style={{ color: "var(--text-muted)" }}>Direct ({totalDirect})</span>
           </div>
         </div>
       </div>
@@ -681,7 +583,7 @@ function QRvsDirectComparisonChart({ data = [] }) {
                   y1={y}
                   x2={width - padRight}
                   y2={y}
-                  stroke="rgba(255, 255, 255, 0.07)"
+                  stroke="var(--border)"
                   strokeDasharray="4 4"
                 />
                 <text
@@ -703,8 +605,8 @@ function QRvsDirectComparisonChart({ data = [] }) {
             <path
               d={qrLine}
               fill="none"
-              stroke="#A855F7"
-              strokeWidth="2.5"
+              stroke="var(--accent)"
+              strokeWidth="2"
               strokeLinecap="round"
             />
           )}
@@ -714,8 +616,8 @@ function QRvsDirectComparisonChart({ data = [] }) {
             <path
               d={directLine}
               fill="none"
-              stroke="#06B6D4"
-              strokeWidth="2.5"
+              stroke="#64748B"
+              strokeWidth="2"
               strokeLinecap="round"
             />
           )}
@@ -726,9 +628,9 @@ function QRvsDirectComparisonChart({ data = [] }) {
               key={`qr_${p.date}`}
               cx={p.x}
               cy={p.y}
-              r={hoveredPoint?.date === p.date ? 4.5 : 2.5}
-              fill="#A855F7"
-              stroke="#ffffff"
+              r={hoveredPoint?.date === p.date ? 4 : 2.5}
+              fill="var(--accent)"
+              stroke="var(--surface)"
               strokeWidth="1"
               style={{ cursor: "pointer" }}
               onMouseEnter={() => setHoveredPoint(series[idx])}
@@ -742,9 +644,9 @@ function QRvsDirectComparisonChart({ data = [] }) {
               key={`dir_${p.date}`}
               cx={p.x}
               cy={p.y}
-              r={hoveredPoint?.date === p.date ? 4.5 : 2.5}
-              fill="#06B6D4"
-              stroke="#ffffff"
+              r={hoveredPoint?.date === p.date ? 4 : 2.5}
+              fill="#64748B"
+              stroke="var(--surface)"
               strokeWidth="1"
               style={{ cursor: "pointer" }}
               onMouseEnter={() => setHoveredPoint(series[idx])}
@@ -784,15 +686,15 @@ function QRvsDirectComparisonChart({ data = [] }) {
           >
             <div className="chart-tooltip-title">{formatShortDate(hoveredPoint.date)}</div>
             <div className="chart-tooltip-row">
-              <span className="tooltip-swatch" style={{ background: "#A855F7" }} />
-              <span>QR Scans: <strong style={{ color: "#fff" }}>{hoveredPoint.qr || 0}</strong></span>
+              <span className="tooltip-swatch" style={{ background: "var(--accent)" }} />
+              <span>QR Scans: <strong style={{ color: "var(--text)" }}>{hoveredPoint.qr || 0}</strong></span>
             </div>
             <div className="chart-tooltip-row">
-              <span className="tooltip-swatch" style={{ background: "#06B6D4" }} />
-              <span>Direct: <strong style={{ color: "#fff" }}>{hoveredPoint.direct || 0}</strong></span>
+              <span className="tooltip-swatch" style={{ background: "#64748B" }} />
+              <span>Direct: <strong style={{ color: "var(--text)" }}>{hoveredPoint.direct || 0}</strong></span>
             </div>
-            <div className="chart-tooltip-row" style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "3px" }}>
-              <span>Total: <strong style={{ color: "#34D399" }}>{(hoveredPoint.qr || 0) + (hoveredPoint.direct || 0)}</strong></span>
+            <div className="chart-tooltip-row" style={{ borderTop: "1px solid var(--border)", paddingTop: "3px" }}>
+              <span>Total: <strong style={{ color: "var(--text)" }}>{(hoveredPoint.qr || 0) + (hoveredPoint.direct || 0)}</strong></span>
             </div>
           </div>
         )}
@@ -928,7 +830,7 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
                 cy={size / 2}
                 r={radius}
                 fill="transparent"
-                stroke="rgba(255, 255, 255, 0.05)"
+                stroke="var(--border)"
                 strokeWidth={strokeWidth}
               />
               {slices.map((slice) => {
@@ -966,7 +868,7 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
               })}
             </svg>
             <div className="donut-center-label" aria-live="polite">
-              <span className="donut-center-pct" style={{ color: targetItem ? targetItem.color : "#ffffff" }}>
+              <span className="donut-center-pct" style={{ color: targetItem ? targetItem.color : "var(--text)" }}>
                 {centerPct}
               </span>
               <span className="donut-center-text">
@@ -1002,13 +904,13 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
                     background: isSelected
                       ? `${item.color}22`
                       : isHovered
-                      ? "rgba(255, 255, 255, 0.06)"
-                      : "rgba(255, 255, 255, 0.02)",
+                      ? "var(--surface-hover)"
+                      : "var(--surface-2)",
                     border: isSelected
                       ? `1.5px solid ${item.color}`
                       : isHovered
-                      ? "1px solid rgba(255, 255, 255, 0.15)"
-                      : "1px solid rgba(255, 255, 255, 0.05)",
+                      ? "1px solid var(--border)"
+                      : "1px solid var(--border)",
                     boxShadow: isSelected ? `0 0 12px ${item.color}35` : "none",
                     cursor: "pointer",
                     transition: "all 0.18s ease",
@@ -1044,7 +946,7 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
                     )}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ fontSize: "12.5px", color: "#fff", fontWeight: "600" }}>
+                    <span style={{ fontSize: "12.5px", color: "var(--text)", fontWeight: "600" }}>
                       {item.count.toLocaleString()}
                     </span>
                     <span
@@ -1109,15 +1011,15 @@ function CampaignTrafficChart({ campaignTrends = {}, totalClicks = 0 }) {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "6px",
-                    background: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    background: "var(--surface-2)",
+                    border: "1px solid var(--border)",
                     borderRadius: "6px",
                     padding: "3px 8px",
                     fontSize: "11.5px",
                   }}
                 >
                   <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: color }} />
-                  <strong style={{ color: "#fff" }}>{tc.campaign}</strong>
+                  <strong style={{ color: "var(--text)" }}>{tc.campaign}</strong>
                   <span style={{ color: "var(--text-muted)" }}>({tc.count} • {tc.percentage}%)</span>
                 </div>
               );
@@ -1147,7 +1049,7 @@ function CampaignTrafficChart({ campaignTrends = {}, totalClicks = 0 }) {
                           <strong style={{ color: "var(--text-primary)" }}>{tc.campaign}</strong>
                         </div>
                       </td>
-                      <td style={{ textAlign: "right", fontWeight: "600", color: "#fff" }}>
+                      <td style={{ textAlign: "right", fontWeight: "600", color: "var(--text)" }}>
                         {tc.count.toLocaleString()}
                       </td>
                       <td>
@@ -1198,7 +1100,7 @@ function TrafficHeatmapChart({ heatmapData = {}, totalClicks = 0 }) {
   }, [grid]);
 
   const getCellBg = (count) => {
-    if (!count || count === 0) return "rgba(255, 255, 255, 0.03)";
+    if (!count || count === 0) return "var(--surface-2)";
     const ratio = Math.min(1, count / maxCellClicks);
     if (ratio <= 0.25) return "rgba(16, 185, 129, 0.30)";
     if (ratio <= 0.50) return "rgba(16, 185, 129, 0.55)";
@@ -1221,7 +1123,7 @@ function TrafficHeatmapChart({ heatmapData = {}, totalClicks = 0 }) {
         {/* Legend */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--text-muted)" }}>
           <span>Less</span>
-          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "rgba(255, 255, 255, 0.04)" }} />
+          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "var(--surface-2)" }} />
           <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "rgba(16, 185, 129, 0.30)" }} />
           <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "rgba(16, 185, 129, 0.55)" }} />
           <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "rgba(16, 185, 129, 0.80)" }} />
@@ -1279,8 +1181,8 @@ function TrafficHeatmapChart({ heatmapData = {}, totalClicks = 0 }) {
                       borderRadius: "3px",
                       background: getCellBg(count),
                       border: isHovered
-                        ? "1px solid #ffffff"
-                        : "1px solid rgba(255, 255, 255, 0.05)",
+                        ? "1.5px solid var(--accent)"
+                        : "1px solid var(--border)",
                       cursor: "pointer",
                       transition: "transform 0.1s ease",
                       transform: isHovered ? "scale(1.2)" : "scale(1)",
@@ -1299,7 +1201,7 @@ function TrafficHeatmapChart({ heatmapData = {}, totalClicks = 0 }) {
                 );
               })}
 
-              <span style={{ fontSize: "11px", fontWeight: "600", color: "#fff", textAlign: "right" }}>
+              <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text)", textAlign: "right" }}>
                 {d.totalClicks.toLocaleString()}
               </span>
             </div>
@@ -1320,7 +1222,7 @@ function TrafficHeatmapChart({ heatmapData = {}, totalClicks = 0 }) {
             </div>
             <div className="chart-tooltip-row">
               <span className="tooltip-swatch" style={{ background: "#34D399" }} />
-              <span>Clicks: <strong style={{ color: "#fff" }}>{hoveredCell.count.toLocaleString()}</strong></span>
+              <span>Clicks: <strong style={{ color: "var(--text)" }}>{hoveredCell.count.toLocaleString()}</strong></span>
             </div>
           </div>
         )}
@@ -1375,19 +1277,13 @@ export default function TrafficAnalyticsView({
 
           <div className="traffic-header-controls">
             {/* Filter Pills */}
-            <div className="traffic-filter-pills" role="radiogroup" aria-label="Traffic Analytics date filter">
-              {rangeButtons.map((btn) => (
-                <button
-                  key={btn.id}
-                  type="button"
-                  className={`traffic-pill-btn ${trafficRange === btn.id ? "active" : ""}`}
-                  onClick={() => onRangeChange?.(btn.id)}
-                  disabled={trafficLoading && trafficRange === btn.id}
-                >
-                  {btn.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={rangeButtons.map((btn) => ({ value: btn.id, label: btn.label }))}
+              value={trafficRange}
+              onChange={(val) => onRangeChange?.(val)}
+              size="md"
+              ariaLabel="Traffic Analytics date filter"
+            />
 
             {/* Refresh Button */}
             <SpecularButton

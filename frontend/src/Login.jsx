@@ -5,8 +5,16 @@ import SpecularButton from "./components/SpecularButton";
 
 const AUTH_URL = "http://localhost:5000/api/v1/users";
 
-function Login({ onLoginSuccess, initialError = "" }) {
-  const [mode, setMode] = useState("login"); // "login" | "register" | "forgot" | "reset"
+function Login({ onLoginSuccess, initialError = "", initialMode = "login", onNavigate }) {
+  const [mode, setMode] = useState(() => {
+    try {
+      if (typeof window !== "undefined") {
+        if (window.location.pathname === "/register") return "register";
+        if (window.location.pathname === "/login") return "login";
+      }
+    } catch (_) {}
+    return initialMode;
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -19,7 +27,7 @@ function Login({ onLoginSuccess, initialError = "" }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Check URL query parameters for resetToken or token on mount
+  // Check URL query parameters for resetToken, token, or prefill url on mount
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -29,6 +37,12 @@ function Login({ onLoginSuccess, initialError = "" }) {
         setMode("reset");
         setError("");
         setSuccessMsg("");
+      }
+      const prefillUrl = params.get("url");
+      if (prefillUrl) {
+        try {
+          sessionStorage.setItem("smartlink_prefill_url", prefillUrl);
+        } catch (_) {}
       }
     } catch {
       // Ignore URL parsing errors
@@ -574,6 +588,24 @@ function Login({ onLoginSuccess, initialError = "" }) {
               </button>
             </p>
           )}
+
+          <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid var(--border)" }}>
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                if (onNavigate) {
+                  onNavigate("/");
+                } else {
+                  window.history.pushState({}, "", "/");
+                  window.dispatchEvent(new PopStateEvent("popstate"));
+                }
+              }}
+              style={{ fontSize: "13px", color: "var(--text-muted, #94A3B8)", textDecoration: "none", cursor: "pointer" }}
+            >
+              &larr; Back to home
+            </a>
+          </div>
         </div>
       </div>
     </div>

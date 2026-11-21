@@ -1,35 +1,32 @@
 /* =============================================================================
-   SmartLink SaaS Design Tokens (Linear / Vercel Aesthetic)
-   Professional, hand-crafted, dark-mode design system
+   SmartLink SaaS Design Tokens & Theme Matrix (Linear / Vercel Aesthetic)
+   Multi-preset design tokens switched via data-theme, data-bg, data-accent, data-density
    ============================================================================= */
 
 :root {
-  /* Surfaces */
-  --bg-page: #0E1116;
-  --bg-sidebar: #12161D;
-  --bg-surface: #161B22;
-  --bg-surface-2: #1B212A;
-  --bg-surface-hover: #212833;
-  --bg-surface-active: #262F3D;
+  /* Default Theme Variables (Dark + Slate + Indigo + Comfortable) */
+  --bg: #0E1116;
+  --sidebar: #12161D;
+  --surface: #161B22;
+  --surface-2: #1B212A;
+  --surface-hover: #212833;
+  --surface-active: #262F3D;
 
-  /* Borders */
   --border: #232A34;
   --border-muted: #2A3340;
-  --border-focus: #6C7CFF;
+  --border-focus: var(--accent);
 
-  /* Typography */
   --text: #E6EAF0;
   --text-muted: #8B95A5;
   --text-dim: #606B7D;
 
-  /* Accents & Brand */
   --accent: #6C7CFF;
+  --accent-soft: rgba(108, 124, 255, 0.15);
   --accent-hover: #7E8DFF;
   --accent-active: #5B6BE6;
-  --accent-tint: rgba(108, 124, 255, 0.12);
   --accent-glass: rgba(108, 124, 255, 0.35);
 
-  /* Status Colors (WCAG AA Compliant) */
+  /* Status Colors */
   --success: #3DD68C;
   --success-bg: rgba(61, 214, 140, 0.12);
   --success-border: rgba(61, 214, 140, 0.28);
@@ -41,6 +38,20 @@
   --danger: #FF6B6B;
   --danger-bg: rgba(255, 107, 107, 0.12);
   --danger-border: rgba(255, 107, 107, 0.28);
+
+  /* Backward Compatibility Aliases */
+  --bg-page: var(--bg);
+  --bg-sidebar: var(--sidebar);
+  --bg-surface: var(--surface);
+  --bg-surface-2: var(--surface-2);
+  --bg-surface-hover: var(--surface-hover);
+  --bg-surface-active: var(--surface-active);
+  --text-primary: var(--text);
+  --text-secondary: var(--text-muted);
+  --accent-tint: var(--accent-soft);
+  --accent-violet: var(--accent);
+  --border-subtle: var(--border);
+  --border-light: var(--border);
 
   /* Typography Families */
   --font-ui: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -80,6 +91,277 @@
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-normal: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* =============================================================================
+   DARK THEME PRESETS (data-theme="dark")
+   ============================================================================= */
+
+/* 1. Slate (Default Dark) */
+html[data-theme="dark"],
+html[data-theme="dark"][data-bg="slate"] {
+  --bg: #0E1116;
+  --sidebar: #12161D;
+  --surface: #161B22;
+  --surface-2: #1B212A;
+  --surface-hover: #212833;
+  --surface-active: #262F3D;
+  --border: #232A34;
+  --border-muted: #2A3340;
+  --text: #E6EAF0;
+  --text-muted: #8B95A5;
+  --text-dim: #606B7D;
+  --glass-secondary-bg: rgba(255, 255, 255, 0.06);
+  --glass-secondary-border: rgba(255, 255, 255, 0.12);
+}
+
+/* 2. Midnight (Deep Navy Dark) */
+html[data-theme="dark"][data-bg="midnight"] {
+  --bg: #090D16;
+  --sidebar: #0D121F;
+  --surface: #131A2B;
+  --surface-2: #1A2338;
+  --surface-hover: #202B45;
+  --surface-active: #273454;
+  --border: #222D46;
+  --border-muted: #2A3859;
+  --text: #E6EEFA;
+  --text-muted: #8696B0;
+  --text-dim: #5C6E8A;
+  --glass-secondary-bg: rgba(255, 255, 255, 0.06);
+  --glass-secondary-border: rgba(255, 255, 255, 0.12);
+}
+
+/* 3. Graphite (Neutral Charcoal Dark) */
+html[data-theme="dark"][data-bg="graphite"] {
+  --bg: #121316;
+  --sidebar: #16181C;
+  --surface: #1C1E24;
+  --surface-2: #24272E;
+  --surface-hover: #2B2F38;
+  --surface-active: #343842;
+  --border: #2E323B;
+  --border-muted: #383D47;
+  --text: #E8E9EC;
+  --text-muted: #8D9099;
+  --text-dim: #63666F;
+  --glass-secondary-bg: rgba(255, 255, 255, 0.06);
+  --glass-secondary-border: rgba(255, 255, 255, 0.12);
+}
+
+/* 4. Ink (Pure AMOLED / Pitch Dark) */
+html[data-theme="dark"][data-bg="ink"] {
+  --bg: #050507;
+  --sidebar: #0A0A0E;
+  --surface: #111116;
+  --surface-2: #17171E;
+  --surface-hover: #1E1E26;
+  --surface-active: #262630;
+  --border: #1E1E28;
+  --border-muted: #272733;
+  --text: #EFEFF3;
+  --text-muted: #888894;
+  --text-dim: #5E5E6B;
+  --glass-secondary-bg: rgba(255, 255, 255, 0.05);
+  --glass-secondary-border: rgba(255, 255, 255, 0.1);
+}
+
+/* =============================================================================
+   LIGHT THEME PRESETS (data-theme="light")
+   ============================================================================= */
+
+/* 1. Slate (Light Cool Slate - Default Light) */
+html[data-theme="light"],
+html[data-theme="light"][data-bg="slate"] {
+  --bg: #F4F5F7;
+  --sidebar: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-2: #F0F2F5;
+  --surface-hover: #E8EBF0;
+  --surface-active: #DCE0E8;
+  --border: #E1E5EA;
+  --border-muted: #D1D6DE;
+  --text: #0F172A;
+  --text-muted: #5B6676;
+  --text-dim: #7C8797;
+  --accent: #4F46E5;
+  --accent-soft: rgba(79, 70, 229, 0.10);
+  --accent-hover: #4338CA;
+  --accent-active: #3730A3;
+  --accent-violet: #4F46E5;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 4px 16px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 8px 30px rgba(16, 24, 40, 0.12);
+  --glass-secondary-bg: #F0F2F5;
+  --glass-secondary-border: #E1E5EA;
+  --glass-secondary-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+/* 2. Midnight (Light Soft Blue-Gray) */
+html[data-theme="light"][data-bg="midnight"] {
+  --bg: #F0F3F9;
+  --sidebar: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-2: #E6ECF5;
+  --surface-hover: #DCE5F2;
+  --surface-active: #CDDBEE;
+  --border: #D5DFEE;
+  --border-muted: #C2D1E5;
+  --text: #0C1930;
+  --text-muted: #5B6F90;
+  --text-dim: #7B8FA8;
+  --accent: #4F46E5;
+  --accent-soft: rgba(79, 70, 229, 0.10);
+  --accent-violet: #4F46E5;
+  --shadow-sm: 0 1px 2px rgba(12, 25, 48, 0.06);
+  --shadow-md: 0 4px 16px rgba(12, 25, 48, 0.08);
+  --shadow-lg: 0 8px 30px rgba(12, 25, 48, 0.12);
+  --glass-secondary-bg: #E6ECF5;
+  --glass-secondary-border: #D5DFEE;
+  --glass-secondary-shadow: 0 1px 2px rgba(12, 25, 48, 0.06);
+}
+
+/* 3. Graphite (Light Neutral Cool Gray) */
+html[data-theme="light"][data-bg="graphite"] {
+  --bg: #F2F3F5;
+  --sidebar: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-2: #E8E9EC;
+  --surface-hover: #DEE0E4;
+  --surface-active: #D2D4D9;
+  --border: #D8DADD;
+  --border-muted: #C6C8CD;
+  --text: #18181B;
+  --text-muted: #5B6676;
+  --text-dim: #7C8797;
+  --accent: #4F46E5;
+  --accent-soft: rgba(79, 70, 229, 0.10);
+  --accent-violet: #4F46E5;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 4px 16px rgba(24, 24, 27, 0.08);
+  --shadow-lg: 0 8px 30px rgba(24, 24, 27, 0.12);
+  --glass-secondary-bg: #E8E9EC;
+  --glass-secondary-border: #D8DADD;
+  --glass-secondary-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+/* 4. Ink (Light High-Contrast Pure White) */
+html[data-theme="light"][data-bg="ink"] {
+  --bg: #F3F4F6;
+  --sidebar: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-2: #E5E7EB;
+  --surface-hover: #D1D5DB;
+  --surface-active: #9CA3AF;
+  --border: #D1D5DB;
+  --border-muted: #9CA3AF;
+  --text: #09090B;
+  --text-muted: #4B5563;
+  --text-dim: #6B7280;
+  --accent: #4F46E5;
+  --accent-soft: rgba(79, 70, 229, 0.10);
+  --accent-violet: #4F46E5;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 4px 16px rgba(9, 9, 11, 0.08);
+  --shadow-lg: 0 8px 30px rgba(9, 9, 11, 0.12);
+  --glass-secondary-bg: #E5E7EB;
+  --glass-secondary-border: #D1D5DB;
+  --glass-secondary-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+/* =============================================================================
+   ACCENT COLOR PRESETS (data-accent="...")
+   ============================================================================= */
+
+/* 1. Indigo (Default) */
+html[data-accent="indigo"],
+:root {
+  --accent: #6C7CFF;
+  --accent-soft: rgba(108, 124, 255, 0.15);
+  --accent-hover: #7E8DFF;
+  --accent-active: #5B6BE6;
+  --accent-glass: rgba(108, 124, 255, 0.35);
+}
+
+/* 2. Violet */
+html[data-accent="violet"] {
+  --accent: #8B5CF6;
+  --accent-soft: rgba(139, 92, 246, 0.15);
+  --accent-hover: #9D75F8;
+  --accent-active: #7C4BE0;
+  --accent-glass: rgba(139, 92, 246, 0.35);
+}
+
+/* 3. Teal */
+html[data-accent="teal"] {
+  --accent: #14B8A6;
+  --accent-soft: rgba(20, 184, 166, 0.15);
+  --accent-hover: #2DD4BF;
+  --accent-active: #0D9488;
+  --accent-glass: rgba(20, 184, 166, 0.35);
+}
+
+/* 4. Emerald */
+html[data-accent="emerald"] {
+  --accent: #10B981;
+  --accent-soft: rgba(16, 185, 129, 0.15);
+  --accent-hover: #34D399;
+  --accent-active: #059669;
+  --accent-glass: rgba(16, 185, 129, 0.35);
+}
+
+/* 5. Amber */
+html[data-accent="amber"] {
+  --accent: #F59E0B;
+  --accent-soft: rgba(245, 158, 11, 0.15);
+  --accent-hover: #FBBF24;
+  --accent-active: #D97706;
+  --accent-glass: rgba(245, 158, 11, 0.35);
+}
+
+/* 6. Rose */
+html[data-accent="rose"] {
+  --accent: #F43F5E;
+  --accent-soft: rgba(244, 63, 94, 0.15);
+  --accent-hover: #FB7185;
+  --accent-active: #E11D48;
+  --accent-glass: rgba(244, 63, 94, 0.35);
+}
+
+/* Dynamic Glass Primary Button Recipe (reacts to selected accent) */
+:root,
+html[data-accent] {
+  --glass-primary-bg: var(--accent-glass);
+  --glass-primary-border: var(--accent);
+}
+
+/* =============================================================================
+   DENSITY PRESETS (data-density="...")
+   ============================================================================= */
+
+html[data-density="compact"] {
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 18px;
+}
+
+html[data-density="compact"] .metric-card,
+html[data-density="compact"] .stat-card,
+html[data-density="compact"] .card-box {
+  padding: 14px 16px !important;
+}
+
+html[data-density="compact"] .nav-item {
+  padding: 7px 10px !important;
+  font-size: 13px !important;
+}
+
+html[data-density="compact"] th,
+html[data-density="compact"] td {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
 }
 
 /* Number display utility */

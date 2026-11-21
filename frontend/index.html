@@ -8,6 +8,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>SmartLink — Smart Link Management Platform</title>
+    <script>
+      (function() {
+        try {
+          var raw = localStorage.getItem('smartlink-appearance');
+          var p = raw ? JSON.parse(raw) : {};
+          var t = p.theme || 'dark';
+          var eff = t === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t;
+          var d = document.documentElement;
+          d.setAttribute('data-theme', eff);
+          d.setAttribute('data-bg', p.bg || 'slate');
+          d.setAttribute('data-accent', p.accent || 'indigo');
+          d.setAttribute('data-density', p.density || 'comfortable');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

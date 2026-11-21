@@ -583,26 +583,14 @@ function ClicksOverviewChart({
           <div className="chart-title-row">
             <h3>
               {isAllLinks
-                ? "Clicks Overview — All Links"
-                : `Clicks Overview — /${selectedLink.shortCode}`}
+                ? "Clicks over time"
+                : `Clicks over time — /${selectedLink.shortCode}`}
             </h3>
-            {comparisonMetrics.showBadge && (
-              <span className={`chart-comparison-pill ${comparisonMetrics.type}`}>
-                {comparisonMetrics.type === "positive" ? (
-                  <TrendingUp size={12} className="inline-icon" />
-                ) : comparisonMetrics.type === "negative" ? (
-                  <TrendingDown size={12} className="inline-icon" />
-                ) : (
-                  <Minus size={12} className="inline-icon" />
-                )}
-                {comparisonMetrics.text}
-              </span>
-            )}
           </div>
           <p>
             {isAllLinks
-              ? `Combined performance across all ${links.length} link${links.length !== 1 ? "s" : ""} (${totalPeriodClicks.toLocaleString()} clicks in ${rangeLabel})`
-              : `Daily performance for link /${selectedLink.shortCode} (${totalPeriodClicks.toLocaleString()} clicks in ${rangeLabel})`}
+              ? `Daily click performance across all ${links.length} links.`
+              : `Daily click performance for /${selectedLink.shortCode}.`}
           </p>
         </div>
 
@@ -634,9 +622,8 @@ function ClicksOverviewChart({
           )}
 
           {activeTimeRange !== "all" && (
-            <SpecularButton
-              variant={comparisonMode ? "primary" : "secondary"}
-              size="xs"
+            <button
+              type="button"
               className={`comparison-mode-toggle ${comparisonMode ? "active" : ""}`}
               onClick={() => setComparisonMode((prev) => !prev)}
               title="Toggle previous period comparison mode"
@@ -644,7 +631,7 @@ function ClicksOverviewChart({
             >
               <ArrowRightLeft size={13} />
               <span>Compare</span>
-            </SpecularButton>
+            </button>
           )}
 
           <div className="time-filter-pills" role="radiogroup" aria-label="Time period">
@@ -742,7 +729,7 @@ function ClicksOverviewChart({
             <path
               d={linePath}
               fill="none"
-              stroke="#6C7CFF"
+              stroke="var(--accent)"
               strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -755,7 +742,7 @@ function ClicksOverviewChart({
                 y1={padTop}
                 x2={currentHovered.x}
                 y2={zeroY}
-                stroke="#2E3846"
+                stroke="var(--border)"
                 strokeWidth="1.5"
                 strokeDasharray="3 3"
               />

@@ -7,6 +7,8 @@
 
 import { useState, useMemo } from "react";
 import SpecularButton from "./SpecularButton";
+import { SegmentedControl } from "./ui/SegmentedControl";
+import StatCard from "./ui/StatCard";
 import { Smartphone, Laptop, Monitor, Globe, Cpu, AlertTriangle } from "lucide-react";
 
 // Helper icon renderers for Operating Systems
@@ -56,7 +58,7 @@ function DeviceDonutChart({ data = [], title = "Device Category Split", icon = n
   const radius = (size - strokeWidth) / 2 - 4;
   const circumference = 2 * Math.PI * radius;
 
-  const defaultColors = useMemo(() => ["#8B5CF6", "#06B6D4", "#F59E0B", "#10B981", "#EC4899", "#64748B"], []);
+  const defaultColors = useMemo(() => ["var(--accent)", "#64748B", "#94A3B8", "#475569", "#CBD5E1", "#334155"], []);
 
   const slices = useMemo(() => {
     return activeItems.map((item, idx) => {
@@ -100,7 +102,7 @@ function DeviceDonutChart({ data = [], title = "Device Category Split", icon = n
                 cy={size / 2}
                 r={radius}
                 fill="transparent"
-                stroke="rgba(255, 255, 255, 0.05)"
+                stroke="var(--border)"
                 strokeWidth={strokeWidth}
               />
               {slices.map((slice, idx) => {
@@ -190,96 +192,44 @@ function DeviceMetricCards({ summary, loading = false }) {
   const cards = [
     {
       id: "mobile_share",
-      label: "Mobile Share",
+      label: "Mobile share",
       value: `${mobilePct}%`,
-      subtext: `${mobileClicks.toLocaleString()} of ${totalClicks.toLocaleString()} total visits`,
-      badgeText: mobileClicks > 0 ? `${mobileClicks} visits` : "No visits",
-      badgeType: mobileClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-          <line x1="12" y1="18" x2="12.01" y2="18" />
-        </svg>
-      ),
-      iconBg: "rgba(139, 92, 246, 0.15)",
-      iconColor: "#8B5CF6",
+      helper: `${mobileClicks.toLocaleString()} of ${totalClicks.toLocaleString()} total visits`,
+      icon: <Smartphone size={18} />,
     },
     {
       id: "desktop_share",
-      label: "Desktop Share",
+      label: "Desktop share",
       value: `${desktopPct}%`,
-      subtext: `${desktopClicks.toLocaleString()} of ${totalClicks.toLocaleString()} total visits`,
-      badgeText: desktopClicks > 0 ? `${desktopClicks} visits` : "No visits",
-      badgeType: desktopClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-          <line x1="8" y1="21" x2="16" y2="21" />
-          <line x1="12" y1="17" x2="12" y2="21" />
-        </svg>
-      ),
-      iconBg: "rgba(6, 182, 212, 0.15)",
-      iconColor: "#06B6D4",
+      helper: `${desktopClicks.toLocaleString()} of ${totalClicks.toLocaleString()} total visits`,
+      icon: <Monitor size={18} />,
     },
     {
       id: "primary_os",
       label: "Primary OS",
       value: primaryOs,
-      subtext: totalClicks > 0 ? "Top visitor platform" : "Awaiting visitor traffic",
-      badgeText: primaryOs !== "None" ? "Leading OS" : "Pending",
-      badgeType: primaryOs !== "None" ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <rect x="4" y="4" width="16" height="16" rx="2" />
-          <rect x="9" y="9" width="6" height="6" />
-          <line x1="9" y1="1" x2="9" y2="4" />
-          <line x1="15" y1="1" x2="15" y2="4" />
-          <line x1="9" y1="20" x2="9" y2="23" />
-          <line x1="15" y1="20" x2="15" y2="23" />
-          <line x1="20" y1="9" x2="23" y2="9" />
-          <line x1="20" y1="14" x2="23" y2="14" />
-          <line x1="1" y1="9" x2="4" y2="9" />
-          <line x1="1" y1="14" x2="4" y2="14" />
-        </svg>
-      ),
-      iconBg: "rgba(16, 185, 129, 0.15)",
-      iconColor: "#10B981",
+      helper: totalClicks > 0 ? "Top visitor platform" : "No visits recorded",
+      icon: <Cpu size={18} />,
     },
     {
       id: "primary_browser",
-      label: "Primary Browser",
+      label: "Primary browser",
       value: primaryBrowser,
-      subtext: totalClicks > 0 ? "Top web client engine" : "Awaiting visitor traffic",
-      badgeText: primaryBrowser !== "None" ? "Leading Browser" : "Pending",
-      badgeType: primaryBrowser !== "None" ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="2" y1="12" x2="22" y2="12" />
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-        </svg>
-      ),
-      iconBg: "rgba(245, 158, 11, 0.15)",
-      iconColor: "#F59E0B",
+      helper: totalClicks > 0 ? "Top web client engine" : "No visits recorded",
+      icon: <Globe size={18} />,
     },
   ];
 
   return (
     <div className={`metrics-grid ${loading ? "data-refreshing" : ""}`}>
       {cards.map((card) => (
-        <div className="metric-card campaign-metric-card" key={card.id}>
-          <div className="metric-card-top">
-            <div className="metric-icon-badge" style={{ background: card.iconBg, color: card.iconColor }}>
-              {card.icon}
-            </div>
-            <span className={`metric-trend-pill ${card.badgeType}`}>{card.badgeText}</span>
-          </div>
-          <div className="metric-card-val campaign-metric-val" title={card.value}>
-            {card.value}
-          </div>
-          <div className="metric-card-label">{card.label}</div>
-          <div className="metric-card-subtext">{card.subtext}</div>
-        </div>
+        <StatCard
+          key={card.id}
+          label={card.label}
+          value={card.value}
+          helper={card.helper}
+          icon={card.icon}
+        />
       ))}
     </div>
   );
@@ -305,28 +255,23 @@ export default function DeviceAnalyticsView({
 
   const isZeroState = summary && summary.totalClicks === 0;
 
-  // Donut chart data for Device Category Split
+  // Donut chart data for Device Category Split (Primary in accent, rest in neutral greys)
   const deviceDonutData = useMemo(() => {
-    const colorMap = {
-      mobile: "#8B5CF6",
-      desktop: "#06B6D4",
-      tablet: "#F59E0B",
-      unknown: "#64748B",
-    };
-    return (deviceTypes || []).map((d) => ({
+    const palette = ["var(--accent)", "#64748B", "#94A3B8", "#475569", "#CBD5E1"];
+    return (deviceTypes || []).map((d, idx) => ({
       name: d.type.charAt(0).toUpperCase() + d.type.slice(1),
       count: d.totalClicks || 0,
-      color: colorMap[d.type.toLowerCase()] || "#A855F7",
+      color: palette[idx % palette.length],
     }));
   }, [deviceTypes]);
 
-  // Donut chart data for Top Operating Systems
+  // Donut chart data for Top Operating Systems (Primary in accent, rest in neutral greys)
   const osDonutData = useMemo(() => {
-    const osColors = ["#10B981", "#3B82F6", "#8B5CF6", "#F59E0B", "#EC4899", "#64748B"];
+    const palette = ["var(--accent)", "#64748B", "#94A3B8", "#475569", "#CBD5E1"];
     return (operatingSystems || []).slice(0, 5).map((os, idx) => ({
       name: os.name,
       count: os.totalClicks || 0,
-      color: osColors[idx % osColors.length],
+      color: palette[idx % palette.length],
     }));
   }, [operatingSystems]);
 
@@ -338,28 +283,22 @@ export default function DeviceAnalyticsView({
           <div>
             <h1>Devices & Operating Systems</h1>
             <p>
-              Monitor visitor device hardware, operating system distribution, browser engines, and version adoption across direct links and QR scans.
+              Visitor device hardware, operating systems, and browser breakdown.
             </p>
           </div>
 
           <div className="campaign-controls-group">
-            <div className="campaign-range-pill-group" role="group" aria-label="Date range filter">
-              {[
-                { id: "7d", label: "Last 7 Days" },
-                { id: "30d", label: "Last 30 Days" },
-                { id: "all", label: "All Time" },
-              ].map((btn) => (
-                <button
-                  key={btn.id}
-                  type="button"
-                  className={`range-pill-btn ${deviceRange === btn.id ? "active" : ""}`}
-                  onClick={() => onRangeChange?.(btn.id)}
-                  disabled={deviceLoading && deviceRange === btn.id}
-                >
-                  {btn.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={[
+                { value: "7d", label: "Last 7 Days" },
+                { value: "30d", label: "Last 30 Days" },
+                { value: "all", label: "All Time" },
+              ]}
+              value={deviceRange}
+              onChange={(val) => onRangeChange?.(val)}
+              size="md"
+              ariaLabel="Date range filter"
+            />
 
             <SpecularButton
               type="button"
@@ -464,8 +403,8 @@ export default function DeviceAnalyticsView({
           {/* 7. Device Category Cards with QR vs Direct Breakdown */}
           <div className={`card-box ${deviceLoading ? "data-refreshing" : ""}`} style={{ padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ fontSize: "15px", fontWeight: "700", color: "#fff", display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
-                Device Category Attribution (QR Scans vs Direct Visits)
+              <h3 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text)", display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+                Device Category Attribution
               </h3>
               <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                 Total: {(summary?.totalClicks || 0).toLocaleString()} clicks
@@ -485,8 +424,8 @@ export default function DeviceAnalyticsView({
                   <div
                     key={dev.type}
                     style={{
-                      background: "rgba(255, 255, 255, 0.02)",
-                      border: "1px solid var(--border-subtle)",
+                      background: "var(--surface-2)",
+                      border: "1px solid var(--border)",
                       borderRadius: "var(--radius-md)",
                       padding: "16px",
                       display: "flex",
@@ -497,23 +436,23 @@ export default function DeviceAnalyticsView({
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ fontSize: "20px" }}>{getDeviceTypeIcon(dev.type)}</span>
-                        <span style={{ fontWeight: "700", color: "var(--text-primary)", fontSize: "14px" }}>
+                        <span style={{ fontWeight: "600", color: "var(--text)", fontSize: "14px" }}>
                           {typeName}
                         </span>
                       </div>
-                      <span className="geo-table-iso-pill" style={{ color: "#A855F7" }}>
+                      <span className="geo-table-iso-pill" style={{ color: "var(--accent)" }}>
                         {dev.percentage}% share
                       </span>
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12.5px", color: "var(--text-secondary)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12.5px", color: "var(--text-muted)" }}>
                       <span>Total Visits:</span>
-                      <strong style={{ color: "#fff" }}>{totalDevClicks.toLocaleString()}</strong>
+                      <strong style={{ color: "var(--text)" }}>{totalDevClicks.toLocaleString()}</strong>
                     </div>
 
                     {/* QR vs Direct Visual Progress Bar */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <div style={{ display: "flex", height: "8px", width: "100%", borderRadius: "4px", overflow: "hidden", background: "rgba(255, 255, 255, 0.06)" }}>
+                      <div style={{ display: "flex", height: "8px", width: "100%", borderRadius: "4px", overflow: "hidden", background: "var(--border)" }}>
                         <div
                           style={{
                             width: `${qrPct}%`,
@@ -553,7 +492,7 @@ export default function DeviceAnalyticsView({
             {/* Operating Systems Table with Versions */}
             <div className="geo-table-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#fff", display: "flex", alignItems: "center", gap: "8px" }}>
+                <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--text)", display: "flex", alignItems: "center", gap: "8px" }}>
                   Operating Systems & Versions
                 </h4>
                 <span style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
@@ -562,13 +501,13 @@ export default function DeviceAnalyticsView({
               </div>
 
               <div style={{ overflowX: "auto" }}>
-                <table className="custom-links-table" style={{ width: "100%", fontSize: "12.5px" }}>
+                <table className="custom-links-table" style={{ width: "100%", fontSize: "13px" }}>
                   <thead>
                     <tr>
                       <th style={{ width: "36px", textAlign: "center" }}>#</th>
-                      <th>OS Platform</th>
+                      <th>OS platform</th>
                       <th style={{ textAlign: "right" }}>Clicks</th>
-                      <th style={{ width: "130px" }}>Share</th>
+                      <th style={{ width: "130px" }}>Traffic share</th>
                       <th style={{ textAlign: "right" }}>Channels</th>
                     </tr>
                   </thead>
@@ -581,7 +520,7 @@ export default function DeviceAnalyticsView({
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                 <span style={{ fontSize: "16px" }}>{getOsIcon(os.name)}</span>
-                                <strong style={{ color: "var(--text-primary)" }}>{os.name}</strong>
+                                <strong style={{ color: "var(--text)" }}>{os.name}</strong>
                               </div>
                               {/* Detected OS Versions */}
                               {os.versions && os.versions.length > 0 && (
@@ -591,11 +530,11 @@ export default function DeviceAnalyticsView({
                                       key={ver.version}
                                       style={{
                                         fontSize: "10px",
-                                        background: "rgba(255, 255, 255, 0.06)",
-                                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                                        background: "var(--surface-2)",
+                                        border: "1px solid var(--border)",
                                         borderRadius: "3px",
                                         padding: "1px 5px",
-                                        color: "var(--text-secondary)",
+                                        color: "var(--text-muted)",
                                       }}
                                       title={`${ver.clicks} clicks (${os.totalClicks > 0 ? ((ver.clicks / os.totalClicks) * 100).toFixed(0) : 0}%)`}
                                     >
@@ -606,7 +545,7 @@ export default function DeviceAnalyticsView({
                               )}
                             </div>
                           </td>
-                          <td style={{ textAlign: "right", fontWeight: "600", color: "#fff" }}>
+                          <td style={{ textAlign: "right", fontWeight: "600", color: "var(--text)" }}>
                             {os.totalClicks.toLocaleString()}
                           </td>
                           <td>
@@ -650,7 +589,7 @@ export default function DeviceAnalyticsView({
             {/* Web Browsers Table with Versions */}
             <div className="geo-table-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#fff", display: "flex", alignItems: "center", gap: "8px" }}>
+                <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--text)", display: "flex", alignItems: "center", gap: "8px" }}>
                   Web Browsers & Versions
                 </h4>
                 <span style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
@@ -659,13 +598,13 @@ export default function DeviceAnalyticsView({
               </div>
 
               <div style={{ overflowX: "auto" }}>
-                <table className="custom-links-table" style={{ width: "100%", fontSize: "12.5px" }}>
+                <table className="custom-links-table" style={{ width: "100%", fontSize: "13px" }}>
                   <thead>
                     <tr>
                       <th style={{ width: "36px", textAlign: "center" }}>#</th>
-                      <th>Browser Engine</th>
+                      <th>Browser engine</th>
                       <th style={{ textAlign: "right" }}>Clicks</th>
-                      <th style={{ width: "130px" }}>Share</th>
+                      <th style={{ width: "130px" }}>Traffic share</th>
                       <th style={{ textAlign: "right" }}>Channels</th>
                     </tr>
                   </thead>
@@ -678,7 +617,7 @@ export default function DeviceAnalyticsView({
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                 <span style={{ fontSize: "16px" }}>{getBrowserIcon(b.name)}</span>
-                                <strong style={{ color: "var(--text-primary)" }}>{b.name}</strong>
+                                <strong style={{ color: "var(--text)" }}>{b.name}</strong>
                               </div>
                               {/* Detected Browser Versions */}
                               {b.versions && b.versions.length > 0 && (
@@ -688,11 +627,11 @@ export default function DeviceAnalyticsView({
                                       key={ver.version}
                                       style={{
                                         fontSize: "10px",
-                                        background: "rgba(255, 255, 255, 0.06)",
-                                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                                        background: "var(--surface-2)",
+                                        border: "1px solid var(--border)",
                                         borderRadius: "3px",
                                         padding: "1px 5px",
-                                        color: "var(--text-secondary)",
+                                        color: "var(--text-muted)",
                                       }}
                                       title={`${ver.clicks} clicks (${b.totalClicks > 0 ? ((ver.clicks / b.totalClicks) * 100).toFixed(0) : 0}%)`}
                                     >
@@ -703,7 +642,7 @@ export default function DeviceAnalyticsView({
                               )}
                             </div>
                           </td>
-                          <td style={{ textAlign: "right", fontWeight: "600", color: "#fff" }}>
+                          <td style={{ textAlign: "right", fontWeight: "600", color: "var(--text)" }}>
                             {b.totalClicks.toLocaleString()}
                           </td>
                           <td>
@@ -750,7 +689,7 @@ export default function DeviceAnalyticsView({
             {/* Manufacturer Breakdown */}
             <div className="geo-table-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#fff", display: "flex", alignItems: "center", gap: "8px" }}>
+                <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--text)", display: "flex", alignItems: "center", gap: "8px" }}>
                   Hardware Manufacturers
                 </h4>
                 <span style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
@@ -759,13 +698,13 @@ export default function DeviceAnalyticsView({
               </div>
 
               <div style={{ overflowX: "auto" }}>
-                <table className="custom-links-table" style={{ width: "100%", fontSize: "12.5px" }}>
+                <table className="custom-links-table" style={{ width: "100%", fontSize: "13px" }}>
                   <thead>
                     <tr>
                       <th style={{ width: "36px", textAlign: "center" }}>#</th>
                       <th>Manufacturer</th>
                       <th style={{ textAlign: "right" }}>Clicks</th>
-                      <th style={{ width: "130px" }}>Share</th>
+                      <th style={{ width: "130px" }}>Traffic share</th>
                       <th style={{ textAlign: "right" }}>Channels</th>
                     </tr>
                   </thead>
@@ -777,10 +716,10 @@ export default function DeviceAnalyticsView({
                           <td>
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                               <span style={{ fontSize: "16px" }}>{getVendorIcon(v.name)}</span>
-                              <strong style={{ color: "var(--text-primary)" }}>{v.name}</strong>
+                              <strong style={{ color: "var(--text)" }}>{v.name}</strong>
                             </div>
                           </td>
-                          <td style={{ textAlign: "right", fontWeight: "600", color: "#fff" }}>
+                          <td style={{ textAlign: "right", fontWeight: "600", color: "var(--text)" }}>
                             {v.totalClicks.toLocaleString()}
                           </td>
                           <td>
@@ -790,7 +729,7 @@ export default function DeviceAnalyticsView({
                                   className="geo-progress-bar-fill"
                                   style={{
                                     width: `${v.percentage}%`,
-                                    background: "linear-gradient(90deg, #F59E0B, #FBBF24)",
+                                    background: "var(--accent)",
                                   }}
                                 />
                               </div>
@@ -824,7 +763,7 @@ export default function DeviceAnalyticsView({
             {/* Detected Hardware Models */}
             <div className="geo-table-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#fff", display: "flex", alignItems: "center", gap: "8px" }}>
+                <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--text)", display: "flex", alignItems: "center", gap: "8px" }}>
                   Detected Device Models
                 </h4>
                 <span style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
@@ -833,11 +772,11 @@ export default function DeviceAnalyticsView({
               </div>
 
               <div style={{ overflowX: "auto" }}>
-                <table className="custom-links-table" style={{ width: "100%", fontSize: "12.5px" }}>
+                <table className="custom-links-table" style={{ width: "100%", fontSize: "13px" }}>
                   <thead>
                     <tr>
                       <th style={{ width: "36px", textAlign: "center" }}>#</th>
-                      <th>Device Model</th>
+                      <th>Device model</th>
                       <th>Vendor</th>
                       <th style={{ textAlign: "right" }}>Clicks</th>
                       <th style={{ textAlign: "right" }}>Channels</th>
@@ -849,14 +788,14 @@ export default function DeviceAnalyticsView({
                         <tr key={`${m.vendor}-${m.name}`}>
                           <td style={{ textAlign: "center", color: "var(--text-muted)" }}>{m.rank}</td>
                           <td>
-                            <strong style={{ color: "var(--text-primary)" }}>{m.name}</strong>
+                            <strong style={{ color: "var(--text)" }}>{m.name}</strong>
                           </td>
                           <td>
-                            <span className="geo-table-iso-pill" style={{ color: "var(--text-secondary)" }}>
+                            <span className="geo-table-iso-pill" style={{ color: "var(--text-muted)" }}>
                               {m.vendor}
                             </span>
                           </td>
-                          <td style={{ textAlign: "right", fontWeight: "600", color: "#fff" }}>
+                          <td style={{ textAlign: "right", fontWeight: "600", color: "var(--text)" }}>
                             {m.totalClicks.toLocaleString()}
                           </td>
                           <td style={{ textAlign: "right" }}>

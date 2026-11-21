@@ -50,6 +50,7 @@ import {
   Megaphone,
   QrCode,
   Globe,
+  Building2,
   Smartphone,
   Activity,
   ArrowRightLeft,
@@ -76,7 +77,18 @@ import {
   Check,
   RefreshCw,
   ExternalLink,
+  Settings as SettingsIcon,
+  HelpCircle,
 } from "lucide-react";
+import LandingPage from "./marketing/LandingPage";
+import PricingPage from "./marketing/PricingPage";
+import DocsPage from "./marketing/DocsPage";
+import ChangelogPage from "./marketing/ChangelogPage";
+import StatusPage from "./marketing/StatusPage";
+import SettingsView from "./components/SettingsView";
+import SidebarBottom from "./components/SidebarBottom";
+import AnnouncementBanner from "./components/AnnouncementBanner";
+import { PLAN_LIMITS, CURRENT_PLAN } from "./config/plans.config";
 import "./App.css";
 import "./AuroraTheme.css";
 
@@ -110,15 +122,14 @@ const requestTokenRefresh = () => {
   return refreshPromise;
 };
 
-// Default Donut Color Palette
+// Default Donut Color Palette: Primary in accent, secondaries in neutral greys
 const DONUT_COLORS = [
-  "#8B5CF6", // Violet
-  "#06B6D4", // Cyan
-  "#10B981", // Emerald
-  "#F59E0B", // Amber
-  "#EC4899", // Pink
-  "#6366F1", // Indigo
-  "#64748B", // Slate
+  "var(--accent)", // Primary accent
+  "#64748B",       // Slate neutral
+  "#94A3B8",       // Slate light
+  "#475569",       // Slate dark
+  "#CBD5E1",       // Slate extra light
+  "#334155",       // Slate extra dark
 ];
 
 // CHANGE: Notifications Step 4D — 2026-11-05
@@ -204,56 +215,37 @@ function MetricCards({
   const cards = [
     {
       id: "total_links",
-      label: "Total Links",
+      label: "Total links",
       value: totalLinks,
-      badgeText: totalLinks > 0 ? `${activePercent}% Active` : "No links yet",
-      badgeType: totalLinks > 0 ? "positive" : "neutral",
-      icon: <Link2 size={20} />,
-      iconBg: "rgba(124, 58, 237, 0.15)",
-      iconColor: "#8B5CF6",
-      spotlightColor: "rgba(168, 85, 247, 0.40)",
-      borderColor: "rgba(192, 132, 252, 0.85)",
-      sub: totalLinks > 0 ? `${activeLinks} active • ${inactiveLinks} paused` : "Create your first short link",
+      badgeText: null,
+      icon: <Link2 size={18} />,
+      sub: totalLinks > 0 ? `${activeLinks} active, ${inactiveLinks} paused` : "No links created yet",
     },
     {
       id: "total_clicks",
-      label: "Total Clicks",
+      label: "Total clicks",
       value: totalClicks,
-      badgeText: todayClicks > 0 ? `+${todayClicks} today` : (totalClicks > 0 ? `↑ ${totalClicks.toLocaleString()} hits` : "Awaiting clicks"),
-      badgeType: totalClicks > 0 ? "positive" : "neutral",
-      icon: <MousePointerClick size={20} />,
-      iconBg: "rgba(99, 102, 241, 0.15)",
-      iconColor: "#6366F1",
-      spotlightColor: "rgba(99, 102, 241, 0.42)",
-      borderColor: "rgba(129, 140, 248, 0.85)",
-      sub: todayClicks > 0 ? `${todayClicks} clicks recorded today (IST)` : "All-time recorded visitor hits",
+      badgeText: null,
+      icon: <MousePointerClick size={18} />,
+      sub: todayClicks > 0 ? `+${todayClicks} clicks today` : "All-time recorded clicks",
     },
     {
       id: "avg_clicks",
-      label: "Avg Clicks / Link",
+      label: "Avg clicks per link",
       value: totalLinks > 0 ? avgClicks : 0,
       decimals: 1,
-      badgeText: avgClicks > 0 ? "Healthy velocity" : "New collection",
-      badgeType: avgClicks > 0 ? "positive" : "neutral",
-      icon: <TrendingUp size={20} />,
-      iconBg: "rgba(6, 182, 212, 0.15)",
-      iconColor: "#06B6D4",
-      spotlightColor: "rgba(6, 182, 212, 0.40)",
-      borderColor: "rgba(56, 189, 248, 0.85)",
-      sub: totalLinks > 0 ? `${clicksPerActive} avg per active link` : "Mean click density",
+      badgeText: null,
+      icon: <TrendingUp size={18} />,
+      sub: totalLinks > 0 ? `${clicksPerActive} per active link` : "Average clicks per link",
     },
     {
       id: "active_links",
-      label: "Active Links",
+      label: "Active links",
       value: activeLinks,
-      badgeText: activePercent === 100 && totalLinks > 0 ? "100% Operational" : (activeLinks > 0 ? "Live routing" : "Paused"),
+      badgeText: activeLinks > 0 ? "Active" : "Paused",
       badgeType: activeLinks > 0 ? "positive" : "neutral",
-      icon: <Zap size={20} />,
-      iconBg: "rgba(16, 185, 129, 0.15)",
-      iconColor: "#10B981",
-      spotlightColor: "rgba(16, 185, 129, 0.38)",
-      borderColor: "rgba(52, 211, 153, 0.85)",
-      sub: `${activePercent}% fleet routing capacity`,
+      icon: <Zap size={18} />,
+      sub: `${activePercent}% routing capacity`,
     },
   ];
 
@@ -315,18 +307,8 @@ function DonutChart({ title, icon, data = [], emptyMessage = "No data recorded y
 
   const activeSlice = hoveredIdx !== null ? slices[hoveredIdx] : null;
 
-  const isDevice = typeof title === "string" && title.toLowerCase().includes("device");
-  const isBrowser = typeof title === "string" && title.toLowerCase().includes("browser");
-  const spotlightColor = isDevice
-    ? "rgba(99, 102, 241, 0.32)"
-    : isBrowser
-    ? "rgba(6, 182, 212, 0.32)"
-    : "rgba(168, 85, 247, 0.30)";
-  const borderColor = isDevice
-    ? "rgba(129, 140, 248, 0.75)"
-    : isBrowser
-    ? "rgba(56, 189, 248, 0.75)"
-    : "rgba(192, 132, 252, 0.75)";
+  const spotlightColor = "var(--accent-soft, rgba(79, 70, 229, 0.12))";
+  const borderColor = "var(--border)";
 
   return (
     <SpotlightCard
@@ -355,7 +337,7 @@ function DonutChart({ title, icon, data = [], emptyMessage = "No data recorded y
                 cy={size / 2}
                 r={radius}
                 fill="transparent"
-                stroke="rgba(255, 255, 255, 0.05)"
+                stroke="var(--border)"
                 strokeWidth={strokeWidth}
               />
               {/* Colored Slices */}
@@ -390,7 +372,7 @@ function DonutChart({ title, icon, data = [], emptyMessage = "No data recorded y
                 x="50%"
                 y="47%"
                 textAnchor="middle"
-                fill="#ffffff"
+                fill="var(--text)"
                 fontSize="16"
                 fontWeight="800"
                 fontFamily="Inter, sans-serif"
@@ -950,7 +932,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
             <Calendar size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "8px", color: "var(--accent)" }} />
             Click Activity Graph ({selectedYear})
           </h3>
-          <p>Daily interaction density and audience contribution frequency in Indian Standard Time (IST)</p>
+          <p>Daily click activity and frequency.</p>
         </div>
 
         <div className="yearly-graph-actions">
@@ -1096,14 +1078,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                   <TrendingUp size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px", color: "var(--accent)" }} />
                   Weekly Click Activity ({selectedYear})
                 </h5>
-                <p>Aggregated weekly interaction totals across 52 weeks in Indian Standard Time (IST)</p>
-              </div>
-              <div className="weekly-stat-badge">
-                {weeklyData.maxClicks > 0 ? (
-                  <>Peak: <strong>{weeklyData.maxClicks} clicks/wk</strong></>
-                ) : (
-                  <>0 clicks in {selectedYear}</>
-                )}
+                <p>Weekly click totals across 52 weeks.</p>
               </div>
             </div>
 
@@ -1117,9 +1092,9 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                 </defs>
 
                 {/* Horizontal reference grid lines */}
-                <line x1="36" y1="16" x2="745" y2="16" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
-                <line x1="36" y1="52" x2="745" y2="52" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
-                <line x1="36" y1="88" x2="745" y2="88" stroke="rgba(255,255,255,0.12)" />
+                <line x1="36" y1="16" x2="745" y2="16" stroke="var(--border)" strokeDasharray="3,3" />
+                <line x1="36" y1="52" x2="745" y2="52" stroke="var(--border)" strokeDasharray="3,3" />
+                <line x1="36" y1="88" x2="745" y2="88" stroke="var(--border)" />
 
                 {/* Y-axis tick labels */}
                 <text x="30" y="19" fill="#64748b" fontSize="9" textAnchor="end">{weeklyData.maxClicks > 0 ? weeklyData.maxClicks : "-"}</text>
@@ -1134,7 +1109,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                       y1="88"
                       x2={tick.xPos}
                       y2="92"
-                      stroke="rgba(255,255,255,0.22)"
+                      stroke="var(--border)"
                       strokeWidth="1"
                     />
                     <text
@@ -1207,11 +1182,11 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                       cy={hoveredWeek.y}
                       r="5"
                       fill="#38bdf8"
-                      stroke="#ffffff"
+                      stroke="var(--surface)"
                       strokeWidth="2"
                     />
                     <g transform={`translate(${Math.min(680, Math.max(70, hoveredWeek.x))}, ${hoveredWeek.y > 45 ? hoveredWeek.y - 18 : hoveredWeek.y + 20})`}>
-                      <rect x="-46" y="-11" width="92" height="19" rx="4" fill="#090d16" stroke="#38bdf8" strokeWidth="1" />
+                      <rect x="-46" y="-11" width="92" height="19" rx="4" fill="var(--surface-2)" stroke="var(--accent)" strokeWidth="1" />
                       <text x="0" y="2" fill="#38bdf8" fontSize="9" fontWeight="700" textAnchor="middle" dominantBaseline="middle">
                         W{hoveredWeek.weekIndex}: {hoveredWeek.clicks} {hoveredWeek.clicks === 1 ? "click" : "clicks"}
                       </text>
@@ -1269,16 +1244,7 @@ function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }
                   <BarChart3 size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px", color: "var(--accent)" }} />
                   Day-of-Week Analysis
                 </h5>
-                <p>Recorded audience interaction distribution from Monday through Sunday in IST</p>
-              </div>
-              <div className="dow-peak-pill">
-                {dowData.busiestDay ? (
-                  <>
-                    <Trophy size={13} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "4px", color: "var(--warning)" }} /> Peak Day: <strong>{dowData.busiestDay.name} ({dowData.busiestDay.clicks} clicks)</strong>
-                  </>
-                ) : (
-                  <>No weekday activity in {selectedYear}</>
-                )}
+                <p>Traffic distribution from Monday through Sunday.</p>
               </div>
             </div>
 
@@ -1587,13 +1553,10 @@ function SmartTrafficSection({ intelligence }) {
               <p>{spikeAlert.message}</p>
             </div>
           </div>
-          <div className="spike-badge">
-            +{spikeAlert.percentageIncrease}% Velocity
-          </div>
         </div>
       )}
 
-      {/* Header with Momentum Badge */}
+      {/* Header */}
       <div className="intelligence-header">
         <div className="intel-heading-group">
           <div className="intel-icon-box" aria-hidden="true">
@@ -1601,33 +1564,20 @@ function SmartTrafficSection({ intelligence }) {
           </div>
           <div>
             <h3>Smart Traffic Intelligence</h3>
-            <p>Automated spike detection, peak window in IST, and audience strategy</p>
+            <p>Traffic alerts and peak activity analysis.</p>
           </div>
         </div>
-
-        {momentum && (
-          <span className={`momentum-pill momentum-${momentum.status || "steady"}`}>
-            {momentum.label || "Monitoring"}
-          </span>
-        )}
       </div>
 
       {/* 4 Actionable Insight Cards */}
       <div className="intel-cards-grid">
         {displayCards.map((card) => {
-          const cardThemes = {
-            traffic_status: { spotlight: "rgba(99, 102, 241, 0.32)", border: "rgba(129, 140, 248, 0.75)" },
-            audience_platform: { spotlight: "rgba(6, 182, 212, 0.32)", border: "rgba(56, 189, 248, 0.75)" },
-            peak_window: { spotlight: "rgba(168, 85, 247, 0.32)", border: "rgba(192, 132, 252, 0.75)" },
-            action_tip: { spotlight: "rgba(16, 185, 129, 0.30)", border: "rgba(52, 211, 153, 0.75)" },
-          };
-          const theme = cardThemes[card.id] || { spotlight: "rgba(168, 85, 247, 0.30)", border: "rgba(192, 132, 252, 0.75)" };
           return (
             <SpotlightCard
               key={card.id}
               className="intel-card"
-              spotlightColor={theme.spotlight}
-              borderColor={theme.border}
+              spotlightColor="var(--accent-soft, rgba(79, 70, 229, 0.12))"
+              borderColor="var(--border)"
               radius={240}
             >
               <div className="intel-card-top">
@@ -1791,7 +1741,7 @@ function RecentLinksTable({
       <div className="table-topbar">
         <div className="table-topbar-title">
           <h3>Recent Links</h3>
-          <p>Shortened links created in your workspace with live click metrics</p>
+          <p>Manage and track your active short links.</p>
         </div>
 
         <div className="table-actions-group">
@@ -2320,90 +2270,44 @@ function CampaignMetricCards({ summary, loading = false }) {
   const cards = [
     {
       id: "campaign_clicks",
-      label: "Total Campaign Clicks",
-      value: attributedClicks.toLocaleString(),
-      subtext: `${totalRecordedClicks.toLocaleString()} total clicks (${unattributedClicks.toLocaleString()} untracked)`,
-      badgeText: attributedClicks > 0 ? "Attributed Traffic" : "Awaiting clicks",
-      badgeType: attributedClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="6" />
-          <circle cx="12" cy="12" r="2" />
-        </svg>
-      ),
-      iconBg: "rgba(124, 58, 237, 0.15)",
-      iconColor: "#8B5CF6",
+      label: "Attributed clicks",
+      value: attributedClicks,
+      helper: `${totalRecordedClicks.toLocaleString()} total recorded clicks`,
+      icon: <MousePointerClick size={18} />,
     },
     {
       id: "total_campaigns",
-      label: "Total Campaigns",
-      value: totalCampaigns.toLocaleString(),
-      subtext: totalCampaigns === 1 ? "1 active campaign" : `${totalCampaigns} active campaigns`,
-      badgeText: totalCampaigns > 0 ? "Active UTM Tags" : "None defined",
-      badgeType: totalCampaigns > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-          <line x1="4" y1="22" x2="4" y2="15" />
-        </svg>
-      ),
-      iconBg: "rgba(6, 182, 212, 0.15)",
-      iconColor: "#06B6D4",
+      label: "Active campaigns",
+      value: totalCampaigns,
+      helper: totalCampaigns === 1 ? "1 active campaign" : `${totalCampaigns} active campaigns`,
+      icon: <Megaphone size={18} />,
     },
     {
       id: "top_source",
-      label: "Top Traffic Source",
+      label: "Top traffic source",
       value: topSource?.name || "None",
-      subtext: topSource ? `${topSource.count.toLocaleString()} clicks` : "No source recorded",
-      badgeText: topSource ? "utm_source" : "Awaiting data",
-      badgeType: topSource ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="2" y1="12" x2="22" y2="12" />
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-        </svg>
-      ),
-      iconBg: "rgba(16, 185, 129, 0.15)",
-      iconColor: "#10B981",
+      helper: topSource ? `${topSource.count.toLocaleString()} clicks` : "No source recorded",
+      icon: <Globe size={18} />,
     },
     {
       id: "top_campaign",
-      label: "Top Campaign",
+      label: "Top campaign",
       value: topCampaign?.name || "None",
-      subtext: topCampaign ? `${topCampaign.count.toLocaleString()} clicks` : "No campaign recorded",
-      badgeText: topCampaign ? "utm_campaign" : "Awaiting data",
-      badgeType: topCampaign ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      ),
-      iconBg: "rgba(245, 158, 11, 0.15)",
-      iconColor: "#F59E0B",
+      helper: topCampaign ? `${topCampaign.count.toLocaleString()} clicks` : "No campaign recorded",
+      icon: <Megaphone size={18} />,
     },
   ];
 
   return (
     <div className={`metrics-grid ${loading ? "data-refreshing" : ""}`}>
       {cards.map((card) => (
-        <div className="metric-card campaign-metric-card" key={card.id}>
-          <div className="metric-card-top">
-            <div className="metric-icon-badge" style={{ background: card.iconBg, color: card.iconColor }}>
-              {card.icon}
-            </div>
-            <span className={`metric-trend-pill ${card.badgeType}`}>{card.badgeText}</span>
-          </div>
-          <div
-            className="metric-card-val campaign-metric-val"
-            title={typeof card.value === "string" ? card.value : ""}
-          >
-            {card.value}
-          </div>
-          <div className="metric-card-label">{card.label}</div>
-          {card.subtext && <div className="campaign-metric-subtext">{card.subtext}</div>}
-        </div>
+        <StatCard
+          key={card.id}
+          label={card.label}
+          value={card.value}
+          helper={card.helper}
+          icon={card.icon}
+        />
       ))}
     </div>
   );
@@ -2432,7 +2336,7 @@ function CampaignPerformanceTable({ performance = [], loading = false }) {
       <div className="table-topbar">
         <div className="table-topbar-title">
           <h3>Campaign Performance</h3>
-          <p>Real-time click distribution by campaign name, traffic source, and medium</p>
+          <p>Click distribution by campaign, source, and medium.</p>
         </div>
 
         <div className="table-actions-group">
@@ -2710,13 +2614,10 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
       <div className="chart-card-header">
         <div className="chart-title-group">
           <div className="campaign-chart-title-row">
-            <h3>Campaign Clicks Over Time</h3>
-            <span className="campaign-tag-source" style={{ fontSize: "11px", padding: "2px 8px" }}>
-              Attributed Clicks Only
-            </span>
+            <h3>Campaign clicks over time</h3>
           </div>
           <p>
-            Daily campaign-attributed clicks across all marketing channels ({totalPeriodClicks.toLocaleString()} click{totalPeriodClicks !== 1 ? "s" : ""} in {rangeLabel})
+            Daily campaign-attributed clicks across marketing channels.
           </p>
         </div>
       </div>
@@ -2725,14 +2626,12 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
         <svg viewBox={`0 0 ${width} ${height}`} className="chart-svg" preserveAspectRatio="none">
           <defs>
             <linearGradient id="campaignChartAreaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.32" />
-              <stop offset="65%" stopColor="#7C3AED" stopOpacity="0.08" />
-              <stop offset="100%" stopColor="#7C3AED" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.0" />
             </linearGradient>
             <linearGradient id="campaignChartLineGradient" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#7C3AED" />
-              <stop offset="50%" stopColor="#8B5CF6" />
-              <stop offset="100%" stopColor="#A78BFA" />
+              <stop offset="0%" stopColor="var(--accent)" />
+              <stop offset="100%" stopColor="var(--accent)" />
             </linearGradient>
             <filter id="campaignPurpleGlow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="2" stdDeviation="3.5" floodColor="#8B5CF6" floodOpacity="0.4" />
@@ -2750,7 +2649,7 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
                   y1={yPos}
                   x2={width - padRight}
                   y2={yPos}
-                  stroke={isBaseline ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.04)"}
+                  stroke="var(--border)"
                   strokeDasharray={isBaseline ? undefined : "4 4"}
                 />
                 <text
@@ -2921,7 +2820,7 @@ function CampaignAnalyticsView({
         <div className="campaigns-title-row">
           <div>
             <h1>Campaign & UTM Analytics</h1>
-            <p>Monitor campaign attribution, inbound traffic sources, and marketing channels.</p>
+            <p>Track marketing campaign attribution and inbound channels.</p>
           </div>
 
           <div className="campaign-controls-group">
@@ -3057,94 +2956,48 @@ function QRMetricCards({ summary, loading = false }) {
   const qrClicks = summary?.qrClicks ?? 0;
   const directClicks = summary?.directClicks ?? 0;
   const qrPercentage = summary?.qrPercentage ?? 0;
-  const directPercentage = totalClicks > 0 ? Number((100 - qrPercentage).toFixed(1)) : 0;
 
   const cards = [
     {
       id: "total_clicks",
-      label: "Total Clicks",
-      value: totalClicks.toLocaleString(),
-      subtext: totalClicks === 1 ? "1 overall link visit" : `${totalClicks.toLocaleString()} total link visits`,
-      badgeText: totalClicks > 0 ? "All Channels" : "Awaiting traffic",
-      badgeType: totalClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      ),
-      iconBg: "rgba(139, 92, 246, 0.15)",
-      iconColor: "#8B5CF6",
+      label: "Total clicks",
+      value: totalClicks,
+      helper: `${totalClicks.toLocaleString()} total recorded visits`,
+      icon: <MousePointerClick size={18} />,
     },
     {
       id: "qr_scans",
-      label: "QR Scans",
-      value: qrClicks.toLocaleString(),
-      subtext: `${qrPercentage}% of total recorded traffic`,
-      badgeText: qrClicks > 0 ? "Physical / Scans" : "No scans yet",
-      badgeType: qrClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <rect x="3" y="3" width="7" height="7" />
-          <rect x="14" y="3" width="7" height="7" />
-          <rect x="14" y="14" width="7" height="7" />
-          <rect x="3" y="14" width="7" height="7" />
-          <line x1="9" y1="9" x2="15" y2="15" />
-        </svg>
-      ),
-      iconBg: "rgba(168, 85, 247, 0.15)",
-      iconColor: "#A855F7",
+      label: "QR scans",
+      value: qrClicks,
+      helper: `${qrPercentage}% of total recorded traffic`,
+      icon: <QrCode size={18} />,
     },
     {
       id: "direct_clicks",
-      label: "Direct Clicks",
-      value: directClicks.toLocaleString(),
-      subtext: `${directPercentage}% of total recorded traffic`,
-      badgeText: directClicks > 0 ? "Web / Direct" : "No direct clicks",
-      badgeType: directClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-        </svg>
-      ),
-      iconBg: "rgba(6, 182, 212, 0.15)",
-      iconColor: "#06B6D4",
+      label: "Direct clicks",
+      value: directClicks,
+      helper: `${totalClicks > 0 ? Number((100 - qrPercentage).toFixed(1)) : 0}% of total traffic`,
+      icon: <Link2 size={18} />,
     },
     {
       id: "qr_scan_rate",
-      label: "QR Scan Rate",
+      label: "QR scan rate",
       value: `${qrPercentage}%`,
-      subtext: `${qrClicks.toLocaleString()} of ${totalClicks.toLocaleString()} total visits`,
-      badgeText: qrPercentage >= 50 ? "High QR Adoption" : qrClicks > 0 ? "Active QR Visits" : "No QR visits",
-      badgeType: qrClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-          <path d="M22 12A10 10 0 0 0 12 2v10z" />
-        </svg>
-      ),
-      iconBg: "rgba(245, 158, 11, 0.15)",
-      iconColor: "#F59E0B",
+      helper: `${qrClicks.toLocaleString()} of ${totalClicks.toLocaleString()} total visits`,
+      icon: <TrendingUp size={18} />,
     },
   ];
 
   return (
     <div className={`metrics-grid ${loading ? "data-refreshing" : ""}`}>
       {cards.map((card) => (
-        <div className="metric-card campaign-metric-card" key={card.id}>
-          <div className="metric-card-top">
-            <div className="metric-icon-badge" style={{ background: card.iconBg, color: card.iconColor }}>
-              {card.icon}
-            </div>
-            <span className={`metric-trend-pill ${card.badgeType}`}>{card.badgeText}</span>
-          </div>
-          <div className="metric-card-val campaign-metric-val" title={card.value}>
-            {card.value}
-          </div>
-          <div className="metric-card-label">{card.label}</div>
-          {card.subtext && <div className="campaign-metric-subtext">{card.subtext}</div>}
-        </div>
+        <StatCard
+          key={card.id}
+          label={card.label}
+          value={card.value}
+          helper={card.helper}
+          icon={card.icon}
+        />
       ))}
     </div>
   );
@@ -3200,7 +3053,7 @@ function QRLinksTable({
       <div className="table-topbar">
         <div className="table-topbar-title">
           <h3>Per-Link QR Performance</h3>
-          <p>Breakdown of QR scans versus direct visits for each shortened link in your workspace</p>
+          <p>QR scans and direct visits per link.</p>
         </div>
 
         <div className="table-actions-group">
@@ -3511,7 +3364,7 @@ function QRScanInsights({
               Top Performing QR Links
             </h3>
             <p>
-              Top 5 short links ranked by QR scans ({rangeLabel}) &bull; Zero-scan links excluded
+              Top short links ranked by QR scans.
             </p>
           </div>
         </div>
@@ -3703,7 +3556,7 @@ function QRAnalyticsView({
         <div className="campaigns-title-row">
           <div>
             <h1>QR Analytics</h1>
-            <p>Track QR code engagement, compare scans against direct link visits, and monitor per-link conversion.</p>
+            <p>Track QR code scans and channel conversion.</p>
           </div>
 
           <div className="campaign-controls-group">
@@ -3775,8 +3628,8 @@ function QRAnalyticsView({
               title="Traffic Channel (QR Scans vs Direct Clicks)"
               icon={<QrCode size={16} />}
               data={[
-                { name: "QR Scans", count: summary?.qrClicks || 0, color: "#8B5CF6" },
-                { name: "Direct Clicks", count: summary?.directClicks || 0, color: "#06B6D4" },
+                { name: "QR Scans", count: summary?.qrClicks || 0, color: "var(--accent)" },
+                { name: "Direct Clicks", count: summary?.directClicks || 0, color: "#64748B" },
               ]}
               emptyMessage="No traffic recorded in this time range. Scan the QR code or click your short link to view channel breakdown."
             />
@@ -3912,93 +3765,53 @@ function GeoMetricCards({ summary, topCountries = [] }) {
     {
       id: "geo_clicks",
       label: "Geo Identified Visits",
-      value: geoIdentified.toLocaleString(),
-      subtext: `${geoRate}% of total recorded traffic`,
-      badgeText: geoIdentified > 0 ? "Global traffic" : "Awaiting visits",
-      badgeType: geoIdentified > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
-          <circle cx="12" cy="10" r="3" />
-        </svg>
-      ),
-      iconBg: "rgba(16, 185, 129, 0.15)",
-      iconColor: "#10B981",
+      value: geoIdentified,
+      helper: `${geoRate}% of total recorded traffic`,
+      delta: geoIdentified > 0 ? "Global traffic" : "Awaiting visits",
+      trend: geoIdentified > 0 ? "up" : "neutral",
+      icon: <Globe size={18} />,
     },
     {
       id: "countries",
       label: "Countries Reached",
-      value: countriesCount.toLocaleString(),
-      subtext: topCountries[0] ? `Top: ${topCountries[0].country}` : "Worldwide reach",
-      badgeText: countriesCount > 0 ? `${countriesCount} nations` : "No countries",
-      badgeType: countriesCount > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="2" y1="12" x2="22" y2="12" />
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-        </svg>
-      ),
-      iconBg: "rgba(139, 92, 246, 0.15)",
-      iconColor: "#8B5CF6",
+      value: countriesCount,
+      helper: topCountries[0] ? `Top: ${topCountries[0].country}` : "Worldwide reach",
+      delta: countriesCount > 0 ? `${countriesCount} nations` : "No countries",
+      trend: countriesCount > 0 ? "up" : "neutral",
+      icon: <Globe size={18} />,
     },
     {
       id: "cities",
-      label: "Cities Reached",
-      value: citiesCount.toLocaleString(),
-      subtext: `${citiesCount} urban locations`,
-      badgeText: citiesCount > 0 ? "Urban hubs" : "No cities",
-      badgeType: citiesCount > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
-          <path d="M9 22v-4h6v4" />
-          <path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01" />
-        </svg>
-      ),
-      iconBg: "rgba(6, 182, 212, 0.15)",
-      iconColor: "#06B6D4",
+      label: "Urban Hubs",
+      value: citiesCount,
+      helper: `${citiesCount} urban locations`,
+      delta: citiesCount > 0 ? "Urban hubs" : "No cities",
+      trend: citiesCount > 0 ? "up" : "neutral",
+      icon: <Building2 size={18} />,
     },
     {
       id: "qr_geo",
-      label: "QR Physical Visits",
-      value: qrGeoClicks.toLocaleString(),
-      subtext: `${summary?.directGeoClicks || 0} direct visits`,
-      badgeText: qrGeoClicks > 0 ? "Physical QR" : "0 QR scans",
-      badgeType: qrGeoClicks > 0 ? "positive" : "neutral",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-          <rect x="3" y="3" width="7" height="7" />
-          <rect x="14" y="3" width="7" height="7" />
-          <rect x="14" y="14" width="7" height="7" />
-          <rect x="3" y="14" width="7" height="7" />
-          <line x1="9" y1="9" x2="15" y2="15" />
-        </svg>
-      ),
-      iconBg: "rgba(245, 158, 11, 0.15)",
-      iconColor: "#F59E0B",
+      label: "QR Scans",
+      value: qrGeoClicks,
+      helper: `${summary?.directGeoClicks || 0} direct visits`,
+      delta: qrGeoClicks > 0 ? "Physical QR" : "0 QR scans",
+      trend: qrGeoClicks > 0 ? "up" : "neutral",
+      icon: <QrCode size={18} />,
     },
   ];
 
   return (
-    <div className="campaign-metrics-grid geo-metrics-grid">
+    <div className="metrics-grid">
       {cards.map((c) => (
-        <div key={c.id} className="campaign-stat-card">
-          <div className="stat-card-header">
-            <div
-              className="stat-card-icon-box"
-              style={{ background: c.iconBg, color: c.iconColor }}
-            >
-              {c.icon}
-            </div>
-            <span className={`stat-card-badge ${c.badgeType}`}>{c.badgeText}</span>
-          </div>
-          <div className="stat-card-body">
-            <span className="stat-card-label">{c.label}</span>
-            <div className="stat-card-value">{c.value}</div>
-            <span className="stat-card-subtext">{c.subtext}</span>
-          </div>
-        </div>
+        <StatCard
+          key={c.id}
+          label={c.label}
+          value={c.value}
+          delta={c.delta}
+          trend={c.trend}
+          helper={c.helper}
+          icon={c.icon}
+        />
       ))}
     </div>
   );
@@ -4093,18 +3906,18 @@ function TopCountriesTable({ countries = [], onSelectCountry }) {
 
   return (
     <div className="geo-table-card">
-      <div className="table-topbar">
+      <div className="table-topbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
         <div className="table-topbar-title">
-          <h3>Top Countries</h3>
-          <p>Nations ranked by overall visitor engagement. Click any country to drill down into states.</p>
+          <h3 style={{ fontSize: "15px", fontWeight: "600", margin: 0, color: "var(--text)" }}>Top Countries</h3>
+          <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0" }}>Nations ranked by overall visitor engagement.</p>
         </div>
-        <div className="table-actions-group">
-          <input
-            type="text"
-            className="filter-search-input"
+        <div style={{ width: "220px" }}>
+          <Input
+            icon={Search}
             placeholder="Search countries..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            size="sm"
           />
         </div>
       </div>
@@ -4113,12 +3926,10 @@ function TopCountriesTable({ countries = [], onSelectCountry }) {
         <table className="custom-links-table">
           <thead>
             <tr>
-              <th style={{ width: "70px" }}>Rank</th>
+              <th style={{ width: "60px" }}>Rank</th>
               <th>Country</th>
-              <th>Total Visits</th>
-              <th>QR Scans</th>
-              <th>Direct Clicks</th>
-              <th style={{ width: "200px" }}>Traffic Share</th>
+              <th style={{ textAlign: "right" }}>Visits</th>
+              <th style={{ width: "180px", textAlign: "right" }}>Traffic Share</th>
             </tr>
           </thead>
           <tbody>
@@ -4133,46 +3944,40 @@ function TopCountriesTable({ countries = [], onSelectCountry }) {
                     title={`Click to inspect states in ${c.country}`}
                   >
                     <td>
-                      <span className={`qr-rank-pill rank-${c.rank <= 3 ? c.rank : "other"}`}>
+                      <span className="rank-num" style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "600" }}>
                         #{c.rank}
                       </span>
                     </td>
                     <td>
-                      <div className="geo-country-cell">
+                      <div className="geo-country-cell" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span className="geo-table-flag">{flag}</span>
-                        <div className="geo-country-names">
-                          <span className="geo-table-country-name">
+                        <div className="geo-country-names" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span className="geo-table-country-name" style={{ fontWeight: "600", color: "var(--text)" }}>
                             {c.country}
-                            <span className="drilldown-arrow-hint">Explore →</span>
                           </span>
-                          {c.countryCode && (
-                            <span className="geo-table-iso-pill">{c.countryCode}</span>
-                          )}
+                          <span className="drilldown-arrow-hint">Explore →</span>
                         </div>
                       </div>
                     </td>
-                    <td>
-                      <span className="clicks-badge">{c.totalClicks}</span>
+                    <td style={{ textAlign: "right", fontWeight: "600", color: "var(--text)", fontFamily: "var(--font-mono)" }}>
+                      {c.totalClicks.toLocaleString()}
                     </td>
-                    <td>
-                      <span className="geo-channel-pill qr">
-                        {c.qrClicks} ({c.qrPercentage}%)
-                      </span>
-                    </td>
-                    <td>
-                      <span className="geo-channel-pill direct">
-                        {c.directClicks}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="geo-progress-cluster">
-                        <div className="geo-progress-bar-bg">
+                    <td style={{ textAlign: "right" }}>
+                      <div className="geo-progress-cluster" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
+                        <div className="geo-progress-bar-bg" style={{ flex: 1, maxWidth: "100px", height: "6px", background: "var(--surface-2)", borderRadius: "999px", overflow: "hidden" }}>
                           <div
                             className="geo-progress-bar-fill"
-                            style={{ width: `${Math.min(100, Math.max(4, c.percentage))}%` }}
+                            style={{
+                              width: `${Math.min(100, Math.max(4, c.percentage))}%`,
+                              height: "100%",
+                              background: "var(--accent)",
+                              borderRadius: "999px",
+                            }}
                           />
                         </div>
-                        <span className="geo-percentage-text">{c.percentage}%</span>
+                        <span className="geo-percentage-text" style={{ fontSize: "12px", color: "var(--text-muted)", minWidth: "36px", textAlign: "right" }}>
+                          {c.percentage}%
+                        </span>
                       </div>
                     </td>
                   </tr>
@@ -4180,7 +3985,7 @@ function TopCountriesTable({ countries = [], onSelectCountry }) {
               })
             ) : (
               <tr>
-                <td colSpan="6" className="table-empty-row">
+                <td colSpan="4" className="table-empty-row">
                   No countries match your search filter.
                 </td>
               </tr>
@@ -4208,18 +4013,18 @@ function TopCitiesTable({ cities = [], onSelectCity }) {
 
   return (
     <div className="geo-table-card">
-      <div className="table-topbar">
+      <div className="table-topbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
         <div className="table-topbar-title">
-          <h3>Top Cities</h3>
-          <p>Metropolitan locations generating the highest volume of visits. Click to view city analytics.</p>
+          <h3 style={{ fontSize: "15px", fontWeight: "600", margin: 0, color: "var(--text)" }}>Top Cities</h3>
+          <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0" }}>Metropolitan locations ranked by volume.</p>
         </div>
-        <div className="table-actions-group">
-          <input
-            type="text"
-            className="filter-search-input"
+        <div style={{ width: "220px" }}>
+          <Input
+            icon={Search}
             placeholder="Search cities..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            size="sm"
           />
         </div>
       </div>
@@ -4228,13 +4033,10 @@ function TopCitiesTable({ cities = [], onSelectCity }) {
         <table className="custom-links-table">
           <thead>
             <tr>
-              <th style={{ width: "70px" }}>Rank</th>
+              <th style={{ width: "60px" }}>Rank</th>
               <th>City</th>
-              <th>Country</th>
-              <th>Total Visits</th>
-              <th>QR Scans</th>
-              <th>Direct Clicks</th>
-              <th style={{ width: "140px" }}>Share</th>
+              <th style={{ textAlign: "right" }}>Visits</th>
+              <th style={{ width: "180px", textAlign: "right" }}>Traffic Share</th>
             </tr>
           </thead>
           <tbody>
@@ -4249,42 +4051,47 @@ function TopCitiesTable({ cities = [], onSelectCity }) {
                     title={`Click to inspect analytics for ${c.city}`}
                   >
                     <td>
-                      <span className={`qr-rank-pill rank-${c.rank <= 3 ? c.rank : "other"}`}>
+                      <span className="rank-num" style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "600" }}>
                         #{c.rank}
                       </span>
                     </td>
                     <td>
-                      <strong style={{ color: "var(--text-primary)" }}>
-                        {c.city}
-                        <span className="drilldown-arrow-hint">View →</span>
-                      </strong>
-                    </td>
-                    <td>
-                      <div className="geo-country-cell">
+                      <div className="geo-country-cell" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span className="geo-table-flag">{flag}</span>
-                        <span>{c.country}</span>
+                        <div className="geo-country-names" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontWeight: "600", color: "var(--text)" }}>{c.city}</span>
+                          <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>({c.country})</span>
+                          <span className="drilldown-arrow-hint">Explore →</span>
+                        </div>
                       </div>
                     </td>
-                    <td>
-                      <span className="clicks-badge">{c.totalClicks}</span>
+                    <td style={{ textAlign: "right", fontWeight: "600", color: "var(--text)", fontFamily: "var(--font-mono)" }}>
+                      {c.totalClicks.toLocaleString()}
                     </td>
-                    <td>
-                      <span className="geo-channel-pill qr">{c.qrClicks}</span>
-                    </td>
-                    <td>
-                      <span className="geo-channel-pill direct">{c.directClicks}</span>
-                    </td>
-                    <td>
-                      <span className="geo-percentage-text" style={{ fontWeight: 650 }}>
-                        {c.percentage}%
-                      </span>
+                    <td style={{ textAlign: "right" }}>
+                      <div className="geo-progress-cluster" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
+                        <div className="geo-progress-bar-bg" style={{ flex: 1, maxWidth: "100px", height: "6px", background: "var(--surface-2)", borderRadius: "999px", overflow: "hidden" }}>
+                          <div
+                            className="geo-progress-bar-fill"
+                            style={{
+                              width: `${Math.min(100, Math.max(4, c.percentage))}%`,
+                              height: "100%",
+                              background: "var(--accent)",
+                              borderRadius: "999px",
+                            }}
+                          />
+                        </div>
+                        <span className="geo-percentage-text" style={{ fontSize: "12px", color: "var(--text-muted)", minWidth: "36px", textAlign: "right" }}>
+                          {c.percentage}%
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan="7" className="table-empty-row">
+                <td colSpan="4" className="table-empty-row">
                   No cities match your search filter.
                 </td>
               </tr>
@@ -4410,9 +4217,18 @@ function GeoAnalyticsView({
 
       {/* Loading Skeleton */}
       {geoLoading && !geoAnalytics ? (
-        <div className="campaign-loading-state">
-          <div className="loading-spinner" />
-          <p>Analyzing global geographic traffic...</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div className="metrics-grid">
+            <Skeleton height={110} />
+            <Skeleton height={110} />
+            <Skeleton height={110} />
+            <Skeleton height={110} />
+          </div>
+          <Skeleton height={420} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+            <Skeleton height={320} />
+            <Skeleton height={320} />
+          </div>
         </div>
       ) : (
         <>
@@ -4471,8 +4287,21 @@ function GeoAnalyticsView({
 // -----------------------------------------------------------------------------
 function App() {
   // CHANGE: Added persistent session refresh tokens — 2026-10-21
-  const [token, setToken] = useState("");
-  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem("token") || "";
+    } catch (_) {
+      return "";
+    }
+  });
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      return stored ? JSON.parse(stored) : null;
+    } catch (_) {
+      return null;
+    }
+  });
   const [authError, setAuthError] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -4481,6 +4310,20 @@ function App() {
   const [error, setError] = useState("");
   const [copiedLinkId, setCopiedLinkId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchScope, setSearchScope] = useState("all"); // "all" | "links" | "campaigns" | "pages"
+  const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    const handleGlobalSearchKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleGlobalSearchKey);
+    return () => window.removeEventListener("keydown", handleGlobalSearchKey);
+  }, []);
+
   const [sortOrder, setSortOrder] = useState("newest");
   const [timeRange, setTimeRange] = useState("7d");
 
@@ -4561,8 +4404,58 @@ function App() {
     setSelectedQrLink(null);
   }, []);
 
+  // Client-side routing: pathname state and navigation handler
+  const [currentPath, setCurrentPath] = useState(() => {
+    try {
+      if (typeof window !== "undefined") {
+        return window.location.pathname || "/";
+      }
+    } catch (_) {}
+    return "/";
+  });
+
+  const navigateTo = useCallback((path) => {
+    try {
+      const url = new URL(path, window.location.origin);
+      const pathname = url.pathname || "/";
+      if (window.location.pathname !== pathname || window.location.hash !== url.hash) {
+        window.history.pushState({}, "", path);
+      }
+      setCurrentPath(pathname);
+      if (pathname === "/settings") {
+        setActiveView("settings");
+      } else if (pathname === "/dashboard" || pathname === "/app") {
+        setActiveView("dashboard");
+      }
+      window.scrollTo(0, 0);
+    } catch (_) {
+      window.location.href = path;
+    }
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname || "/";
+      setCurrentPath(path);
+      if (path === "/settings") {
+        setActiveView("settings");
+      } else if (path === "/dashboard" || path === "/app") {
+        setActiveView("dashboard");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   // CHANGE: Added separate Campaign Analytics frontend view — 2026-11-02
-  const [activeView, setActiveView] = useState("dashboard"); // "dashboard" | "campaigns"
+  const [activeView, setActiveView] = useState(() => {
+    try {
+      if (typeof window !== "undefined" && window.location.pathname === "/settings") {
+        return "settings";
+      }
+    } catch (_) {}
+    return "dashboard";
+  }); // "dashboard" | "campaigns" | "settings"
   // CHANGE: Main Dashboard + Sidebar UI Redesign (Desktop collapse & Mobile drawer) — 2026-11-19
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try {
@@ -4785,8 +4678,9 @@ function App() {
       setCampaignRange("all");
       setError("");
       setAuthError("");
+      navigateTo("/");
     }
-  }, []);
+  }, [navigateTo]);
 
   // Handle successful login
   const handleLoginSuccess = useCallback((newToken, userData) => {
@@ -4795,7 +4689,19 @@ function App() {
     if (userData) setUser(userData);
     setAuthError("");
     setError("");
-  }, []);
+
+    // Check if there is a prefilled URL from mini shortener
+    try {
+      const prefillUrl = sessionStorage.getItem("smartlink_prefill_url");
+      if (prefillUrl) {
+        setNewUrlInput(prefillUrl);
+        setShowCreateModal(true);
+        sessionStorage.removeItem("smartlink_prefill_url");
+      }
+    } catch (_) {}
+
+    navigateTo("/dashboard");
+  }, [navigateTo]);
 
   // Silent session restoration on initial visit / page reload
   useEffect(() => {
@@ -5743,6 +5649,40 @@ function App() {
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // PUBLIC MARKETING ROUTES (No login needed)
+  // ---------------------------------------------------------------------------
+  if (currentPath === "/" || currentPath === "") {
+    return <LandingPage token={token} onNavigate={navigateTo} />;
+  }
+  if (currentPath === "/pricing") {
+    return <PricingPage token={token} onNavigate={navigateTo} />;
+  }
+  if (currentPath === "/docs") {
+    return <DocsPage token={token} onNavigate={navigateTo} />;
+  }
+  if (currentPath === "/changelog") {
+    return <ChangelogPage token={token} onNavigate={navigateTo} />;
+  }
+  if (currentPath === "/status") {
+    return <StatusPage token={token} onNavigate={navigateTo} />;
+  }
+
+  // Auth routes (/login or /register)
+  if (currentPath === "/login" || currentPath === "/register") {
+    if (token) {
+      return <LandingPage token={token} onNavigate={navigateTo} />;
+    }
+    return (
+      <Login
+        onLoginSuccess={handleLoginSuccess}
+        initialError={authError}
+        initialMode={currentPath === "/register" ? "register" : "login"}
+        onNavigate={navigateTo}
+      />
+    );
+  }
+
   // CHANGE: Added persistent session refresh tokens — 2026-10-21
   if (isInitializing) {
     return (
@@ -5757,7 +5697,14 @@ function App() {
   }
 
   if (!token) {
-    return <Login onLoginSuccess={handleLoginSuccess} initialError={authError} />;
+    return (
+      <Login
+        onLoginSuccess={handleLoginSuccess}
+        initialError={authError}
+        initialMode="login"
+        onNavigate={navigateTo}
+      />
+    );
   }
 
   return (
@@ -5817,8 +5764,9 @@ function App() {
                 setActiveView("dashboard");
                 setIsMobileMenuOpen(false);
               }}
-              title="Dashboard"
+              title={isSidebarCollapsed ? "Dashboard" : undefined}
               data-tooltip="Dashboard"
+              aria-label="Dashboard"
             >
               <span className="nav-item-icon">
                 <LayoutDashboard size={18} />
@@ -5848,8 +5796,9 @@ function App() {
                   if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
                 }
               }}
-              title="My Links"
+              title={isSidebarCollapsed ? "My Links" : undefined}
               data-tooltip="My Links"
+              aria-label="My Links"
             >
               <span className="nav-item-icon">
                 <Link2 size={18} />
@@ -5864,8 +5813,9 @@ function App() {
                 setActiveView("qr-analytics");
                 setIsMobileMenuOpen(false);
               }}
-              title="QR Analytics"
+              title={isSidebarCollapsed ? "QR Analytics" : undefined}
               data-tooltip="QR Analytics"
+              aria-label="QR Analytics"
             >
               <span className="nav-item-icon">
                 <QrCode size={18} />
@@ -5886,8 +5836,9 @@ function App() {
                 setActiveView("campaigns");
                 setIsMobileMenuOpen(false);
               }}
-              title="Campaigns"
+              title={isSidebarCollapsed ? "Campaigns" : undefined}
               data-tooltip="Campaigns"
+              aria-label="Campaigns"
             >
               <span className="nav-item-icon">
                 <Megaphone size={18} />
@@ -5902,8 +5853,9 @@ function App() {
                 setActiveView("geo-analytics");
                 setIsMobileMenuOpen(false);
               }}
-              title="Geo Analytics"
+              title={isSidebarCollapsed ? "Geo Analytics" : undefined}
               data-tooltip="Geo Analytics"
+              aria-label="Geo Analytics"
             >
               <span className="nav-item-icon">
                 <Globe size={18} />
@@ -5918,8 +5870,9 @@ function App() {
                 setActiveView("device-analytics");
                 setIsMobileMenuOpen(false);
               }}
-              title="Devices & OS"
+              title={isSidebarCollapsed ? "Devices & OS" : undefined}
               data-tooltip="Devices & OS"
+              aria-label="Devices & OS"
             >
               <span className="nav-item-icon">
                 <Smartphone size={18} />
@@ -5934,8 +5887,9 @@ function App() {
                 setActiveView("traffic-analytics");
                 setIsMobileMenuOpen(false);
               }}
-              title="Traffic Analytics"
+              title={isSidebarCollapsed ? "Traffic Analytics" : undefined}
               data-tooltip="Traffic Analytics"
+              aria-label="Traffic Analytics"
             >
               <span className="nav-item-icon">
                 <Activity size={18} />
@@ -5950,8 +5904,9 @@ function App() {
                 setActiveView("link-comparison");
                 setIsMobileMenuOpen(false);
               }}
-              title="Link Comparison"
+              title={isSidebarCollapsed ? "Link Comparison" : undefined}
               data-tooltip="Link Comparison"
+              aria-label="Link Comparison"
             >
               <span className="nav-item-icon">
                 <ArrowRightLeft size={18} />
@@ -5966,8 +5921,9 @@ function App() {
                 setActiveView("anomaly-detection");
                 setIsMobileMenuOpen(false);
               }}
-              title="Traffic Intelligence"
+              title={isSidebarCollapsed ? "Traffic Intelligence" : undefined}
               data-tooltip="Traffic Intelligence"
+              aria-label="Traffic Intelligence"
             >
               <span className="nav-item-icon">
                 <ShieldAlert size={18} />
@@ -5988,8 +5944,9 @@ function App() {
                 setActiveView("ab-testing");
                 setIsMobileMenuOpen(false);
               }}
-              title="A/B Testing"
+              title={isSidebarCollapsed ? "A/B Testing" : undefined}
               data-tooltip="A/B Testing"
+              aria-label="A/B Testing"
             >
               <span className="nav-item-icon">
                 <GitFork size={18} />
@@ -6004,8 +5961,9 @@ function App() {
                 setActiveView("reports");
                 setIsMobileMenuOpen(false);
               }}
-              title="Reports & Export"
+              title={isSidebarCollapsed ? "Reports & Export" : undefined}
               data-tooltip="Reports & Export"
+              aria-label="Reports & Export"
             >
               <span className="nav-item-icon">
                 <FileText size={18} />
@@ -6028,40 +5986,48 @@ function App() {
                   handleOpenAnalytics(target);
                 }
               }}
-              title="Quick Analytics"
+              title={isSidebarCollapsed ? "Quick Analytics" : undefined}
               data-tooltip="Quick Analytics"
+              aria-label="Quick Analytics"
             >
               <span className="nav-item-icon">
                 <BarChart3 size={18} />
               </span>
               <span className="nav-item-text">Quick Analytics</span>
             </button>
+
+            <button
+              type="button"
+              className={`nav-item ${activeView === "settings" ? "active" : ""}`}
+              onClick={() => {
+                setActiveView("settings");
+                setIsMobileMenuOpen(false);
+                navigateTo("/settings");
+              }}
+              title={isSidebarCollapsed ? "Settings" : undefined}
+              data-tooltip="Settings"
+              aria-label="Settings"
+            >
+              <span className="nav-item-icon">
+                <SettingsIcon size={18} />
+              </span>
+              <span className="nav-item-text">Settings</span>
+            </button>
           </nav>
         </div>
 
-        {/* User Profile Footer */}
-        <div className="sidebar-footer">
-          <div className="user-avatar" title={user?.username || "Vijay"}>
-            {user?.username ? user.username.charAt(0).toUpperCase() : "V"}
-          </div>
-          <div className="user-info">
-            <span className="user-name" title={user?.username || "Vijay"}>
-              {user?.username || "Vijay"}
-            </span>
-            <span className="user-email" title={user?.email || "smartlink@user"}>
-              {user?.email || "smartlink@user"}
-            </span>
-          </div>
-          <button
-            type="button"
-            className="btn-icon-logout"
-            onClick={handleLogout}
-            title="Log out"
-            aria-label="Log out"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
+        {/* Enhanced Sticky Sidebar Bottom Block */}
+        <SidebarBottom
+          isCollapsed={isSidebarCollapsed}
+          totalLinks={dashboardAnalytics?.totalLinks ?? links.length}
+          totalClicks={
+            dashboardAnalytics?.totalClicks ??
+            links.reduce((sum, l) => sum + (l.clicks || 0), 0)
+          }
+          user={user}
+          onNavigate={navigateTo}
+          onLogout={handleLogout}
+        />
       </aside>
 
       {/* Main Viewport */}
@@ -6079,20 +6045,72 @@ function App() {
               <Menu size={20} />
             </button>
 
-            <Input
-              icon={Search}
-              shortcut="Ctrl+K"
-              type="search"
-              placeholder="Search links..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ width: "260px" }}
-              aria-label="Search links"
-            />
+            <div className="topbar-search-box">
+              <span className="search-box-icon" aria-hidden="true">
+                <Search size={15} />
+              </span>
+              <select
+                className="topbar-search-scope"
+                value={searchScope}
+                onChange={(e) => setSearchScope(e.target.value)}
+                aria-label="Search scope"
+              >
+                <option value="all">All</option>
+                <option value="links">Links</option>
+                <option value="campaigns">Campaigns</option>
+                <option value="pages">Pages</option>
+              </select>
+              <input
+                ref={searchInputRef}
+                type="search"
+                className="topbar-search-field"
+                placeholder={
+                  searchScope === "links"
+                    ? "Search links..."
+                    : searchScope === "campaigns"
+                    ? "Search campaigns..."
+                    : searchScope === "pages"
+                    ? "Search pages..."
+                    : "Search links, campaigns..."
+                }
+                value={searchTerm}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchTerm(val);
+                  if (searchScope === "pages" && val.trim()) {
+                    const q = val.toLowerCase().trim();
+                    if ("settings".includes(q)) {
+                      setActiveView("settings");
+                    } else if ("campaigns".includes(q)) {
+                      setActiveView("campaigns");
+                    } else if ("dashboard".includes(q)) {
+                      setActiveView("dashboard");
+                    } else if ("reports".includes(q)) {
+                      setActiveView("reports");
+                    }
+                  }
+                }}
+                aria-label={`Search in ${searchScope}`}
+              />
+              <kbd className="ui-input-shortcut" aria-hidden="true">
+                Ctrl+K
+              </kbd>
+            </div>
           </div>
 
           <div className="topbar-actions">
-            {/* CHANGE: Notifications Step 4C / Bell Click Fix — 2026-11-05 */}
+            {/* 1. Help icon button */}
+            <button
+              type="button"
+              className="topbar-icon-btn"
+              onClick={() => navigateTo("/docs")}
+              title="Help & docs"
+              aria-label="Help & documentation"
+            >
+              <HelpCircle size={18} />
+            </button>
+
+            {/* 2. Notifications bell with count badge */}
             <div className="topbar-notifications-wrapper" ref={notificationsRef}>
               <button
                 type="button"
@@ -6262,13 +6280,21 @@ function App() {
               )}
             </div>
 
-            <div className="topbar-profile-pill">
-              <div className="user-avatar" style={{ width: "28px", height: "28px", fontSize: "12px" }}>
-                {user?.username ? user.username.charAt(0).toUpperCase() : "V"}
-              </div>
-              <span className="topbar-profile-name">{user?.username || "Vijay"}</span>
-            </div>
+            {/* 3. Upgrade button (secondary glass style, hidden for highest plan) */}
+            {!PLAN_LIMITS[CURRENT_PLAN]?.isHighest && (
+              <button
+                type="button"
+                className="topbar-upgrade-btn"
+                onClick={() => navigateTo("/pricing")}
+                title="Upgrade plan"
+                aria-label="Upgrade subscription plan"
+              >
+                <Zap size={14} className="upgrade-btn-icon" />
+                <span>Upgrade</span>
+              </button>
+            )}
 
+            {/* 4. Create link primary button */}
             <Button
               variant="primary"
               size="md"
@@ -6288,8 +6314,23 @@ function App() {
             >
               Create link
             </Button>
+
+            {/* 5. Avatar with online dot */}
+            <div
+              className="topbar-avatar-wrapper"
+              title={`Signed in as ${user?.username || "Vijay"}`}
+              aria-label={`Signed in as ${user?.username || "Vijay"}`}
+            >
+              <div className="user-avatar topbar-user-avatar">
+                {user?.username ? user.username.charAt(0).toUpperCase() : "V"}
+              </div>
+              <span className="user-online-dot topbar-online-dot" aria-label="Online" />
+            </div>
           </div>
         </header>
+
+        {/* 4. Announcement Banner (dismissible below topbar) */}
+        <AnnouncementBanner onNavigate={navigateTo} />
 
         {/* Main View Switcher: Dashboard vs Campaigns */}
         {/* CHANGE: Added separate Campaign Analytics frontend view — 2026-11-02 */}
@@ -6517,6 +6558,19 @@ function App() {
             links={links}
             token={token}
             apiBaseUrl={API_BASE_URL}
+          />
+        ) : activeView === "settings" ? (
+          <SettingsView
+            user={user}
+            token={token}
+            apiBaseUrl={API_BASE_URL}
+            onUserUpdate={(updatedUser) => {
+              setUser(updatedUser);
+              try {
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+              } catch (_) {}
+            }}
+            onLogout={handleLogout}
           />
         ) : null}
       </main>
@@ -6928,7 +6982,7 @@ function App() {
 
                   {/* Individual Click Events History Table */}
                   <div className="links-table-card">
-                    <h4 style={{ margin: "0 0 12px", color: "#fff", fontSize: "15px" }}>
+                    <h4 style={{ margin: "0 0 12px", color: "var(--text)", fontSize: "15px" }}>
                       Click Events Log (IST)
                     </h4>
                     <div className="table-responsive-box">

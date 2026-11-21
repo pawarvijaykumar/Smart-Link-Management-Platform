@@ -37,13 +37,16 @@ function StatCard({
   delta,
   deltaType = "neutral", // "positive" | "negative" | "neutral"
   helperText,
+  helper,
   sparklineData,
   sparklineColor,
+  icon,
   className = "",
   decimals = 0,
   prefix = "",
   suffix = "",
 }) {
+  const finalHelper = helperText || helper;
   const numericVal = typeof value === "number" ? value : parseFloat(value);
   const isNumber = !isNaN(numericVal);
   const [displayValue, setDisplayValue] = useState(isNumber ? 0 : value);
@@ -84,6 +87,7 @@ function StatCard({
     <div className={`ui-stat-card ${className}`}>
       <div className="ui-stat-top">
         <span className="ui-stat-label">{label}</span>
+        {icon && <span className="ui-stat-icon">{icon}</span>}
         {sparklineData && sparklineData.length > 1 && (
           <MiniSparkline data={sparklineData} color={sparklineColor} />
         )}
@@ -93,16 +97,14 @@ function StatCard({
         {formattedDisplay}
       </div>
 
-      {(delta || helperText) && (
+      {(delta || finalHelper) && (
         <div className="ui-stat-bottom">
           {delta && (
             <span className={`ui-stat-delta ui-stat-delta--${deltaType}`}>
-              {deltaType === "positive" && "↑ "}
-              {deltaType === "negative" && "↓ "}
               {delta}
             </span>
           )}
-          {helperText && <span className="ui-stat-helper">{helperText}</span>}
+          {finalHelper && <span className="ui-stat-helper">{finalHelper}</span>}
         </div>
       )}
     </div>

@@ -8,6 +8,7 @@
 import React, { useState, useMemo } from "react";
 import axios from "axios";
 import SpecularButton from "./SpecularButton";
+import { SegmentedControl } from "./ui/SegmentedControl";
 import {
   LayoutDashboard,
   Link2,
@@ -372,35 +373,17 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
               <label className="reports-config-label">
                 Select Evaluation Range (IST)
               </label>
-              <div className="reports-range-buttons">
-                <button
-                  type="button"
-                  className={`reports-btn-range ${
-                    selectedRange === "7d" ? "active" : ""
-                  }`}
-                  onClick={() => setSelectedRange("7d")}
-                >
-                  7 Days
-                </button>
-                <button
-                  type="button"
-                  className={`reports-btn-range ${
-                    selectedRange === "30d" ? "active" : ""
-                  }`}
-                  onClick={() => setSelectedRange("30d")}
-                >
-                  30 Days
-                </button>
-                <button
-                  type="button"
-                  className={`reports-btn-range ${
-                    selectedRange === "all" ? "active" : ""
-                  }`}
-                  onClick={() => setSelectedRange("all")}
-                >
-                  All Time
-                </button>
-              </div>
+              <SegmentedControl
+                options={[
+                  { value: "7d", label: "7 Days" },
+                  { value: "30d", label: "30 Days" },
+                  { value: "all", label: "All Time" },
+                ]}
+                value={selectedRange}
+                onChange={(val) => setSelectedRange(val)}
+                size="md"
+                ariaLabel="Select Evaluation Range (IST)"
+              />
               <span className="reports-input-hint">
                 Calculates metrics using strictly bounded Indian Standard Time
                 calendar dates.

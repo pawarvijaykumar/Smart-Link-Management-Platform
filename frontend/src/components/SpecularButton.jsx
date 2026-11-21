@@ -578,7 +578,7 @@ const SpecularButton = React.forwardRef(function SpecularButton(
       {...rest}
     >
       {/* 1. Official React Bits WebGL Specular Light Canvas */}
-      <canvas ref={canvasRef} className="specular-button__light" aria-hidden="true" />
+      {hasWebGl && <canvas ref={canvasRef} className="specular-button__light" aria-hidden="true" />}
 
       {/* 2. Hybrid CSS Cursor-Following Specular Highlight (Active when hovered) */}
       <span className="specular-button__sheen" aria-hidden="true" />

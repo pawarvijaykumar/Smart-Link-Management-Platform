@@ -6,14 +6,11 @@
 .card-spotlight {
   position: relative;
   border-radius: var(--radius-lg, 16px);
-  background: var(--bg-card, rgba(13, 20, 38, 0.38));
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  background: var(--bg-surface, var(--surface, #161B22));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
   overflow: hidden;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  box-shadow: var(--shadow-sm);
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .card-spotlight.spotlight-active {
@@ -71,7 +68,8 @@
 /* Smart Traffic Intelligence Cards */
 .card-spotlight.intel-card {
   border-radius: var(--radius-md, 10px);
-  background: rgba(13, 20, 38, 0.38);
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
 }
 
 .card-spotlight.intel-card > .card-spotlight-inner {
@@ -85,7 +83,8 @@
 /* Yearly Activity Summary Metric Cards */
 .card-spotlight.summary-metric-card {
   border-radius: 8px;
-  background: rgba(13, 20, 38, 0.38);
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
 }
 
 .card-spotlight.summary-metric-card.spotlight-active {
@@ -117,7 +116,8 @@
 /* Yearly Left-Column Sub-Blocks (Calendar, Weekly Activity, Day of Week) */
 .card-spotlight.yearly-panel-block {
   border-radius: 12px;
-  background: rgba(13, 20, 38, 0.38);
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
 }
 
 .card-spotlight.yearly-panel-block.spotlight-active {
@@ -133,7 +133,7 @@
 
 /* Default hover border fallback */
 .card-spotlight:hover {
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: var(--border-hover, var(--border));
 }
 
 /* Respect reduced motion */

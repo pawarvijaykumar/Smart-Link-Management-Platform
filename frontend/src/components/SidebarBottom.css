@@ -1,0 +1,716 @@
+/* =============================================================================
+   SidebarBottom.css - Modular Bottom Area for SmartLink Sidebar
+   Includes Usage Card, What's New, Help & Docs, About, and Profile row with Popovers
+   ============================================================================= */
+
+.sidebar-bottom-block {
+  margin-top: auto;
+  position: sticky;
+  bottom: 0;
+  border-top: 1px solid var(--border);
+  padding: 12px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--sidebar);
+  flex-shrink: 0;
+  width: 100%;
+  z-index: 60;
+}
+
+.sidebar-bottom-block.is-collapsed {
+  padding: 12px 0;
+  align-items: center;
+  gap: 8px;
+}
+
+/* -----------------------------------------------------------------------------
+   1. Usage Card
+   ----------------------------------------------------------------------------- */
+.sidebar-usage-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card, 10px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.usage-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.usage-card-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.usage-card-plan {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.usage-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.usage-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+}
+
+.usage-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.usage-value {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-track {
+  height: 4px;
+  width: 100%;
+  background: var(--surface-2);
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.usage-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.usage-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
+}
+
+.usage-upgrade-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 0;
+  transition: color 0.15s;
+}
+
+.usage-upgrade-link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* -----------------------------------------------------------------------------
+   2. Navigation Rows (What's New, Help, About)
+   ----------------------------------------------------------------------------- */
+.sidebar-bottom-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.sidebar-popover-anchor {
+  position: relative;
+  width: 100%;
+}
+
+.sidebar-bottom-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-input, 8px);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  outline: none;
+}
+
+.sidebar-bottom-row:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.sidebar-bottom-row.active {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.sidebar-bottom-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.is-collapsed .sidebar-bottom-row {
+  justify-content: center;
+  padding: 9px;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto;
+}
+
+.row-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.row-unread-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  border: 1px solid var(--sidebar);
+}
+
+.row-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge-new-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+/* -----------------------------------------------------------------------------
+   3. Profile Row
+   ----------------------------------------------------------------------------- */
+.profile-anchor {
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-profile-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-input, 8px);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  outline: none;
+}
+
+.sidebar-profile-row:hover {
+  background: var(--surface-hover);
+}
+
+.sidebar-profile-row.active {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.sidebar-profile-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.is-collapsed .sidebar-profile-row {
+  justify-content: center;
+  padding: 6px;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto;
+}
+
+.profile-avatar-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.sidebar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.user-online-dot {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 1.5px solid var(--sidebar);
+  box-shadow: 0 0 4px rgba(16, 185, 129, 0.6);
+}
+
+.profile-info-block {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-username {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-plan-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  letter-spacing: 0.03em;
+}
+
+.profile-email {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-chevron-icon {
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  transition: transform 0.15s ease;
+}
+
+.sidebar-profile-row.active .profile-chevron-icon {
+  transform: rotate(180deg);
+}
+
+/* -----------------------------------------------------------------------------
+   4. Popovers (Shared & Contextual)
+   ----------------------------------------------------------------------------- */
+.sidebar-popover {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card, 12px);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  z-index: 1000;
+  animation: popoverFadeIn 0.15s ease-out;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popover-upward {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  min-width: 230px;
+}
+
+.popover-flyout {
+  position: fixed;
+  left: 78px;
+  bottom: 20px;
+  width: 280px;
+  z-index: 1200;
+}
+
+.popover-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.popover-header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.popover-title-icon {
+  color: var(--accent);
+}
+
+.popover-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s, background 0.12s;
+}
+
+.popover-close-btn:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.popover-body {
+  padding: 10px 12px;
+}
+
+.popover-footer {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  border-bottom-left-radius: var(--radius-card, 12px);
+  border-bottom-right-radius: var(--radius-card, 12px);
+}
+
+.popover-link-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.popover-link-btn:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* What's New Popover Content */
+.whats-new-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.whats-new-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-muted, rgba(255, 255, 255, 0.05));
+}
+
+.whats-new-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.whats-new-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+}
+
+.whats-new-version {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.whats-new-date {
+  color: var(--text-dim);
+}
+
+.whats-new-item-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.whats-new-item-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* About Popover Content */
+.about-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.about-app-info {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.about-app-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.about-app-version {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono, monospace);
+}
+
+.about-status-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input, 8px);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-indicator-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text);
+}
+
+.status-dot-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.status-action-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.status-action-link:hover {
+  text-decoration: underline;
+}
+
+.about-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about-link-row {
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.12s, background 0.12s;
+  text-align: left;
+}
+
+.about-link-row:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.about-copyright {
+  font-size: 10.5px;
+  color: var(--text-dim);
+}
+
+/* Profile Menu Popover Content */
+.profile-menu-popover {
+  width: 240px;
+}
+
+.profile-menu-header {
+  padding: 10px 12px;
+}
+
+.profile-menu-user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-menu-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+}
+
+.profile-menu-user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.profile-menu-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-menu-email {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
+}
+
+.profile-menu-items {
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  text-align: left;
+}
+
+.profile-menu-item:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.theme-toggle-item {
+  justify-content: space-between;
+}
+
+.theme-toggle-item > span:first-of-type {
+  flex: 1;
+  margin-left: 8px;
+}
+
+.theme-current-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--accent);
+}
+
+.profile-menu-item.logout-item {
+  color: #ef4444;
+}
+
+.profile-menu-item.logout-item:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}

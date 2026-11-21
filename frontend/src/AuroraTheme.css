@@ -436,6 +436,7 @@ body::after,
 .campaign-card,
 .qr-metric-card,
 .qr-preview-card,
+.qr-best-performer-card,
 .qr-history-card,
 .geo-metric-card,
 .globe-card,
@@ -572,21 +573,21 @@ body::after,
 }
 
 .metric-card-label {
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
   color: var(--text-muted, #8B95A5) !important;
 }
 
 .metric-card-val {
   font-family: var(--font-mono) !important;
   font-variant-numeric: tabular-nums !important;
-  font-size: 26px !important;
+  font-size: 24px !important;
   font-weight: 600 !important;
   color: var(--text, #E6EAF0) !important;
-  letter-spacing: -0.02em !important;
-  line-height: 1.15;
+  letter-spacing: normal !important;
+  line-height: 1.2;
 }
 
 .metric-card-sub {
@@ -848,10 +849,10 @@ table {
 thead th {
   background: var(--bg-surface-2, #1B212A) !important;
   color: var(--text-muted, #8B95A5) !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.05em !important;
-  text-transform: uppercase !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
   padding: 10px 14px !important;
   border-bottom: 1px solid var(--border, #232A34) !important;
   border-top: none !important;

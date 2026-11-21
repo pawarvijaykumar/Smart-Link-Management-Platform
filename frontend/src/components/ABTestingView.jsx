@@ -983,7 +983,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                         y1={y}
                         x2={chartConfig.width - chartConfig.padRight}
                         y2={y}
-                        stroke="rgba(255, 255, 255, 0.08)"
+                        stroke="var(--border)"
                         strokeDasharray="4 4"
                       />
                       <text
@@ -1037,7 +1037,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                           y1={chartConfig.padTop}
                           x2={p.x}
                           y2={chartConfig.height - chartConfig.padBottom}
-                          stroke="rgba(255, 255, 255, 0.25)"
+                          stroke="var(--border)"
                           strokeDasharray="2 2"
                         />
                       )}
@@ -1048,7 +1048,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                         cy={p.y}
                         r={isHovered ? 5.5 : 3.5}
                         fill="#A855F7"
-                        stroke="#ffffff"
+                        stroke="var(--surface)"
                         strokeWidth={isHovered ? 2 : 1}
                         style={{ cursor: "pointer", transition: "r 0.15s ease" }}
                         onMouseEnter={() =>
@@ -1070,7 +1070,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                         cy={pB.y}
                         r={isHovered ? 5.5 : 3.5}
                         fill="#06B6D4"
-                        stroke="#ffffff"
+                        stroke="var(--surface)"
                         strokeWidth={isHovered ? 2 : 1}
                         style={{ cursor: "pointer", transition: "r 0.15s ease" }}
                         onMouseEnter={() =>

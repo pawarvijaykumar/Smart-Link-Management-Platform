@@ -138,7 +138,7 @@ function AnomalyDetailModal({
               Monitored Short Link
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <strong style={{ color: "#ffffff", fontSize: "14px" }}>s/{item.shortCode}</strong>
+              <strong style={{ color: "var(--text)", fontSize: "14px" }}>s/{item.shortCode}</strong>
               <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>→</span>
               <a
                 href={item.originalUrl}
@@ -217,7 +217,7 @@ function AnomalyDetailModal({
                   <span className="anomaly-modal-stat-label">Today ({item.todayDate || "IST"})</span>
                   <span
                     className="anomaly-modal-stat-value"
-                    style={{ color: isSpike ? "#34D399" : isDrop ? "#F87171" : "#ffffff" }}
+                    style={{ color: isSpike ? "#34D399" : isDrop ? "#F87171" : "var(--text)" }}
                   >
                     {item.todayClicks?.toLocaleString() || 0} clicks
                   </span>
@@ -512,7 +512,7 @@ function AnomalyTimelineChart({ timeline = [] }) {
                   y1={y}
                   x2={width - padRight}
                   y2={y}
-                  stroke="rgba(255, 255, 255, 0.05)"
+                  stroke="var(--border)"
                   strokeDasharray="2 3"
                 />
                 <text
@@ -662,7 +662,7 @@ function AnomalyTimelineChart({ timeline = [] }) {
             <div className="chart-tooltip-row">
               <span className="tooltip-swatch" style={{ backgroundColor: "#8B5CF6" }} />
               <span>Observed:</span>
-              <strong style={{ color: "#ffffff" }}>
+              <strong style={{ color: "var(--text)" }}>
                 {hoveredPoint.clicks.toLocaleString()} clicks
               </strong>
             </div>
@@ -800,7 +800,7 @@ function AnomalyAlertsFeed({
                     >
                       {isResolved ? "Resolved" : isAcknowledged ? "Acknowledged" : "New"}
                     </span>
-                    <strong style={{ fontSize: "14px", color: "#ffffff" }}>
+                    <strong style={{ fontSize: "14px", color: "var(--text)" }}>
                       s/{evt.shortCode}
                     </strong>
                   </div>
@@ -899,7 +899,7 @@ function AnomalyAlertsFeed({
       ) : (
         <div className="anomaly-empty-state-box">
           <CheckCircle2 size={28} style={{ color: "var(--success)" }} />
-          <strong style={{ color: "#ffffff", fontSize: "14px" }}>
+          <strong style={{ color: "var(--text)", fontSize: "14px" }}>
             No Anomalies in this Category
           </strong>
           <p style={{ color: "var(--text-muted)", fontSize: "12px", margin: "4px 0 0" }}>
@@ -1030,7 +1030,7 @@ function LinkSurveillanceTable({ linkHealth = [], onOpenModal }) {
                   <tr key={link._id || link.shortCode}>
                     <td>
                       <div style={{ display: "flex", flexDirection: "column" }}>
-                        <strong style={{ color: "#ffffff", fontSize: "13px" }}>
+                        <strong style={{ color: "var(--text)", fontSize: "13px" }}>
                           s/{link.shortCode}
                         </strong>
                         <span
@@ -1119,7 +1119,7 @@ function LinkSurveillanceTable({ linkHealth = [], onOpenModal }) {
                     </td>
 
                     <td>
-                      <strong style={{ color: "#ffffff" }}>
+                      <strong style={{ color: "var(--text)" }}>
                         {(link.totalClicks || 0).toLocaleString()}
                       </strong>
                     </td>
@@ -1129,7 +1129,7 @@ function LinkSurveillanceTable({ linkHealth = [], onOpenModal }) {
                     <td title={`Today (${link.todayDate || "IST"})`}>
                       <strong
                         style={{
-                          color: isSpike ? "#34D399" : isDrop ? "#F87171" : "#ffffff",
+                          color: isSpike ? "#34D399" : isDrop ? "#F87171" : "var(--text)",
                         }}
                       >
                         {link.todayClicks || 0}

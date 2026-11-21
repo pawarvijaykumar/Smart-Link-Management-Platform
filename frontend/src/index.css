@@ -8,7 +8,15 @@
 html {
   color-scheme: dark;
   scroll-behavior: smooth;
-  background-color: var(--bg-page);
+  background-color: var(--bg);
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {

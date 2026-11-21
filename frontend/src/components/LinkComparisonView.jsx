@@ -159,7 +159,7 @@ function LinkSelector({
                 style={{ backgroundColor: color }}
               />
               <div className="selected-link-info">
-                <strong style={{ color: "#ffffff" }}>s/{link.shortCode}</strong>
+                <strong style={{ color: "var(--text)" }}>s/{link.shortCode}</strong>
                 <span className="selected-link-dest" title={link.originalUrl}>
                   {formatUrl(link.originalUrl, 26)}
                 </span>
@@ -383,7 +383,7 @@ function ComparisonKPICards({ links = [], summary = {}, range = "7d" }) {
                     className="selected-link-color-dot"
                     style={{ backgroundColor: color }}
                   />
-                  <strong style={{ fontSize: "14px", color: "#ffffff" }}>
+                  <strong style={{ fontSize: "14px", color: "var(--text)" }}>
                     s/{link.shortCode}
                   </strong>
                 </div>
@@ -503,7 +503,7 @@ function TotalClicksBarChart({ links = [] }) {
                   className="selected-link-color-dot"
                   style={{ backgroundColor: color }}
                 />
-                <strong style={{ color: "#ffffff", fontSize: "13px" }}>
+                <strong style={{ color: "var(--text)", fontSize: "13px" }}>
                   s/{link.shortCode}
                 </strong>
                 <span
@@ -530,7 +530,7 @@ function TotalClicksBarChart({ links = [] }) {
               </div>
 
               <div className="comparison-bar-values">
-                <strong style={{ color: "#ffffff", fontSize: "13px" }}>
+                <strong style={{ color: "var(--text)", fontSize: "13px" }}>
                   {link.totalClicks.toLocaleString()}
                 </strong>
                 <span className="comparison-bar-share">{pctOfGroup}%</span>
@@ -606,7 +606,7 @@ function QRvsDirectGroupedChart({ links = [] }) {
                   className="selected-link-color-dot"
                   style={{ backgroundColor: color }}
                 />
-                <strong style={{ color: "#ffffff", fontSize: "13px" }}>
+                <strong style={{ color: "var(--text)", fontSize: "13px" }}>
                   s/{link.shortCode}
                 </strong>
                 <span style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
@@ -718,7 +718,7 @@ function DeviceDistributionComparison({ links = [] }) {
                     className="selected-link-color-dot"
                     style={{ backgroundColor: color }}
                   />
-                  <strong style={{ color: "#ffffff", fontSize: "13px" }}>
+                  <strong style={{ color: "var(--text)", fontSize: "13px" }}>
                     s/{link.shortCode}
                   </strong>
                 </div>
@@ -794,7 +794,7 @@ function GeographicComparison({ links = [] }) {
                   className="selected-link-color-dot"
                   style={{ backgroundColor: color }}
                 />
-                <strong style={{ color: "#ffffff", fontSize: "13px" }}>
+                <strong style={{ color: "var(--text)", fontSize: "13px" }}>
                   s/{link.shortCode}
                 </strong>
                 <span style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
@@ -941,7 +941,7 @@ function MultiLineDailyTrendChart({ links = [], dates = [] }) {
                   className="legend-swatch"
                   style={{ backgroundColor: color }}
                 />
-                <span style={{ fontSize: "12px", color: "#ffffff", fontWeight: "600" }}>
+                <span style={{ fontSize: "12px", color: "var(--text)", fontWeight: "600" }}>
                   s/{link.shortCode}
                 </span>
               </div>
@@ -966,7 +966,7 @@ function MultiLineDailyTrendChart({ links = [], dates = [] }) {
                   y1={y}
                   x2={width - padRight}
                   y2={y}
-                  stroke="rgba(255, 255, 255, 0.07)"
+                  stroke="var(--border)"
                   strokeDasharray="4 4"
                 />
                 <text
@@ -999,7 +999,7 @@ function MultiLineDailyTrendChart({ links = [], dates = [] }) {
                   : (hoveredDateIdx / (dates.length - 1)) * innerW)
               }
               y2={zeroY}
-              stroke="rgba(255, 255, 255, 0.3)"
+              stroke="var(--border)"
               strokeDasharray="3 3"
             />
           )}
@@ -1114,7 +1114,7 @@ function MultiLineDailyTrendChart({ links = [], dates = [] }) {
                     className="tooltip-swatch"
                     style={{ backgroundColor: item.color }}
                   />
-                  <span style={{ color: "#ffffff", fontWeight: "600" }}>
+                  <span style={{ color: "var(--text)", fontWeight: "600" }}>
                     s/{item.link.shortCode}:
                   </span>
                   <span>{pt ? pt.clicks.toLocaleString() : 0} clicks</span>
@@ -1252,7 +1252,7 @@ export default function LinkComparisonView({
             style={{
               fontSize: "20px",
               fontWeight: "750",
-              color: "#ffffff",
+              color: "var(--text)",
               margin: "0 0 4px 0",
               display: "flex",
               alignItems: "center",
@@ -1382,7 +1382,7 @@ export default function LinkComparisonView({
       {!loading && selectedIds.length < 2 && (
         <div className="comparison-empty-selection-card">
           <div style={{ marginBottom: "12px", color: "var(--accent)" }}><ArrowRightLeft size={36} /></div>
-          <h3 style={{ color: "#ffffff", fontSize: "17px", margin: "0 0 6px 0" }}>
+          <h3 style={{ color: "var(--text)", fontSize: "17px", margin: "0 0 6px 0" }}>
             Select Links to Benchmark
           </h3>
           <p

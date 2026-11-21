@@ -8,18 +8,18 @@ import SpecularButton from "./SpecularButton";
 const getSourceIcon = (sourceName = "") => {
   const s = sourceName.toLowerCase();
   if (s.includes("google") || s.includes("bing") || s.includes("yahoo") || s.includes("search")) {
-    return <Compass size={16} className="source-icon-svg text-cyan" />;
+    return <Compass size={18} className="source-icon-svg" />;
   }
   if (s.includes("twitter") || s.includes("x.com") || s.includes("t.co")) {
-    return <Radio size={16} className="source-icon-svg text-purple" />;
+    return <Radio size={18} className="source-icon-svg" />;
   }
   if (s.includes("linkedin") || s.includes("github") || s.includes("slack")) {
-    return <ArrowUpRight size={16} className="source-icon-svg text-emerald" />;
+    return <ArrowUpRight size={18} className="source-icon-svg" />;
   }
   if (s.includes("direct") || s.includes("untracked")) {
-    return <ShieldCheck size={16} className="source-icon-svg text-slate" />;
+    return <ShieldCheck size={18} className="source-icon-svg" />;
   }
-  return <Globe size={16} className="source-icon-svg text-indigo" />;
+  return <Globe size={18} className="source-icon-svg" />;
 };
 
 export default function TrafficSourcesCard({
@@ -53,8 +53,8 @@ export default function TrafficSourcesCard({
   return (
     <SpotlightCard
       className="traffic-sources-card"
-      spotlightColor="rgba(168, 85, 247, 0.28)"
-      borderColor="rgba(192, 132, 252, 0.70)"
+      spotlightColor="var(--accent-soft, rgba(79, 70, 229, 0.12))"
+      borderColor="var(--border)"
       radius={320}
     >
       <div className="traffic-sources-header">
@@ -65,14 +65,9 @@ export default function TrafficSourcesCard({
           <div>
             <h3 className="traffic-sources-title">Traffic Source Performance</h3>
             <p className="traffic-sources-subtitle">
-              Attribution by UTM source & inbound channels
+              Attribution by UTM source and inbound channels.
             </p>
           </div>
-        </div>
-        <div className="sources-badge-group">
-          <span className="sources-count-badge">
-            {sources.length} {sources.length === 1 ? "Channel" : "Channels"}
-          </span>
         </div>
       </div>
 
