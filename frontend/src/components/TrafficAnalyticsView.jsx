@@ -56,22 +56,22 @@ function TrafficMetricCards({ summary, loading = false }) {
       <StatCard
         label="Total traffic"
         value={totalClicks.toLocaleString()}
-        icon={TrendingUp}
+        icon={<TrendingUp size={18} />}
       />
       <StatCard
         label="Channel split"
         value={totalClicks > 0 ? `${qrPct}% QR • ${directPct}% Dir` : "0% QR • 0% Dir"}
-        icon={QrCode}
+        icon={<QrCode size={18} />}
       />
       <StatCard
         label="Peak engagement"
         value={peakHour !== null && peakHour !== undefined ? formatHour12(peakHour) : "N/A"}
-        icon={Clock}
+        icon={<Clock size={18} />}
       />
       <StatCard
         label="Most active day"
         value={topDayOfWeek}
-        icon={Calendar}
+        icon={<Calendar size={18} />}
       />
     </div>
   );
@@ -713,10 +713,10 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
 
   const colors = {
-    mobile: "#8B5CF6",
-    desktop: "#06B6D4",
-    tablet: "#F59E0B",
-    unknown: "#64748B",
+    mobile: "var(--accent)",
+    desktop: "#64748B",
+    tablet: "#94A3B8",
+    unknown: "#CBD5E1",
   };
 
   const icons = {
@@ -797,10 +797,10 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            Device Traffic Distribution
+            Device traffic distribution
           </h3>
           <p className="traffic-chart-subtitle">
-            Click any category to filter and inspect distribution
+            Visitor breakdown by hardware category.
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -848,7 +848,7 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
                     r={radius}
                     fill="transparent"
                     stroke={slice.color}
-                    strokeWidth={isEmphasized ? strokeWidth + 4 : strokeWidth}
+                    strokeWidth={isEmphasized ? strokeWidth + 3 : strokeWidth}
                     strokeDasharray={slice.strokeDasharray}
                     strokeDashoffset={slice.strokeDashoffset}
                     strokeLinecap="round"
@@ -858,7 +858,6 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
                       transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                       cursor: "pointer",
                       opacity: isDimmed ? 0.22 : 1,
-                      filter: isEmphasized ? `drop-shadow(0 0 6px ${slice.color})` : "none",
                     }}
                     onClick={() => handleCategoryToggle(slice.deviceType)}
                     onMouseEnter={() => setHoveredCategory(slice.deviceType)}
@@ -902,16 +901,13 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
                     padding: "8px 12px",
                     borderRadius: "8px",
                     background: isSelected
-                      ? `${item.color}22`
+                      ? "var(--accent-soft)"
                       : isHovered
                       ? "var(--surface-hover)"
                       : "var(--surface-2)",
                     border: isSelected
-                      ? `1.5px solid ${item.color}`
-                      : isHovered
-                      ? "1px solid var(--border)"
+                      ? "1px solid var(--accent)"
                       : "1px solid var(--border)",
-                    boxShadow: isSelected ? `0 0 12px ${item.color}35` : "none",
                     cursor: "pointer",
                     transition: "all 0.18s ease",
                     outline: "none",
@@ -980,17 +976,17 @@ function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
 // -----------------------------------------------------------------------------
 function CampaignTrafficChart({ campaignTrends = {}, totalClicks = 0 }) {
   const topCampaigns = campaignTrends?.topCampaigns || [];
-  const campColors = ["#10B981", "#8B5CF6", "#F59E0B", "#38BDF8", "#EC4899"];
+  const campColors = ["var(--accent)", "#64748B", "#94A3B8", "#475569", "#CBD5E1"];
 
   return (
     <div className="traffic-chart-card">
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            Campaign Traffic Trends
+            Campaign traffic trends
           </h3>
           <p className="traffic-chart-subtitle">
-            Performance across tagged UTM marketing campaigns
+            Traffic breakdown by UTM campaign.
           </p>
         </div>
         <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
@@ -1031,8 +1027,8 @@ function CampaignTrafficChart({ campaignTrends = {}, totalClicks = 0 }) {
             <table className="custom-links-table" style={{ width: "100%", fontSize: "12px" }}>
               <thead>
                 <tr>
-                  <th style={{ width: "32px", textAlign: "center" }}>#</th>
-                  <th>Campaign Name</th>
+                  <th style={{ width: "32px", textAlign: "center" }}>Rank</th>
+                  <th>Campaign name</th>
                   <th style={{ textAlign: "right" }}>Clicks</th>
                   <th style={{ width: "110px" }}>Share</th>
                 </tr>
@@ -1046,7 +1042,7 @@ function CampaignTrafficChart({ campaignTrends = {}, totalClicks = 0 }) {
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                           <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: color }} />
-                          <strong style={{ color: "var(--text-primary)" }}>{tc.campaign}</strong>
+                          <strong style={{ color: "var(--text)" }}>{tc.campaign}</strong>
                         </div>
                       </td>
                       <td style={{ textAlign: "right", fontWeight: "600", color: "var(--text)" }}>
@@ -1076,8 +1072,8 @@ function CampaignTrafficChart({ campaignTrends = {}, totalClicks = 0 }) {
       ) : (
         <div style={{ textAlign: "center", padding: "24px 16px", color: "var(--text-muted)", fontSize: "12.5px" }}>
           <p style={{ margin: 0, marginBottom: "6px" }}>No UTM campaigns detected in this timeframe.</p>
-          <span style={{ fontSize: "11.5px", color: "var(--text-secondary)" }}>
-            Tip: Tag links with <code style={{ color: "#38BDF8", background: "rgba(56, 189, 248, 0.1)", padding: "1px 4px", borderRadius: "3px" }}>?utm_campaign=summer_sale</code> to track campaign-level traffic here.
+          <span style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
+            Tip: Tag links with <code style={{ color: "var(--accent)", background: "var(--accent-soft)", padding: "1px 4px", borderRadius: "3px" }}>?utm_campaign=launch</code> to track campaign traffic.
           </span>
         </div>
       )}
@@ -1102,10 +1098,10 @@ function TrafficHeatmapChart({ heatmapData = {}, totalClicks = 0 }) {
   const getCellBg = (count) => {
     if (!count || count === 0) return "var(--surface-2)";
     const ratio = Math.min(1, count / maxCellClicks);
-    if (ratio <= 0.25) return "rgba(16, 185, 129, 0.30)";
-    if (ratio <= 0.50) return "rgba(16, 185, 129, 0.55)";
-    if (ratio <= 0.75) return "rgba(16, 185, 129, 0.80)";
-    return "rgba(16, 185, 129, 1.0)";
+    if (ratio <= 0.25) return "color-mix(in srgb, var(--accent) 25%, transparent)";
+    if (ratio <= 0.50) return "color-mix(in srgb, var(--accent) 50%, transparent)";
+    if (ratio <= 0.75) return "color-mix(in srgb, var(--accent) 75%, transparent)";
+    return "var(--accent)";
   };
 
   return (
@@ -1113,21 +1109,21 @@ function TrafficHeatmapChart({ heatmapData = {}, totalClicks = 0 }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            Traffic Activity Heatmap (Days vs Hours in IST)
+            Traffic activity heatmap
           </h3>
           <p className="traffic-chart-subtitle">
-            Visitor density matrix by day of the week and hour of day (UTC+05:30)
+            Visitor density by day and hour.
           </p>
         </div>
 
         {/* Legend */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--text-muted)" }}>
           <span>Less</span>
-          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "var(--surface-2)" }} />
-          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "rgba(16, 185, 129, 0.30)" }} />
-          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "rgba(16, 185, 129, 0.55)" }} />
-          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "rgba(16, 185, 129, 0.80)" }} />
-          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "rgba(16, 185, 129, 1.0)" }} />
+          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "var(--surface-2)", border: "1px solid var(--border)" }} />
+          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "color-mix(in srgb, var(--accent) 25%, transparent)" }} />
+          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "color-mix(in srgb, var(--accent) 50%, transparent)" }} />
+          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "color-mix(in srgb, var(--accent) 75%, transparent)" }} />
+          <span style={{ width: "12px", height: "12px", borderRadius: "2px", background: "var(--accent)" }} />
           <span>More</span>
         </div>
       </div>
@@ -1221,7 +1217,7 @@ function TrafficHeatmapChart({ heatmapData = {}, totalClicks = 0 }) {
               {hoveredCell.day} • {formatHour12(hoveredCell.hour)} ({hoveredCell.label} IST)
             </div>
             <div className="chart-tooltip-row">
-              <span className="tooltip-swatch" style={{ background: "#34D399" }} />
+              <span className="tooltip-swatch" style={{ background: "var(--accent)" }} />
               <span>Clicks: <strong style={{ color: "var(--text)" }}>{hoveredCell.count.toLocaleString()}</strong></span>
             </div>
           </div>
@@ -1266,12 +1262,11 @@ export default function TrafficAnalyticsView({
       <div className="page-greeting">
         <div className="campaigns-title-row">
           <div>
-            {/* CHANGE: Traffic Analytics heading animated with SplitText — 2026-11-19 */}
-            <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Traffic Analytics
+            <h1 style={{ margin: 0, fontSize: "20px", fontWeight: "600", color: "var(--text)" }}>
+              Traffic analytics
             </h1>
-            <p style={{ margin: "6px 0 0", color: "var(--text-muted)", fontSize: "13.5px" }}>
-              Deep dive into daily velocity, hourly density, QR vs direct channel dynamics, device footprint, campaign ROI, and time-of-day heatmaps.
+            <p style={{ margin: "4px 0 0", color: "var(--text-muted)", fontSize: "13px" }}>
+              Daily velocity, hourly patterns, and channel distribution.
             </p>
           </div>
 

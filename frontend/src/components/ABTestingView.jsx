@@ -25,7 +25,12 @@ import {
   FileEdit,
   ArrowLeft,
   Star,
+  Play,
+  Pause,
+  Square,
+  RotateCcw,
 } from "lucide-react";
+import StatCard from "./ui/StatCard";
 
 import {
   DRAFT_STORAGE_KEY,
@@ -626,14 +631,14 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
               className="ab-btn-back"
               onClick={() => setSelectedExperimentId(null)}
             >
-              ← Back to All Experiments
+              <ArrowLeft size={14} style={{ marginRight: "6px" }} /> Back to all experiments
             </SpecularButton>
             <div className="ab-title-line">
-              <h1 className="ab-title">{exp?.name || "Experiment Details"}</h1>
+              <h1 className="ab-title">{exp?.name || "Experiment details"}</h1>
               {exp && renderStatusBadge(exp.status)}
             </div>
             <div className="ab-subtitle-meta">
-              <span>Short Code: <strong>s/{exp?.shortCode}</strong></span>
+              <span>Short code: <strong>s/{exp?.shortCode}</strong></span>
               <span>•</span>
               <span>Created: {formatISTDate(exp?.createdAt)}</span>
               {exp?.startedAt && (
@@ -655,11 +660,11 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
             >
               {copiedId === exp?._id ? (
                 <>
-                  <Check size={14} style={{ marginRight: "5px" }} /> Copied!
+                  <Check size={14} style={{ marginRight: "5px" }} /> Copied
                 </>
               ) : (
                 <>
-                  <Copy size={14} style={{ marginRight: "5px" }} /> Copy Short Link
+                  <Copy size={14} style={{ marginRight: "5px" }} /> Copy short link
                 </>
               )}
             </SpecularButton>
@@ -668,8 +673,9 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
               target="_blank"
               rel="noopener noreferrer"
               className="ab-btn-secondary"
+              style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}
             >
-              ↗ Test Link
+              <ExternalLink size={13} style={{ marginRight: "5px" }} /> Test link
             </a>
 
             {/* Lifecycle transitions */}
@@ -681,7 +687,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 disabled={actionLoading}
                 onClick={() => handleUpdateStatus(exp._id, "active")}
               >
-                ▶ Start Experiment
+                <Play size={13} style={{ marginRight: "5px" }} /> Start experiment
               </SpecularButton>
             )}
 
@@ -695,7 +701,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                   disabled={actionLoading}
                   onClick={() => handleUpdateStatus(exp._id, "paused")}
                 >
-                  ⏸ Pause
+                  <Pause size={13} style={{ marginRight: "5px" }} /> Pause
                 </SpecularButton>
                 <SpecularButton
                   type="button"
@@ -709,7 +715,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                     }
                   }}
                 >
-                  ⏹ Complete
+                  <Square size={13} style={{ marginRight: "5px" }} /> Complete
                 </SpecularButton>
               </>
             )}
@@ -724,7 +730,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                   disabled={actionLoading}
                   onClick={() => handleUpdateStatus(exp._id, "active")}
                 >
-                  ▶ Resume
+                  <Play size={13} style={{ marginRight: "5px" }} /> Resume
                 </SpecularButton>
                 <SpecularButton
                   type="button"
@@ -738,7 +744,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                     }
                   }}
                 >
-                  ⏹ Complete
+                  <Square size={13} style={{ marginRight: "5px" }} /> Complete
                 </SpecularButton>
               </>
             )}
@@ -752,7 +758,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 disabled={actionLoading}
                 onClick={() => handleUpdateStatus(exp._id, "active")}
               >
-                ↺ Re-open Experiment
+                <RotateCcw size={13} style={{ marginRight: "5px" }} /> Reopen experiment
               </SpecularButton>
             )}
           </div>
@@ -826,72 +832,38 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
 
         {/* 4 KPI Cards */}
         <div className="ab-kpi-grid">
-          {/* Card 1: Total Clicks */}
-          <div className="ab-kpi-card">
-            <div className="ab-kpi-header">
-              <span className="ab-kpi-title">Total Period Clicks</span>
-              <span className="ab-kpi-icon total"><TrendingUp size={16} /></span>
-            </div>
-            <div className="ab-kpi-value">{summary.totalClicks.toLocaleString()}</div>
-            <div className="ab-kpi-subtitle">
-              Cumulative clicks across both variants
-            </div>
-          </div>
-
-          {/* Card 2: Variant A Clicks */}
-          <div className="ab-kpi-card variant-a">
-            <div className="ab-kpi-header">
-              <span className="ab-kpi-title">Variant A Clicks</span>
-              <span className="ab-badge-pill pill-a">
-                {summary.variantAPercentage}%
-              </span>
-            </div>
-            <div className="ab-kpi-value text-purple">
-              {summary.variantAClicks.toLocaleString()}
-            </div>
-            <div className="ab-kpi-subtitle">
-              Destination A recorded traffic share
-            </div>
-          </div>
-
-          {/* Card 3: Variant B Clicks */}
-          <div className="ab-kpi-card variant-b">
-            <div className="ab-kpi-header">
-              <span className="ab-kpi-title">Variant B Clicks</span>
-              <span className="ab-badge-pill pill-b">
-                {summary.variantBPercentage}%
-              </span>
-            </div>
-            <div className="ab-kpi-value text-cyan">
-              {summary.variantBClicks.toLocaleString()}
-            </div>
-            <div className="ab-kpi-subtitle">
-              Destination B recorded traffic share
-            </div>
-          </div>
-
-          {/* Card 4: Winning / Leading Variant */}
-          <div className="ab-kpi-card winner">
-            <div className="ab-kpi-header">
-              <span className="ab-kpi-title">Winning Status</span>
-              <span className="ab-kpi-icon trophy"><Trophy size={16} /></span>
-            </div>
-            <div className="ab-kpi-winner-status">
-              {summary.winningVariant === "A" && (
-                <span className="ab-winner-tag tag-a">Variant A Leading</span>
-              )}
-              {summary.winningVariant === "B" && (
-                <span className="ab-winner-tag tag-b">Variant B Leading</span>
-              )}
-              {summary.winningVariant === "TIE" && (
-                <span className="ab-winner-tag tag-tie">Equal Tie (50/50)</span>
-              )}
-              {summary.winningVariant === "NONE" && (
-                <span className="ab-winner-tag tag-none">No Winner Yet</span>
-              )}
-            </div>
-            <div className="ab-kpi-subtitle">{summary.winningReason}</div>
-          </div>
+          <StatCard
+            title="Total period clicks"
+            value={summary.totalClicks.toLocaleString()}
+            icon={<TrendingUp size={18} />}
+            subtitle="Cumulative clicks across both variants"
+          />
+          <StatCard
+            title="Variant A clicks"
+            value={summary.variantAClicks.toLocaleString()}
+            icon={<GitFork size={18} />}
+            subtitle={`${summary.variantAPercentage}% traffic share`}
+          />
+          <StatCard
+            title="Variant B clicks"
+            value={summary.variantBClicks.toLocaleString()}
+            icon={<GitFork size={18} />}
+            subtitle={`${summary.variantBPercentage}% traffic share`}
+          />
+          <StatCard
+            title="Winning variant"
+            value={
+              summary.winningVariant === "A"
+                ? "Variant A"
+                : summary.winningVariant === "B"
+                ? "Variant B"
+                : summary.winningVariant === "TIE"
+                ? "Tie (50/50)"
+                : "No winner yet"
+            }
+            icon={<Trophy size={18} />}
+            subtitle={summary.winningReason}
+          />
         </div>
 
         {/* Traffic Allocation & Split Progress Bar */}
@@ -935,7 +907,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
         <div className="ab-section-card">
           <div className="ab-section-header">
             <div>
-              <h2 className="ab-section-title">Daily Variant Performance Trend</h2>
+              <h2 className="ab-section-title">Daily variant performance trend</h2>
               <p className="ab-section-sub">
                 Daily recorded clicks per variant in Indian Standard Time (IST).
               </p>
@@ -962,17 +934,6 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 preserveAspectRatio="none"
                 className="ab-chart-svg"
               >
-                <defs>
-                  <linearGradient id="gradVariantA" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#A855F7" />
-                    <stop offset="100%" stopColor="#C084FC" />
-                  </linearGradient>
-                  <linearGradient id="gradVariantB" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#06B6D4" />
-                    <stop offset="100%" stopColor="#22D3EE" />
-                  </linearGradient>
-                </defs>
-
                 {/* Y-Axis Horizontal Gridlines & Values */}
                 {chartConfig.yTicks.map((val) => {
                   const y = chartConfig.getY(val);
@@ -1005,8 +966,8 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                   <path
                     d={chartConfig.pathA}
                     fill="none"
-                    stroke="url(#gradVariantA)"
-                    strokeWidth="2.8"
+                    stroke="var(--accent)"
+                    strokeWidth="2.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
@@ -1017,8 +978,8 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                   <path
                     d={chartConfig.pathB}
                     fill="none"
-                    stroke="url(#gradVariantB)"
-                    strokeWidth="2.8"
+                    stroke="#64748B"
+                    strokeWidth="2.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
@@ -1047,7 +1008,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                         cx={p.x}
                         cy={p.y}
                         r={isHovered ? 5.5 : 3.5}
-                        fill="#A855F7"
+                        fill="var(--accent)"
                         stroke="var(--surface)"
                         strokeWidth={isHovered ? 2 : 1}
                         style={{ cursor: "pointer", transition: "r 0.15s ease" }}
@@ -1069,7 +1030,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                         cx={pB.x}
                         cy={pB.y}
                         r={isHovered ? 5.5 : 3.5}
-                        fill="#06B6D4"
+                        fill="#64748B"
                         stroke="var(--surface)"
                         strokeWidth={isHovered ? 2 : 1}
                         style={{ cursor: "pointer", transition: "r 0.15s ease" }}
@@ -1166,7 +1127,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 className="variant-url-link"
                 title={exp?.variantA}
               >
-                {truncateUrl(exp?.variantA, 60)} ↗
+                {truncateUrl(exp?.variantA, 60)}
               </a>
             </div>
             <div className="variant-footer-stats">
@@ -1193,7 +1154,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 className="variant-url-link"
                 title={exp?.variantB}
               >
-                {truncateUrl(exp?.variantB, 60)} ↗
+                {truncateUrl(exp?.variantB, 60)}
               </a>
             </div>
             <div className="variant-footer-stats">
@@ -1229,9 +1190,9 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
       {/* Page Title & Main Header */}
       <div className="ab-header-row">
         <div>
-          <h1 className="ab-title">Smart A/B Link Testing</h1>
+          <h1 className="ab-title">A/B testing</h1>
           <p className="ab-subtitle">
-            Split visitor traffic evenly across two destination URLs to evaluate which variant drives more recorded clicks.
+            Split traffic evenly across two destination URLs.
           </p>
         </div>
         <div className="ab-header-actions">
@@ -1244,11 +1205,11 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
           >
             {hasDraft ? (
               <>
-                <FileEdit size={14} style={{ marginRight: "6px" }} /> Resume Draft Experiment
+                <FileEdit size={14} style={{ marginRight: "6px" }} /> Resume draft experiment
               </>
             ) : (
               <>
-                <Plus size={14} style={{ marginRight: "6px" }} /> New Experiment
+                <Plus size={14} style={{ marginRight: "6px" }} /> New experiment
               </>
             )}
           </SpecularButton>
@@ -1419,8 +1380,9 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                     rel="noopener noreferrer"
                     className="open-btn"
                     title="Open short link"
+                    style={{ display: "inline-flex", alignItems: "center" }}
                   >
-                    ↗
+                    <ExternalLink size={12} />
                   </a>
                 </div>
 
@@ -1450,7 +1412,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                 <div className="exp-summary-row">
                   <div className="summary-clicks">
                     <span className="summary-num">{(exp.totalClicks || 0).toLocaleString()}</span>
-                    <span className="summary-label">Total Clicks</span>
+                    <span className="summary-label">Total clicks</span>
                   </div>
                   <div className="summary-winner">
                     {isAWinning && (

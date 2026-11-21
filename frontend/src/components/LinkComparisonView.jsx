@@ -8,17 +8,15 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
 import SpecularButton from "./SpecularButton";
-import { ArrowRightLeft, Trophy, AlertTriangle, Info, X, Smartphone, Monitor, Tablet, HardDrive, QrCode, Globe } from "lucide-react";
+import StatCard from "./ui/StatCard";
+import { ArrowRightLeft, Trophy, AlertTriangle, Info, X, Smartphone, Monitor, Tablet, HardDrive, QrCode, Globe, TrendingUp } from "lucide-react";
 
 export const LINK_COLORS = [
-  "#8B5CF6", // 0: Violet
-  "#10B981", // 1: Emerald
-  "#06B6D4", // 2: Cyan
-  "#F59E0B", // 3: Amber
-  "#EC4899", // 4: Pink
-  "#3B82F6", // 5: Blue
-  "#84CC16", // 6: Lime
-  "#F97316", // 7: Orange
+  "var(--accent)", // 0: Primary accent
+  "#64748B",       // 1: Slate
+  "#94A3B8",       // 2: Light slate
+  "#475569",       // 3: Dark slate
+  "#CBD5E1",       // 4: Pale slate
 ];
 
 export const getLinkColor = (index) => LINK_COLORS[index % LINK_COLORS.length];
@@ -100,10 +98,10 @@ function LinkSelector({
       <div className="comparison-selector-header">
         <div>
           <h3 className="comparison-selector-title">
-            Compare Short Links
+            Compare short links
           </h3>
           <p className="comparison-selector-subtitle">
-            Select 2 or more short links from your account to benchmark performance side by side.
+            Select 2 or more short links to benchmark performance.
           </p>
         </div>
 
@@ -150,8 +148,8 @@ function LinkSelector({
               key={link._id}
               className="selected-link-chip"
               style={{
-                borderColor: `${color}88`,
-                backgroundColor: `${color}15`,
+                borderColor: idx === 0 ? "var(--accent)" : "var(--border)",
+                backgroundColor: idx === 0 ? "var(--accent-soft)" : "var(--surface-2)",
               }}
             >
               <span
@@ -259,7 +257,7 @@ function BestPerformerBanner({ bestPerformer, totalClicksCombined = 0 }) {
       <div className="comparison-best-performer-card empty">
         <div className="best-performer-icon"><ArrowRightLeft size={16} /></div>
         <div>
-          <h4 className="best-performer-title">No Clicks Recorded</h4>
+          <h4 className="best-performer-title">No clicks recorded</h4>
           <p className="best-performer-subtext">
             None of the selected links have recorded clicks within the selected date range.
           </p>
@@ -269,18 +267,18 @@ function BestPerformerBanner({ bestPerformer, totalClicksCombined = 0 }) {
   }
 
   return (
-    <div className="comparison-best-performer-card">
+    <div className="comparison-best-performer-card" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
       <div className="best-performer-left">
-        <div className="best-performer-trophy"><Trophy size={16} /></div>
+        <div style={{ color: "var(--text-muted)" }}><Trophy size={18} /></div>
         <div>
-          <div className="best-performer-badge">Top Performing Link</div>
-          <h4 className="best-performer-title">
+          <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--text-muted)" }}>Top performing link</span>
+          <h4 className="best-performer-title" style={{ fontSize: "15px", fontWeight: "600", margin: "2px 0", color: "var(--text)" }}>
             s/{bestPerformer.shortCode}
-            <span className="best-performer-clicks">
+            <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--accent)", background: "var(--accent-soft)", padding: "2px 8px", borderRadius: "4px" }}>
               {bestPerformer.totalClicks.toLocaleString()} clicks
             </span>
           </h4>
-          <p className="best-performer-url" title={bestPerformer.originalUrl}>
+          <p className="best-performer-url" title={bestPerformer.originalUrl} style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--text-muted)" }}>
             {formatUrl(bestPerformer.originalUrl, 50)}
           </p>
         </div>
@@ -288,12 +286,13 @@ function BestPerformerBanner({ bestPerformer, totalClicksCombined = 0 }) {
 
       <div className="best-performer-right">
         <div className="best-performer-metric">
-          <span className="metric-num">{bestPerformer.percentageOfTotal}%</span>
-          <span className="metric-label">Share of Group Traffic</span>
+          <span className="metric-num" style={{ fontSize: "24px", fontWeight: "600", fontFamily: "var(--font-mono, monospace)", color: "var(--text)" }}>
+            {bestPerformer.percentageOfTotal}%
+          </span>
+          <span className="metric-label" style={{ fontSize: "12px", fontWeight: "500", color: "var(--text-muted)" }}>
+            Share of group traffic
+          </span>
         </div>
-        <p className="best-performer-disclaimer">
-          * Ranking is based on total recorded clicks within the selected date range, not conversion rate or unique visitors.
-        </p>
       </div>
     </div>
   );
@@ -306,62 +305,27 @@ function ComparisonKPICards({ links = [], summary = {}, range = "7d" }) {
   return (
     <div className="comparison-kpi-cards-section">
       {/* High level combined stats */}
-      <div className="comparison-top-metrics-grid">
-        <div className="metric-card">
-          <div className="metric-card-top">
-            <span className="metric-card-label">Combined Clicks</span>
-            <span className="channel-badge total">{range === "all" ? "All Time" : "Period"}</span>
-          </div>
-          <div className="campaign-metric-value">
-            {(summary.totalClicksCombined || 0).toLocaleString()}
-          </div>
-          <p className="campaign-metric-subtext">Across {links.length} selected links</p>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-card-top">
-            <span className="metric-card-label">Total QR Scans</span>
-            <span className="channel-badge qr">QR Scans</span>
-          </div>
-          <div className="campaign-metric-value" style={{ color: "var(--accent-purple)" }}>
-            {(summary.totalQRCombined || 0).toLocaleString()}
-          </div>
-          <p className="campaign-metric-subtext">
-            {summary.qrPercentage || 0}% of combined traffic
-          </p>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-card-top">
-            <span className="metric-card-label">Total Direct Visits</span>
-            <span className="channel-badge direct">Direct Visits</span>
-          </div>
-          <div className="campaign-metric-value" style={{ color: "#06B6D4" }}>
-            {(summary.totalDirectCombined || 0).toLocaleString()}
-          </div>
-          <p className="campaign-metric-subtext">
-            {summary.directPercentage || 0}% of combined traffic
-          </p>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-card-top">
-            <span className="metric-card-label">Primary Channel</span>
-            <span className="channel-badge live">Insight</span>
-          </div>
-          <div className="campaign-metric-value" style={{ fontSize: "18px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
-            {(summary.totalQRCombined || 0) >= (summary.totalDirectCombined || 0) ? (
-              <>
-                <QrCode size={18} style={{ color: "var(--accent)" }} /> QR Scans
-              </>
-            ) : (
-              <>
-                <Globe size={18} style={{ color: "var(--accent)" }} /> Direct Visits
-              </>
-            )}
-          </div>
-          <p className="campaign-metric-subtext">Leading traffic acquisition source</p>
-        </div>
+      <div className="metrics-grid" style={{ marginBottom: "16px" }}>
+        <StatCard
+          label="Combined clicks"
+          value={(summary.totalClicksCombined || 0).toLocaleString()}
+          icon={<TrendingUp size={18} />}
+        />
+        <StatCard
+          label="Total QR scans"
+          value={(summary.totalQRCombined || 0).toLocaleString()}
+          icon={<QrCode size={18} />}
+        />
+        <StatCard
+          label="Total direct visits"
+          value={(summary.totalDirectCombined || 0).toLocaleString()}
+          icon={<Globe size={18} />}
+        />
+        <StatCard
+          label="Primary channel"
+          value={(summary.totalQRCombined || 0) >= (summary.totalDirectCombined || 0) ? "QR Scans" : "Direct Visits"}
+          icon={<ArrowRightLeft size={18} />}
+        />
       </div>
 
       {/* Individual Link Cards Grid */}
@@ -476,10 +440,10 @@ function TotalClicksBarChart({ links = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            Total Click Comparison
+            Total click comparison
           </h3>
           <p className="traffic-chart-subtitle">
-            Relative click volume across selected short links
+            Relative click volume across selected short links.
           </p>
         </div>
         <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
@@ -524,7 +488,6 @@ function TotalClicksBarChart({ links = [] }) {
                   style={{
                     width: `${Math.max(2, pctOfMax)}%`,
                     backgroundColor: color,
-                    boxShadow: `0 0 8px ${color}55`,
                   }}
                 />
               </div>
@@ -561,34 +524,34 @@ function QRvsDirectGroupedChart({ links = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            QR Scans vs. Direct Visits Comparison
+            QR scans vs direct visits
           </h3>
           <p className="traffic-chart-subtitle">
-            Channel acquisition split across compared links
+            Channel acquisition split across compared links.
           </p>
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span
               style={{
-                width: "10px",
-                height: "10px",
-                backgroundColor: "#8B5CF6",
+                width: "8px",
+                height: "8px",
+                backgroundColor: "var(--accent)",
                 borderRadius: "2px",
               }}
             />
-            <span style={{ fontSize: "11.5px", color: "var(--text-secondary)" }}>QR</span>
+            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>QR</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span
               style={{
-                width: "10px",
-                height: "10px",
-                backgroundColor: "#06B6D4",
+                width: "8px",
+                height: "8px",
+                backgroundColor: "#64748B",
                 borderRadius: "2px",
               }}
             />
-            <span style={{ fontSize: "11.5px", color: "var(--text-secondary)" }}>Direct</span>
+            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Direct</span>
           </div>
         </div>
       </div>
@@ -616,7 +579,7 @@ function QRvsDirectGroupedChart({ links = [] }) {
 
               {/* QR Bar */}
               <div className="grouped-bar-subrow">
-                <span className="grouped-bar-sublabel" style={{ color: "#A78BFA" }}>
+                <span className="grouped-bar-sublabel" style={{ color: "var(--text-muted)" }}>
                   QR Scans
                 </span>
                 <div className="comparison-bar-track">
@@ -624,7 +587,7 @@ function QRvsDirectGroupedChart({ links = [] }) {
                     className="comparison-bar-fill"
                     style={{
                       width: `${Math.max(link.qrClicks > 0 ? 3 : 0, qrPct)}%`,
-                      backgroundColor: "#8B5CF6",
+                      backgroundColor: "var(--accent)",
                     }}
                   />
                 </div>
@@ -635,7 +598,7 @@ function QRvsDirectGroupedChart({ links = [] }) {
 
               {/* Direct Bar */}
               <div className="grouped-bar-subrow">
-                <span className="grouped-bar-sublabel" style={{ color: "#22D3EE" }}>
+                <span className="grouped-bar-sublabel" style={{ color: "var(--text-muted)" }}>
                   Direct Visits
                 </span>
                 <div className="comparison-bar-track">
@@ -643,7 +606,7 @@ function QRvsDirectGroupedChart({ links = [] }) {
                     className="comparison-bar-fill"
                     style={{
                       width: `${Math.max(link.directClicks > 0 ? 3 : 0, directPct)}%`,
-                      backgroundColor: "#06B6D4",
+                      backgroundColor: "#64748B",
                     }}
                   />
                 </div>
@@ -664,10 +627,10 @@ function QRvsDirectGroupedChart({ links = [] }) {
 // =============================================================================
 function DeviceDistributionComparison({ links = [] }) {
   const deviceColors = {
-    mobile: "#8B5CF6",
-    desktop: "#06B6D4",
-    tablet: "#F59E0B",
-    unknown: "#64748B",
+    mobile: "var(--accent)",
+    desktop: "#64748B",
+    tablet: "#94A3B8",
+    unknown: "#CBD5E1",
   };
 
   const deviceIcons = {
@@ -682,10 +645,10 @@ function DeviceDistributionComparison({ links = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            Device Category Breakdown
+            Device category breakdown
           </h3>
           <p className="traffic-chart-subtitle">
-            Visitor hardware segmentation comparison per link
+            Visitor hardware segmentation comparison per link.
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -776,10 +739,10 @@ function GeographicComparison({ links = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            Geographic Traffic Comparison
+            Geographic traffic comparison
           </h3>
           <p className="traffic-chart-subtitle">
-            Top countries and cities driving visitors to each link
+            Top countries and cities driving visitors.
           </p>
         </div>
       </div>
@@ -924,10 +887,10 @@ function MultiLineDailyTrendChart({ links = [], dates = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            Daily Traffic Trend Comparison
+            Daily traffic trend comparison
           </h3>
           <p className="traffic-chart-subtitle">
-            Daily visitor trajectories across compared links (IST Timezone)
+            Daily visitor trajectories across compared links.
           </p>
         </div>
 
@@ -1246,23 +1209,20 @@ export default function LinkComparisonView({
   return (
     <div className="comparison-view-container">
       {/* Top Header & Date Filters */}
-      <div className="traffic-chart-header" style={{ marginBottom: "12px" }}>
+      <div className="traffic-chart-header" style={{ marginBottom: "16px" }}>
         <div>
-          <h2
+          <h1
             style={{
               fontSize: "20px",
-              fontWeight: "750",
+              fontWeight: "600",
               color: "var(--text)",
               margin: "0 0 4px 0",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
             }}
           >
-            Link Comparison
-          </h2>
+            Link comparison
+          </h1>
           <p style={{ margin: 0, fontSize: "13px", color: "var(--text-muted)" }}>
-            Side-by-side performance benchmarking across short links, channels, devices & regions
+            Side-by-side performance benchmarking across short links.
           </p>
         </div>
 

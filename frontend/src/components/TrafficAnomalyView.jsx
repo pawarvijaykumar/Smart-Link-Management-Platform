@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
 import SpecularButton from "./SpecularButton";
+import StatCard from "./ui/StatCard";
 import { ShieldAlert, AlertTriangle, RefreshCw, CheckCircle2, TrendingUp, TrendingDown, Info, X } from "lucide-react";
 
 // -----------------------------------------------------------------------------
@@ -449,17 +450,17 @@ function AnomalyTimelineChart({ timeline = [] }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            Dynamic Statistical Threshold Band & Anomalies
+            Statistical threshold band
           </h3>
           <p className="traffic-chart-subtitle">
-            Historical baseline (mean) with dynamic ±2σ confidence bounds against observed click traffic
+            Dynamic confidence bounds against observed click traffic.
           </p>
         </div>
 
         {/* Legend */}
         <div className="anomaly-chart-legend">
           <div className="legend-item">
-            <span className="legend-dot" style={{ backgroundColor: "#8B5CF6" }} />
+            <span className="legend-dot" style={{ backgroundColor: "var(--accent)" }} />
             <span>Observed Traffic</span>
           </div>
           <div className="legend-item">
@@ -473,8 +474,8 @@ function AnomalyTimelineChart({ timeline = [] }) {
             <span
               className="legend-box"
               style={{
-                backgroundColor: "rgba(139, 92, 246, 0.15)",
-                border: "1px dashed rgba(139, 92, 246, 0.35)",
+                backgroundColor: "var(--accent-soft)",
+                border: "1px dashed var(--accent)",
               }}
             />
             <span>±2σ Normal Threshold Band</span>
@@ -497,8 +498,8 @@ function AnomalyTimelineChart({ timeline = [] }) {
         >
           <defs>
             <linearGradient id="thresholdBandGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.16" />
-              <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.04" />
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.16" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.04" />
             </linearGradient>
           </defs>
 
@@ -549,7 +550,7 @@ function AnomalyTimelineChart({ timeline = [] }) {
             <path
               d={actualPath}
               fill="none"
-              stroke="#8B5CF6"
+              stroke="var(--accent)"
               strokeWidth="2.5"
               strokeLinecap="round"
             />
@@ -563,25 +564,22 @@ function AnomalyTimelineChart({ timeline = [] }) {
 
             return (
               <g key={p.date}>
-                {/* Glow ring for anomalous points */}
+                {/* Ring for anomalous points */}
                 {(isSpike || isDrop) && (
                   <circle
                     cx={p.x}
                     cy={p.yActual}
-                    r={isHovered ? 9 : 7}
+                    r={isHovered ? 8 : 6}
                     fill="none"
                     stroke={isSpike ? "#EF4444" : "#F59E0B"}
-                    strokeWidth="2"
-                    style={{
-                      animation: "pulseGlow 2s infinite",
-                    }}
+                    strokeWidth="1.5"
                   />
                 )}
                 <circle
                   cx={p.x}
                   cy={p.yActual}
-                  r={isHovered ? 5.5 : p.isAnomaly ? 4.5 : 3}
-                  fill={isSpike ? "#EF4444" : isDrop ? "#F59E0B" : "#8B5CF6"}
+                  r={isHovered ? 5 : p.isAnomaly ? 4 : 2.5}
+                  fill={isSpike ? "#EF4444" : isDrop ? "#F59E0B" : "var(--accent)"}
                   stroke="#0F172A"
                   strokeWidth="2"
                   style={{ transition: "r 0.15s ease", cursor: "pointer" }}
@@ -719,10 +717,10 @@ function AnomalyAlertsFeed({
       <div className="anomaly-alerts-header">
         <div>
           <h3 className="traffic-chart-title">
-            Active Anomaly Detections ({anomalyEvents.length})
+            Active anomaly detections ({anomalyEvents.length})
           </h3>
           <p className="traffic-chart-subtitle">
-            Statistically significant traffic deviations identified by the surveillance engine
+            Statistically significant traffic deviations identified by surveillance.
           </p>
         </div>
 
@@ -939,10 +937,10 @@ function LinkSurveillanceTable({ linkHealth = [], onOpenModal }) {
       <div className="traffic-chart-header">
         <div>
           <h3 className="traffic-chart-title">
-            Link Traffic Surveillance Roster
+            Link traffic surveillance roster
           </h3>
           <p className="traffic-chart-subtitle">
-            Monitored links with baseline click rates, daily activity, and interactive health status badges
+            Monitored links with baseline rates and activity.
           </p>
         </div>
 
@@ -1328,13 +1326,20 @@ export default function TrafficAnomalyView({
   return (
     <div className="traffic-anomaly-view-container">
       {/* Top Header & Range Bar */}
-      <div className="traffic-analytics-header">
+      <div className="traffic-analytics-header" style={{ marginBottom: "16px" }}>
         <div>
-          <h2 className="traffic-analytics-title">
-            Traffic Intelligence
-          </h2>
-          <p className="traffic-analytics-subtitle">
-            Dynamic statistical threshold surveillance across click history detecting traffic spikes and cliff drops
+          <h1
+            style={{
+              fontSize: "20px",
+              fontWeight: "600",
+              color: "var(--text)",
+              margin: "0 0 4px",
+            }}
+          >
+            Traffic intelligence
+          </h1>
+          <p style={{ margin: 0, fontSize: "13px", color: "var(--text-muted)" }}>
+            Statistical surveillance detecting unusual traffic spikes and drops.
           </p>
         </div>
 
@@ -1391,104 +1396,27 @@ export default function TrafficAnomalyView({
       {!loading && data && (
         <>
           {/* 1. Health Score & Top Anomaly KPI Cards */}
-          <div className="anomaly-top-cards-grid">
-            {/* Health Score Gauge Card */}
-            <div className="anomaly-health-card">
-              <div className="health-score-top">
-                <span className="health-card-label">Traffic Health Index</span>
-                <span
-                  className={`health-rating-badge ${
-                    summary.healthScore >= 90
-                      ? "optimal"
-                      : summary.healthScore >= 75
-                      ? "good"
-                      : summary.healthScore >= 50
-                      ? "attention"
-                      : "critical"
-                  }`}
-                >
-                  {summary.healthRating}
-                </span>
-              </div>
-              <div className="health-score-val-wrapper">
-                <div
-                  className="health-score-number"
-                  style={{
-                    color:
-                      summary.healthScore >= 90
-                        ? "#10B981"
-                        : summary.healthScore >= 75
-                        ? "#06B6D4"
-                        : summary.healthScore >= 50
-                        ? "#F59E0B"
-                        : "#EF4444",
-                  }}
-                >
-                  {summary.healthScore}%
-                </div>
-                <p className="health-score-desc">
-                  {summary.healthScore >= 90
-                    ? "Normal statistical stability across links"
-                    : summary.healthScore >= 75
-                    ? "Minor traffic anomalies observed"
-                    : "Significant deviations detected; review alerts"}
-                </p>
-              </div>
-            </div>
-
-            {/* Total Anomalies */}
-            <div className="metric-card">
-              <div className="metric-card-top">
-                <span className="metric-card-label">Total Anomalies</span>
-                <span className="channel-badge live">Surveillance</span>
-              </div>
-              <div
-                className="campaign-metric-value"
-                style={{
-                  color: summary.totalAnomaliesDetected > 0 ? "#F87171" : "#10B981",
-                }}
-              >
-                {summary.totalAnomaliesDetected || 0}
-              </div>
-              <p className="campaign-metric-subtext">Active deviations in period</p>
-            </div>
-
-            {/* Spikes vs Drops */}
-            <div className="metric-card">
-              <div className="metric-card-top">
-                <span className="metric-card-label">Spikes / Drops</span>
-                <span className="channel-badge direct">Surges vs Cliffs</span>
-              </div>
-              <div className="campaign-metric-value" style={{ fontSize: "20px" }}>
-                <span style={{ color: "#34D399" }}>{summary.spikeCount || 0} Spikes</span>
-                {" / "}
-                <span style={{ color: "#F87171" }}>{summary.dropCount || 0} Drops</span>
-              </div>
-              <p className="campaign-metric-subtext">Statistical deviation breakdown</p>
-            </div>
-
-            {/* Unresolved Alerts */}
-            <div className="metric-card">
-              <div className="metric-card-top">
-                <span className="metric-card-label">Unresolved Alerts</span>
-                <span
-                  className={`channel-badge ${
-                    (summary.unresolvedCount || 0) > 0 ? "qr" : "utm"
-                  }`}
-                >
-                  {(summary.unresolvedCount || 0) > 0 ? "Action Required" : "All Clear"}
-                </span>
-              </div>
-              <div
-                className="campaign-metric-value"
-                style={{
-                  color: (summary.unresolvedCount || 0) > 0 ? "#EF4444" : "#10B981",
-                }}
-              >
-                {summary.unresolvedCount || 0}
-              </div>
-              <p className="campaign-metric-subtext">Alerts requiring owner attention</p>
-            </div>
+          <div className="metrics-grid" style={{ marginBottom: "16px" }}>
+            <StatCard
+              label="Traffic health index"
+              value={`${summary.healthScore}%`}
+              icon={<ShieldAlert size={18} />}
+            />
+            <StatCard
+              label="Total anomalies"
+              value={summary.totalAnomaliesDetected || 0}
+              icon={<AlertTriangle size={18} />}
+            />
+            <StatCard
+              label="Spikes / drops"
+              value={`${summary.spikeCount || 0} / ${summary.dropCount || 0}`}
+              icon={<TrendingUp size={18} />}
+            />
+            <StatCard
+              label="Unresolved alerts"
+              value={summary.unresolvedCount || 0}
+              icon={<CheckCircle2 size={18} />}
+            />
           </div>
 
           {/* 2. Dynamic Statistical Threshold Band Timeline Chart */}

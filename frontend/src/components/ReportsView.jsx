@@ -35,9 +35,9 @@ import {
 export const REPORT_CATEGORIES = [
   {
     id: "overall",
-    title: "Overall Dashboard Report",
+    title: "Overall dashboard report",
     icon: <LayoutDashboard size={18} style={{ color: "var(--accent)" }} />,
-    tag: "Executive Summary",
+    tag: "Executive summary",
     description:
       "Platform-wide executive overview with total short link volume, cumulative clicks, QR scan rates, and international geographic reach.",
     features: [
@@ -49,9 +49,9 @@ export const REPORT_CATEGORIES = [
   },
   {
     id: "links",
-    title: "Individual Link Performance Report",
+    title: "Link performance report",
     icon: <Link2 size={18} style={{ color: "var(--accent)" }} />,
-    tag: "Deep-Dive Audit",
+    tag: "Deep-dive audit",
     description:
       "Comprehensive link audit report detailing destination URLs, security access controls (password, expiration, max clicks), and visitor audit trails.",
     features: [
@@ -63,9 +63,9 @@ export const REPORT_CATEGORIES = [
   },
   {
     id: "qr",
-    title: "QR Analytics Report",
+    title: "QR analytics report",
     icon: <QrCode size={18} style={{ color: "var(--accent)" }} />,
-    tag: "Mobile & Physical Media",
+    tag: "Mobile & QR",
     description:
       "Detailed analysis of QR code scans versus direct web clicks, physical media campaign adoption, and daily scan timelines.",
     features: [
@@ -77,9 +77,9 @@ export const REPORT_CATEGORIES = [
   },
   {
     id: "geo",
-    title: "Geo-Location Analytics Report",
+    title: "Geo-location report",
     icon: <Globe size={18} style={{ color: "var(--accent)" }} />,
-    tag: "Global Audience",
+    tag: "Global audience",
     description:
       "Worldwide audience geographic reach identifying top visitor countries, ISO country codes, and metropolitan cities driving platform traffic.",
     features: [
@@ -91,9 +91,9 @@ export const REPORT_CATEGORIES = [
   },
   {
     id: "devices",
-    title: "Device & Browser Intelligence Report",
+    title: "Device & browser report",
     icon: <Smartphone size={18} style={{ color: "var(--accent)" }} />,
-    tag: "Hardware & Platform",
+    tag: "Hardware & platform",
     description:
       "Granular breakdown of visitor hardware platforms, including mobile, desktop, and tablet distribution, operating systems, and web browsers.",
     features: [
@@ -105,9 +105,9 @@ export const REPORT_CATEGORIES = [
   },
   {
     id: "campaigns",
-    title: "Campaign Analytics Report",
+    title: "Campaign analytics report",
     icon: <Megaphone size={18} style={{ color: "var(--accent)" }} />,
-    tag: "Marketing & Attribution",
+    tag: "Marketing & attribution",
     description:
       "Marketing campaign performance evaluation tracking standard UTM tags (utm_campaign, utm_source, utm_medium) across acquisition channels.",
     features: [
@@ -119,9 +119,9 @@ export const REPORT_CATEGORIES = [
   },
   {
     id: "traffic",
-    title: "Traffic Analytics Report",
+    title: "Traffic analytics report",
     icon: <Activity size={18} style={{ color: "var(--accent)" }} />,
-    tag: "Time & Peak Trends",
+    tag: "Time & peak trends",
     description:
       "Temporal traffic pattern analysis tracking 24-hour hourly distributions in Indian Standard Time (IST) and historical volume trajectories.",
     features: [
@@ -133,9 +133,9 @@ export const REPORT_CATEGORIES = [
   },
   {
     id: "anomalies",
-    title: "Anomaly Detection Report",
+    title: "Anomaly detection report",
     icon: <ShieldAlert size={18} style={{ color: "var(--accent)" }} />,
-    tag: "Threat & Spike Surveillance",
+    tag: "Threat surveillance",
     description:
       "Statistical fleet health audit recording traffic surge spikes, sudden cliff drops, baseline deviations, and surveillance incident logs.",
     features: [
@@ -147,9 +147,9 @@ export const REPORT_CATEGORIES = [
   },
   {
     id: "experiments",
-    title: "A/B Experiment Performance Report",
+    title: "A/B experiment report",
     icon: <GitFork size={18} style={{ color: "var(--accent)" }} />,
-    tag: "Optimization & Testing",
+    tag: "Split testing",
     description:
       "Statistical split testing report evaluating 50/50 Variant A and Variant B traffic distribution, lead margins, and winning variants.",
     features: [
@@ -254,13 +254,11 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
   return (
     <div className="reports-view-root">
       {/* View Header */}
-      {/* CHANGE: Automated Reports page heading animated with SplitText — 2026-11-19 */}
       <div className="reports-header-row">
         <div>
-          <h1 className="reports-page-title">Automated Reports & Exports</h1>
+          <h1 className="reports-page-title">Reports & export</h1>
           <p className="reports-page-subtitle">
-            Generate and export presentation-ready PDF reports and Excel-compatible
-            CSV datasets from actual MongoDB analytics.
+            Export formatted PDF summaries and CSV datasets.
           </p>
         </div>
       </div>
@@ -300,9 +298,9 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
         {/* Left Column: Categories Grid */}
         <div className="reports-categories-col">
           <div className="reports-section-header">
-            <h3>1. Select Report Category</h3>
+            <h3>Select report category</h3>
             <span className="reports-badge-count">
-              {REPORT_CATEGORIES.length} Available
+              {REPORT_CATEGORIES.length} available
             </span>
           </div>
 
@@ -331,7 +329,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
         {/* Right Column: Parameters & Export Actions */}
         <div className="reports-actions-col">
           <div className="reports-section-header">
-            <h3>2. Configure Parameters & Export</h3>
+            <h3>Configure parameters & export</h3>
           </div>
 
           <div className="reports-card reports-config-card">
@@ -356,7 +354,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
 
               {/* Feature Highlights */}
               <div className="reports-features-list">
-                <span className="reports-features-label">Included in Report:</span>
+                <span className="reports-features-label">Included in report:</span>
                 <ul>
                   {currentCategory.features.map((f, idx) => (
                     <li key={idx} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -371,7 +369,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
             {/* Date Range Selection */}
             <div className="reports-config-group">
               <label className="reports-config-label">
-                Select Evaluation Range (IST)
+                Select evaluation range (IST)
               </label>
               <SegmentedControl
                 options={[
@@ -394,14 +392,14 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
             {selectedCategory === "links" && (
               <div className="reports-config-group">
                 <label className="reports-config-label">
-                  Link Scope Filter (Optional)
+                  Link scope filter (optional)
                 </label>
                 <select
                   className="reports-select-input"
                   value={selectedLinkId}
                   onChange={(e) => setSelectedLinkId(e.target.value)}
                 >
-                  <option value="">All Links (Comprehensive Report)</option>
+                  <option value="">All links (comprehensive report)</option>
                   {links.map((link) => {
                     const displayName =
                       link.name ||
@@ -426,7 +424,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
             {/* Export Format Actions */}
             <div className="reports-download-section">
               <label className="reports-config-label">
-                3. Choose Export Format
+                Choose export format
               </label>
 
               <div className="reports-download-buttons">
@@ -449,8 +447,8 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
                     <>
                       <span className="reports-btn-icon"><FileText size={16} /></span>
                       <div className="reports-btn-text">
-                        <strong>Download PDF Report</strong>
-                        <small>Formatted A4 document with KPI cards & tables</small>
+                        <strong>Download PDF report</strong>
+                        <small>Formatted document with KPI cards and tables</small>
                       </div>
                     </>
                   )}
@@ -459,7 +457,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
                 {/* CSV Download Button */}
                 <SpecularButton
                   type="button"
-                  variant="cyan"
+                  variant="secondary"
                   size="md"
                   className="reports-btn-download csv"
                   onClick={() => handleDownload("csv")}
@@ -475,8 +473,8 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
                     <>
                       <span className="reports-btn-icon"><Download size={16} /></span>
                       <div className="reports-btn-text">
-                        <strong>Download CSV Dataset</strong>
-                        <small>Excel-compatible UTF-8 raw analytics export</small>
+                        <strong>Download CSV dataset</strong>
+                        <small>Excel-compatible raw analytics export</small>
                       </div>
                     </>
                   )}

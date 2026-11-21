@@ -330,7 +330,7 @@ export default function SettingsView({
       <div className="settings-header">
         <h1 className="settings-title">Settings</h1>
         <p className="settings-subtitle">
-          Manage your account preferences, visual appearance, active devices, and notifications.
+          Manage account preferences, appearance, and notifications.
         </p>
       </div>
 

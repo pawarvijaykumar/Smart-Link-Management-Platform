@@ -110,7 +110,7 @@ html[data-theme="dark"][data-bg="slate"] {
   --border-muted: #2A3340;
   --text: #E6EAF0;
   --text-muted: #8B95A5;
-  --text-dim: #606B7D;
+  --text-dim: #8B95A5;
   --glass-secondary-bg: rgba(255, 255, 255, 0.06);
   --glass-secondary-border: rgba(255, 255, 255, 0.12);
 }
@@ -127,7 +127,7 @@ html[data-theme="dark"][data-bg="midnight"] {
   --border-muted: #2A3859;
   --text: #E6EEFA;
   --text-muted: #8696B0;
-  --text-dim: #5C6E8A;
+  --text-dim: #8696B0;
   --glass-secondary-bg: rgba(255, 255, 255, 0.06);
   --glass-secondary-border: rgba(255, 255, 255, 0.12);
 }
@@ -144,7 +144,7 @@ html[data-theme="dark"][data-bg="graphite"] {
   --border-muted: #383D47;
   --text: #E8E9EC;
   --text-muted: #8D9099;
-  --text-dim: #63666F;
+  --text-dim: #8D9099;
   --glass-secondary-bg: rgba(255, 255, 255, 0.06);
   --glass-secondary-border: rgba(255, 255, 255, 0.12);
 }
@@ -161,7 +161,7 @@ html[data-theme="dark"][data-bg="ink"] {
   --border-muted: #272733;
   --text: #EFEFF3;
   --text-muted: #888894;
-  --text-dim: #5E5E6B;
+  --text-dim: #888894;
   --glass-secondary-bg: rgba(255, 255, 255, 0.05);
   --glass-secondary-border: rgba(255, 255, 255, 0.1);
 }
@@ -183,7 +183,7 @@ html[data-theme="light"][data-bg="slate"] {
   --border-muted: #D1D6DE;
   --text: #0F172A;
   --text-muted: #5B6676;
-  --text-dim: #7C8797;
+  --text-dim: #5B6676;
   --accent: #4F46E5;
   --accent-soft: rgba(79, 70, 229, 0.10);
   --accent-hover: #4338CA;
@@ -209,7 +209,7 @@ html[data-theme="light"][data-bg="midnight"] {
   --border-muted: #C2D1E5;
   --text: #0C1930;
   --text-muted: #5B6F90;
-  --text-dim: #7B8FA8;
+  --text-dim: #5B6F90;
   --accent: #4F46E5;
   --accent-soft: rgba(79, 70, 229, 0.10);
   --accent-violet: #4F46E5;
@@ -233,7 +233,7 @@ html[data-theme="light"][data-bg="graphite"] {
   --border-muted: #C6C8CD;
   --text: #18181B;
   --text-muted: #5B6676;
-  --text-dim: #7C8797;
+  --text-dim: #5B6676;
   --accent: #4F46E5;
   --accent-soft: rgba(79, 70, 229, 0.10);
   --accent-violet: #4F46E5;
@@ -257,7 +257,7 @@ html[data-theme="light"][data-bg="ink"] {
   --border-muted: #9CA3AF;
   --text: #09090B;
   --text-muted: #4B5563;
-  --text-dim: #6B7280;
+  --text-dim: #4B5563;
   --accent: #4F46E5;
   --accent-soft: rgba(79, 70, 229, 0.10);
   --accent-violet: #4F46E5;
