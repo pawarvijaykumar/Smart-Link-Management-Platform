@@ -157,19 +157,19 @@
    ============================================================================= */
 
 /* Primary: Tinted Accent Glass */
-.specular-button--primary {
-  background: rgba(108, 124, 255, 0.35) !important;
-  border: 1px solid rgba(108, 124, 255, 0.5) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+.specular-button--primary:not(:disabled):not([disabled]):not(.specular-button--disabled) {
+  background: var(--accent) !important;
+  border: 1px solid var(--accent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 3px rgba(0, 0, 0, 0.15) !important;
   backdrop-filter: blur(14px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
   color: #ffffff !important;
 }
 
-.specular-button--primary:hover {
-  background: rgba(108, 124, 255, 0.48) !important;
-  border-color: rgba(108, 124, 255, 0.75) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 4px 14px rgba(108, 124, 255, 0.35) !important;
+.specular-button--primary:not(:disabled):not([disabled]):not(.specular-button--disabled):hover {
+  background: var(--accent-hover, #4338CA) !important;
+  border-color: var(--accent-hover, #4338CA) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 4px 14px rgba(79, 70, 229, 0.35) !important;
 }
 
 /* Secondary: Clean Neutral Surface */

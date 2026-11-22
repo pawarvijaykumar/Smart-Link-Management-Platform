@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 // CHANGE: Added password recovery — 2026-10-20
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "../utils/emailService.js";
+import { OAuth2Client } from "google-auth-library";
 
 //POST use to api test
 const createUser = async (req, res) => {
@@ -301,6 +302,129 @@ console.log("USERS IN DB:", await User.find({}, { email: 1, username: 1 }).lean(
   }
 };
 
+const googleLoginUser = async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential || typeof credential !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Google credential is required",
+      });
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      console.error("GOOGLE_CLIENT_ID is missing from environment variables");
+      return res.status(500).json({
+        success: false,
+        message: "Google authentication is not configured on the server",
+      });
+    }
+
+    let payload;
+    try {
+      const client = new OAuth2Client(clientId);
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: clientId,
+      });
+      payload = ticket.getPayload();
+    } catch (verifyError) {
+      console.error("Google token verification failed:", verifyError);
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired Google credential",
+      });
+    }
+
+    if (!payload || !payload.email) {
+      return res.status(401).json({
+        success: false,
+        message: "Google token did not contain a valid email address",
+      });
+    }
+
+    const googleEmail = payload.email.trim().toLowerCase();
+
+    // Find-or-create: Check if user exists with this verified email
+    let user = await User.findOne({ email: googleEmail });
+
+    if (!user) {
+      let baseUsername = payload.name
+        ? payload.name.trim().toLowerCase().replace(/[^a-z0-9]/g, "")
+        : googleEmail.split("@")[0].replace(/[^a-z0-9]/g, "");
+      if (!baseUsername || baseUsername.length < 2) {
+        baseUsername = "user";
+      }
+
+      let username = baseUsername;
+      let counter = 1;
+      while (await User.findOne({ username })) {
+        username = `${baseUsername}${counter}`;
+        counter++;
+      }
+
+      // Generate a secure random password hash to satisfy schema requirements
+      const randomPassword = crypto.randomBytes(32).toString("hex");
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+      user = await User.create({
+        username,
+        email: googleEmail,
+        password: hashedPassword,
+      });
+    }
+
+    // Generate short-lived access token (15m) and long-lived persistent refresh token (7d)
+    const accessToken = generateAccessToken(user._id);
+    const rawRefreshToken = generateRefreshToken();
+    const tokenHash = hashToken(rawRefreshToken);
+
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    // Atomically prune expired tokens and append new session token
+    await User.updateOne(
+      { _id: user._id },
+      { $pull: { refreshTokens: { expiresAt: { $lte: now } } } }
+    );
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $push: {
+          refreshTokens: {
+            $each: [{ tokenHash, expiresAt, createdAt: now }],
+            $slice: -5,
+          },
+        },
+      }
+    );
+
+    // Set secure HTTP-only refresh cookie
+    res.cookie("refreshToken", rawRefreshToken, getRefreshCookieOptions());
+
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    delete userResponse.refreshTokens;
+    delete userResponse.resetPasswordToken;
+    delete userResponse.resetPasswordExpires;
+
+    return res.status(200).json({
+      success: true,
+      message: "Google login successful",
+      token: accessToken,
+      user: userResponse,
+    });
+  } catch (error) {
+    console.error("Google login controller error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to log in with Google",
+    });
+  }
+};
+
 // CHANGE: Added persistent session refresh tokens — 2026-10-21
 // Concurrency-Safe Atomic Token Rotation via Positional Operator (No VersionError)
 const refreshToken = async (req, res) => {
@@ -579,6 +703,7 @@ export {
   updateUser,
   deleteUser,
   loginUser,
+  googleLoginUser,
   getMyProfile,
   forgotPassword,
   resetPassword,

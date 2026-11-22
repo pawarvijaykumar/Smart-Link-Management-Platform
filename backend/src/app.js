@@ -62,6 +62,7 @@ app.use(express.json());
 
 // Routes-->"When someone sends a GET request to this URL, what should I do?"
 app.use('/api', healthRoutes);//its show api testing 
+app.use("/api/users", userRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/links", linkRouter);

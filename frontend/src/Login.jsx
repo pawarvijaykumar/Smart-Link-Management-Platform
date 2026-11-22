@@ -1,11 +1,17 @@
 // CHANGE: Added password recovery — 2026-10-20
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { Link2 } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
+import { useTheme } from "./context/ThemeContext";
 import SpecularButton from "./components/SpecularButton";
 
 const AUTH_URL = "http://localhost:5000/api/v1/users";
 
 function Login({ onLoginSuccess, initialError = "", initialMode = "login", onNavigate }) {
+  const { effectiveTheme } = useTheme();
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
   const [mode, setMode] = useState(() => {
     try {
       if (typeof window !== "undefined") {
@@ -48,6 +54,66 @@ function Login({ onLoginSuccess, initialError = "", initialMode = "login", onNav
       // Ignore URL parsing errors
     }
   }, []);
+
+  // Check if Google Client ID is configured and warn if missing
+  useEffect(() => {
+    if (!googleClientId) {
+      console.warn("Google sign-in is not configured: VITE_GOOGLE_CLIENT_ID environment variable is missing.");
+    }
+  }, [googleClientId]);
+
+  // Handle Google OAuth Success
+  const handleGoogleSuccess = async (credentialResponse) => {
+    if (!credentialResponse?.credential) {
+      setError("Failed to retrieve Google credentials.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccessMsg("");
+
+    try {
+      // POST to /api/users/google using the same API client and token storage as normal login
+      const response = await axios.post(
+        "/api/users/google",
+        { credential: credentialResponse.credential },
+        { withCredentials: true }
+      );
+
+      if (response.data?.success && response.data?.token) {
+        localStorage.setItem("token", response.data.token);
+        if (response.data.user) {
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+        }
+        if (onLoginSuccess) {
+          onLoginSuccess(response.data.token, response.data.user);
+        }
+        if (onNavigate) {
+          onNavigate("/dashboard");
+        } else {
+          window.history.pushState({}, "", "/dashboard");
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }
+      } else {
+        setError(response.data?.message || "Google sign-in failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Google sign-in error:", err);
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Google sign-in failed. Please try again later.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.warn("Google Sign-In prompt failed or was closed.");
+    setError("Google Sign-In was cancelled or failed to load.");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -240,8 +306,10 @@ function Login({ onLoginSuccess, initialError = "", initialMode = "login", onNav
       <div className="auth-card">
         {/* Brand Header */}
         <div className="auth-brand">
-          <div className="auth-logo-icon" aria-hidden="true">S</div>
-          <div>
+          <div className="auth-logo-icon" aria-hidden="true">
+            <Link2 size={22} strokeWidth={2.2} />
+          </div>
+          <div className="auth-brand-info">
             <h1 className="auth-brand-name">SmartLink</h1>
             <span className="auth-brand-tagline">Link Management & Analytics</span>
           </div>
@@ -546,6 +614,33 @@ function Login({ onLoginSuccess, initialError = "", initialMode = "login", onNav
               </>
             )}
           </SpecularButton>
+
+          {/* Google Sign-In & Divider on BOTH Sign In and Register tabs */}
+          {(mode === "login" || mode === "register") && (
+            <>
+              <div className="auth-divider">
+                <span>or</span>
+              </div>
+
+              {googleClientId ? (
+                <div className="auth-google-wrapper">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    text="continue_with"
+                    theme={effectiveTheme === "dark" ? "filled_black" : "outline"}
+                    shape="rectangular"
+                    size="large"
+                    width="376"
+                  />
+                </div>
+              ) : (
+                <p className="auth-google-missing-note">
+                  Google sign-in is not configured
+                </p>
+              )}
+            </>
+          )}
         </form>
 
         {/* Footer Navigation / Switch Prompts */}
@@ -589,7 +684,7 @@ function Login({ onLoginSuccess, initialError = "", initialMode = "login", onNav
             </p>
           )}
 
-          <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid var(--border)" }}>
+          <div className="auth-back-link-wrapper">
             <a
               href="/"
               onClick={(e) => {
@@ -601,7 +696,7 @@ function Login({ onLoginSuccess, initialError = "", initialMode = "login", onNav
                   window.dispatchEvent(new PopStateEvent("popstate"));
                 }
               }}
-              style={{ fontSize: "13px", color: "var(--text-muted, #94A3B8)", textDecoration: "none", cursor: "pointer" }}
+              className="auth-back-link"
             >
               &larr; Back to home
             </a>
