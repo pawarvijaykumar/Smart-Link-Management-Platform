@@ -5,6 +5,7 @@ import { Link2 } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useTheme } from "./context/ThemeContext";
 import SpecularButton from "./components/SpecularButton";
+import PageBackground from "./components/PageBackground";
 
 const AUTH_URL = "http://localhost:5000/api/v1/users";
 
@@ -302,7 +303,8 @@ function Login({ onLoginSuccess, initialError = "", initialMode = "login", onNav
   const isAuthTabVisible = mode === "login" || mode === "register";
 
   return (
-    <div className="auth-wrapper">
+    <div className="page auth-wrapper">
+      <PageBackground />
       <div className="auth-card">
         {/* Brand Header */}
         <div className="auth-brand">

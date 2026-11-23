@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense, lazy } from "react";
 import axios from "axios";
 import Login from "./Login";
 import ClicksOverviewChart, {
@@ -11,7 +11,8 @@ import ClicksOverviewChart, {
 // CHANGE: QR Code Feature Stage 2 — 2026-11-05
 // Import reusable QR Code component and URL helper
 import QRCodeCard, { buildShortUrl } from "./QRCodeCard";
-import RotatingDottedGlobe from "./components/RotatingDottedGlobe";
+import GeoMap2D from "./components/GeoMap2D";
+const GeoGlobe3D = lazy(() => import("./components/GeoGlobe3D"));
 // CHANGE: Stage 9 Device & Browser Intelligence Dashboard — 2026-11-15
 import DeviceAnalyticsView from "./components/DeviceAnalyticsView";
 // CHANGE: Stage 10 Advanced Traffic Visualization Dashboard — 2026-11-16
@@ -79,6 +80,7 @@ import {
   ExternalLink,
   Settings as SettingsIcon,
   HelpCircle,
+  Info,
 } from "lucide-react";
 import LandingPage from "./marketing/LandingPage";
 import PricingPage from "./marketing/PricingPage";
@@ -88,6 +90,8 @@ import StatusPage from "./marketing/StatusPage";
 import SettingsView from "./components/SettingsView";
 import SidebarBottom from "./components/SidebarBottom";
 import AnnouncementBanner from "./components/AnnouncementBanner";
+import CommandPalette from "./components/CommandPalette";
+import { useTheme } from "./context/ThemeContext";
 import { PLAN_LIMITS, CURRENT_PLAN } from "./config/plans.config";
 import "./App.css";
 import "./AuroraTheme.css";
@@ -3754,49 +3758,49 @@ function getCountryFlagEmoji(countryCode) {
   }
 }
 
-function GeoMetricCards({ summary, topCountries = [] }) {
+function GeoMetricCards({ summary, topCountries = [], topCities = [] }) {
   const geoIdentified = summary?.geoIdentifiedClicks ?? 0;
+  const totalClicks = summary?.totalClicks ?? 0;
   const countriesCount = summary?.countriesCount ?? 0;
   const citiesCount = summary?.citiesCount ?? 0;
   const qrGeoClicks = summary?.qrGeoClicks ?? 0;
+  const directGeoClicks = summary?.directGeoClicks ?? 0;
   const geoRate = summary?.geoIdentifiedPercentage ?? 0;
+
+  // Plural helpers
+  const countryPlural = countriesCount === 1 ? "1 country" : `${countriesCount} countries`;
+  const cityPlural = citiesCount === 1 ? "1 city" : `${citiesCount} cities`;
 
   const cards = [
     {
-      id: "geo_clicks",
-      label: "Geo Identified Visits",
+      id: "located_visits",
+      label: "Located visits",
       value: geoIdentified,
-      helper: `${geoRate}% of total recorded traffic`,
-      delta: geoIdentified > 0 ? "Global traffic" : "Awaiting visits",
-      trend: geoIdentified > 0 ? "up" : "neutral",
-      icon: <Globe size={18} />,
+      helper: totalClicks > 0
+        ? `${geoIdentified} of ${totalClicks} visits located (${geoRate}%)`
+        : "0 visits recorded",
     },
     {
       id: "countries",
-      label: "Countries Reached",
+      label: "Countries",
       value: countriesCount,
-      helper: topCountries[0] ? `Top: ${topCountries[0].country}` : "Worldwide reach",
-      delta: countriesCount > 0 ? `${countriesCount} nations` : "No countries",
-      trend: countriesCount > 0 ? "up" : "neutral",
-      icon: <Globe size={18} />,
+      helper: countriesCount > 0
+        ? (topCountries[0] ? `Top: ${topCountries[0].country}` : countryPlural)
+        : "0 countries",
     },
     {
       id: "cities",
-      label: "Urban Hubs",
+      label: "Cities",
       value: citiesCount,
-      helper: `${citiesCount} urban locations`,
-      delta: citiesCount > 0 ? "Urban hubs" : "No cities",
-      trend: citiesCount > 0 ? "up" : "neutral",
-      icon: <Building2 size={18} />,
+      helper: citiesCount > 0
+        ? (topCities[0] ? `Top: ${topCities[0].city}` : cityPlural)
+        : "0 cities",
     },
     {
-      id: "qr_geo",
-      label: "QR Scans",
+      id: "qr_scans",
+      label: "QR scans",
       value: qrGeoClicks,
-      helper: `${summary?.directGeoClicks || 0} direct visits`,
-      delta: qrGeoClicks > 0 ? "Physical QR" : "0 QR scans",
-      trend: qrGeoClicks > 0 ? "up" : "neutral",
-      icon: <QrCode size={18} />,
+      helper: `${directGeoClicks} direct ${directGeoClicks === 1 ? "visit" : "visits"}`,
     },
   ];
 
@@ -3807,12 +3811,87 @@ function GeoMetricCards({ summary, topCountries = [] }) {
           key={c.id}
           label={c.label}
           value={c.value}
-          delta={c.delta}
-          trend={c.trend}
           helper={c.helper}
-          icon={c.icon}
+          icon={null}
+          delta={null}
         />
       ))}
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Component: GeoInsightsStrip
+// Plain-language, data-driven synthesis of geographic traffic trends
+// -----------------------------------------------------------------------------
+function GeoInsightsStrip({ summary, topCountries = [], topCities = [] }) {
+  const total = summary?.totalClicks ?? 0;
+  const geoIdentified = summary?.geoIdentifiedClicks ?? 0;
+  const qrTotal = summary?.qrGeoClicks ?? 0;
+  const directTotal = summary?.directGeoClicks ?? 0;
+
+  if (total === 0) {
+    return (
+      <div className="geo-insights-card">
+        <p style={{ margin: 0, fontSize: "13px", color: "var(--text-muted)" }}>
+          No visits yet. Share a link to see where clicks come from.
+        </p>
+      </div>
+    );
+  }
+
+  const sentences = [];
+
+  // Sentence 1: Leading country market & share
+  if (topCountries.length > 0) {
+    const topC = topCountries[0];
+    if (topC.percentage === 100 || topCountries.length === 1) {
+      sentences.push(`${topC.country} accounts for 100% of located visits.`);
+    } else {
+      sentences.push(
+        `${topC.country} is the leading geographic market, representing ${topC.percentage}% of all located traffic.`
+      );
+    }
+  }
+
+  // Sentence 2: Leading metropolitan city
+  if (topCities.length > 0) {
+    const topCity = topCities[0];
+    sentences.push(
+      `${topCity.city} leads city-level activity with ${topCity.totalClicks} ${
+        topCity.totalClicks === 1 ? "visit" : "visits"
+      }.`
+    );
+  }
+
+  // Sentence 3: Channel breakdown & unlocated visits
+  if (qrTotal > 0 && directTotal > 0) {
+    sentences.push(
+      `Traffic is split between ${qrTotal} physical QR ${
+        qrTotal === 1 ? "scan" : "scans"
+      } and ${directTotal} direct web ${directTotal === 1 ? "visit" : "visits"}.`
+    );
+  } else if (qrTotal > 0) {
+    sentences.push(`All located visits originated from physical QR code scans.`);
+  } else {
+    sentences.push(`All located traffic came from direct web redirects.`);
+  }
+
+  if (total > geoIdentified) {
+    const unlocated = total - geoIdentified;
+    sentences.push(
+      `${unlocated} ${unlocated === 1 ? "visit" : "visits"} could not be mapped due to proxy masking.`
+    );
+  }
+
+  return (
+    <div className="geo-insights-card">
+      <div className="geo-insights-title">
+        <span className="geo-insights-badge">Insights</span>
+      </div>
+      <div className="geo-insights-body">
+        <p>{sentences.join(" ")}</p>
+      </div>
     </div>
   );
 }
@@ -3829,8 +3908,12 @@ function GeoQRComparisonChart({ qrVsDirect = [] }) {
     <div className="geo-chart-card">
       <div className="geo-card-header">
         <div>
-          <h3>QR Scans vs Direct Visits by Country</h3>
-          <p>Channel breakdown comparing physical QR interactions against web redirects across top markets</p>
+          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--text)" }}>
+            QR Scans vs Direct Visits by Country
+          </h3>
+          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "var(--text-muted)" }}>
+            Channel breakdown comparing physical QR interactions against web redirects across top markets
+          </p>
         </div>
         <div className="geo-comparison-legend">
           <span className="legend-item">
@@ -3909,7 +3992,7 @@ function TopCountriesTable({ countries = [], onSelectCountry }) {
       <div className="table-topbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
         <div className="table-topbar-title">
           <h3 style={{ fontSize: "15px", fontWeight: "600", margin: 0, color: "var(--text)" }}>Top Countries</h3>
-          <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0" }}>Nations ranked by overall visitor engagement.</p>
+          <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0" }}>Nations ranked by overall visitor volume.</p>
         </div>
         <div style={{ width: "220px" }}>
           <Input
@@ -3926,10 +4009,10 @@ function TopCountriesTable({ countries = [], onSelectCountry }) {
         <table className="custom-links-table">
           <thead>
             <tr>
-              <th style={{ width: "60px" }}>Rank</th>
               <th>Country</th>
               <th style={{ textAlign: "right" }}>Visits</th>
-              <th style={{ width: "180px", textAlign: "right" }}>Traffic Share</th>
+              <th style={{ width: "160px", textAlign: "right" }}>Share</th>
+              <th style={{ textAlign: "right", width: "140px" }}>Channels</th>
             </tr>
           </thead>
           <tbody>
@@ -3944,19 +4027,10 @@ function TopCountriesTable({ countries = [], onSelectCountry }) {
                     title={`Click to inspect states in ${c.country}`}
                   >
                     <td>
-                      <span className="rank-num" style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "600" }}>
-                        #{c.rank}
-                      </span>
-                    </td>
-                    <td>
                       <div className="geo-country-cell" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span className="geo-table-flag">{flag}</span>
-                        <div className="geo-country-names" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <span className="geo-table-country-name" style={{ fontWeight: "600", color: "var(--text)" }}>
-                            {c.country}
-                          </span>
-                          <span className="drilldown-arrow-hint">Explore →</span>
-                        </div>
+                        <span style={{ fontWeight: "600", color: "var(--text)" }}>{c.country}</span>
+                        <span className="view-states-hover-tag">View states</span>
                       </div>
                     </td>
                     <td style={{ textAlign: "right", fontWeight: "600", color: "var(--text)", fontFamily: "var(--font-mono)" }}>
@@ -3964,7 +4038,7 @@ function TopCountriesTable({ countries = [], onSelectCountry }) {
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <div className="geo-progress-cluster" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
-                        <div className="geo-progress-bar-bg" style={{ flex: 1, maxWidth: "100px", height: "6px", background: "var(--surface-2)", borderRadius: "999px", overflow: "hidden" }}>
+                        <div className="geo-progress-bar-bg" style={{ flex: 1, maxWidth: "80px", height: "4px", background: "var(--surface-2)", borderRadius: "999px", overflow: "hidden" }}>
                           <div
                             className="geo-progress-bar-fill"
                             style={{
@@ -3979,6 +4053,9 @@ function TopCountriesTable({ countries = [], onSelectCountry }) {
                           {c.percentage}%
                         </span>
                       </div>
+                    </td>
+                    <td style={{ textAlign: "right", fontSize: "12px", color: "var(--text-muted)" }}>
+                      {c.qrClicks} QR, {c.directClicks} direct
                     </td>
                   </tr>
                 );
@@ -4033,10 +4110,10 @@ function TopCitiesTable({ cities = [], onSelectCity }) {
         <table className="custom-links-table">
           <thead>
             <tr>
-              <th style={{ width: "60px" }}>Rank</th>
               <th>City</th>
               <th style={{ textAlign: "right" }}>Visits</th>
-              <th style={{ width: "180px", textAlign: "right" }}>Traffic Share</th>
+              <th style={{ width: "160px", textAlign: "right" }}>Share</th>
+              <th style={{ textAlign: "right", width: "140px" }}>Channels</th>
             </tr>
           </thead>
           <tbody>
@@ -4051,17 +4128,11 @@ function TopCitiesTable({ cities = [], onSelectCity }) {
                     title={`Click to inspect analytics for ${c.city}`}
                   >
                     <td>
-                      <span className="rank-num" style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "600" }}>
-                        #{c.rank}
-                      </span>
-                    </td>
-                    <td>
                       <div className="geo-country-cell" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span className="geo-table-flag">{flag}</span>
-                        <div className="geo-country-names" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                           <span style={{ fontWeight: "600", color: "var(--text)" }}>{c.city}</span>
                           <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>({c.country})</span>
-                          <span className="drilldown-arrow-hint">Explore →</span>
                         </div>
                       </div>
                     </td>
@@ -4070,7 +4141,7 @@ function TopCitiesTable({ cities = [], onSelectCity }) {
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <div className="geo-progress-cluster" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
-                        <div className="geo-progress-bar-bg" style={{ flex: 1, maxWidth: "100px", height: "6px", background: "var(--surface-2)", borderRadius: "999px", overflow: "hidden" }}>
+                        <div className="geo-progress-bar-bg" style={{ flex: 1, maxWidth: "80px", height: "4px", background: "var(--surface-2)", borderRadius: "999px", overflow: "hidden" }}>
                           <div
                             className="geo-progress-bar-fill"
                             style={{
@@ -4085,6 +4156,9 @@ function TopCitiesTable({ cities = [], onSelectCity }) {
                           {c.percentage}%
                         </span>
                       </div>
+                    </td>
+                    <td style={{ textAlign: "right", fontSize: "12px", color: "var(--text-muted)" }}>
+                      {c.qrClicks} QR, {c.directClicks} direct
                     </td>
                   </tr>
                 );
@@ -4121,6 +4195,9 @@ function GeoAnalyticsView({
   const qrVsDirect = geoAnalytics?.qrVsDirectByCountry || [];
   const isZeroState = summary && summary.geoIdentifiedClicks === 0 && summary.totalClicks === 0;
 
+  // View mode: 'map' (2D Natural Earth) | 'globe' (3D WebGL)
+  const [viewMode, setViewMode] = useState("map");
+
   // Selected drill-down state across map & tables
   const [selectedCountryForMap, setSelectedCountryForMap] = useState(null);
   const [selectedCityForMap, setSelectedCityForMap] = useState(null);
@@ -4128,7 +4205,7 @@ function GeoAnalyticsView({
   const handleCountryRowSelect = useCallback((countryItem) => {
     setSelectedCountryForMap(countryItem);
     setSelectedCityForMap(null);
-    const mapCard = document.querySelector(".globe-interactive-card");
+    const mapCard = document.querySelector(".visitor-map-card");
     if (mapCard) {
       mapCard.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -4136,7 +4213,7 @@ function GeoAnalyticsView({
 
   const handleCityRowSelect = useCallback((cityItem) => {
     setSelectedCityForMap(cityItem);
-    const mapCard = document.querySelector(".globe-interactive-card");
+    const mapCard = document.querySelector(".visitor-map-card");
     if (mapCard) {
       mapCard.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -4181,19 +4258,11 @@ function GeoAnalyticsView({
               title="Refresh Geolocation Analytics"
               aria-label="Refresh Geolocation Analytics"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                width="15"
-                height="15"
+              <RefreshCw
+                size={14}
                 className={geoLoading ? "spin-icon" : ""}
-              >
-                <path d="M23 4v6h-6" />
-                <path d="M1 20v-6h6" />
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-              </svg>
+                style={{ marginRight: "6px" }}
+              />
               <span>{geoLoading ? "Updating..." : "Refresh"}</span>
             </button>
           </div>
@@ -4233,7 +4302,7 @@ function GeoAnalyticsView({
       ) : (
         <>
           {/* 1. Statistic Cards */}
-          <GeoMetricCards summary={summary} topCountries={topCountries} />
+          <GeoMetricCards summary={summary} topCountries={topCountries} topCities={topCities} />
 
           {/* 2. Zero Traffic State */}
           {isZeroState ? (
@@ -4249,21 +4318,106 @@ function GeoAnalyticsView({
             </div>
           ) : (
             <>
-              {/* 3. Interactive 2D World Map & 3D Rotating Dotted Earth Globe with Multi-Level Drill-Down */}
-              <RotatingDottedGlobe
-                topCountries={topCountries}
-                regions={regions}
-                topCities={topCities}
+              {/* 3. Visitor Map Card with SegmentedControl Toggle */}
+              <div className="geo-chart-card visitor-map-card">
+                <div
+                  className="geo-card-header"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "12px",
+                  }}
+                >
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--text)" }}>
+                      Visitor map
+                    </h3>
+                    <p style={{ margin: "4px 0 0", fontSize: "12.5px", color: "var(--text-muted)" }}>
+                      Where your visitors are, by country and city.
+                    </p>
+                  </div>
+
+                  <SegmentedControl
+                    options={[
+                      { value: "map", label: "Map" },
+                      { value: "globe", label: "Globe" },
+                    ]}
+                    value={viewMode}
+                    onChange={setViewMode}
+                    size="sm"
+                    ariaLabel="Toggle map or globe view"
+                  />
+                </div>
+
+                {/* Conditional Rendering: Only ONE view exists in DOM at any time */}
+                {viewMode === "map" ? (
+                  <GeoMap2D
+                    topCountries={topCountries}
+                    regions={regions}
+                    topCities={topCities}
+                    summary={summary}
+                    selectedCountryProp={selectedCountryForMap}
+                    onCountrySelect={handleCountryRowSelect}
+                    selectedCityProp={selectedCityForMap}
+                  />
+                ) : (
+                  <Suspense
+                    fallback={
+                      <div
+                        style={{
+                          height: "480px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "var(--text-muted)",
+                          fontSize: "13px",
+                        }}
+                      >
+                        Loading 3D Globe...
+                      </div>
+                    }
+                  >
+                    <GeoGlobe3D
+                      topCountries={topCountries}
+                      topCities={topCities}
+                      summary={summary}
+                      onSelectCountry={handleCountryRowSelect}
+                      onSelectCity={handleCityRowSelect}
+                    />
+                  </Suspense>
+                )}
+
+                {/* Approximate IP location notice */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "12px",
+                    color: "var(--text-muted)",
+                    paddingTop: "12px",
+                    borderTop: "1px solid var(--border)",
+                    marginTop: "8px",
+                  }}
+                >
+                  <Info size={13} style={{ flexShrink: 0 }} />
+                  <span>Locations are approximate and based on IP address.</span>
+                </div>
+              </div>
+
+              {/* 4. Insights Strip */}
+              <GeoInsightsStrip
                 summary={summary}
-                selectedCountryProp={selectedCountryForMap}
-                onCountrySelect={setSelectedCountryForMap}
-                selectedCityProp={selectedCityForMap}
+                topCountries={topCountries}
+                topCities={topCities}
               />
 
-              {/* 4. QR vs Direct Channel Breakdown */}
+              {/* 5. QR vs Direct Channel Breakdown */}
               <GeoQRComparisonChart qrVsDirect={qrVsDirect} />
 
-              {/* 5. Dual Tables: Top Countries & Top Cities with Interactive Drill-Down Selection */}
+              {/* 6. Dual Tables: Top Countries & Top Cities */}
               <div className="geo-tables-grid">
                 <TopCountriesTable
                   countries={topCountries}
@@ -4305,6 +4459,8 @@ function App() {
   const [authError, setAuthError] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
 
+  const { theme, setTheme, effectiveTheme } = useTheme();
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -4316,8 +4472,25 @@ function App() {
   useEffect(() => {
     const handleGlobalSearchKey = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        // Do not open when the user is typing in another input if it would clash
+        const activeEl = document.activeElement;
+        const isMac =
+          typeof navigator !== "undefined" &&
+          navigator.platform &&
+          navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+        const isInput =
+          activeEl &&
+          (activeEl.tagName === "INPUT" ||
+            activeEl.tagName === "TEXTAREA" ||
+            activeEl.isContentEditable);
+
+        if (isMac && e.ctrlKey && !e.metaKey && isInput) {
+          // On macOS, Ctrl+K is the readline kill-to-end-of-line shortcut in text fields
+          return;
+        }
+
         e.preventDefault();
-        searchInputRef.current?.focus();
+        setIsCommandPaletteOpen((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handleGlobalSearchKey);
@@ -4452,6 +4625,9 @@ function App() {
     try {
       if (typeof window !== "undefined" && window.location.pathname === "/settings") {
         return "settings";
+      }
+      if (typeof window !== "undefined" && (window.location.pathname === "/geo-analytics" || window.location.pathname === "/geo")) {
+        return "geo-analytics";
       }
     } catch (_) {}
     return "dashboard";
@@ -6045,52 +6221,30 @@ function App() {
               <Menu size={20} />
             </button>
 
-            <div className="topbar-search-box">
+            <div
+              className="topbar-search-box"
+              onClick={() => setIsCommandPaletteOpen(true)}
+              style={{ cursor: "pointer" }}
+            >
               <span className="search-box-icon" aria-hidden="true">
                 <Search size={15} />
               </span>
-              <select
-                className="topbar-search-scope"
-                value={searchScope}
-                onChange={(e) => setSearchScope(e.target.value)}
-                aria-label="Search scope"
-              >
-                <option value="all">All</option>
-                <option value="links">Links</option>
-                <option value="campaigns">Campaigns</option>
-                <option value="pages">Pages</option>
-              </select>
               <input
                 ref={searchInputRef}
                 type="search"
                 className="topbar-search-field"
-                placeholder={
-                  searchScope === "links"
-                    ? "Search links..."
-                    : searchScope === "campaigns"
-                    ? "Search campaigns..."
-                    : searchScope === "pages"
-                    ? "Search pages..."
-                    : "Search links, campaigns..."
-                }
-                value={searchTerm}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setSearchTerm(val);
-                  if (searchScope === "pages" && val.trim()) {
-                    const q = val.toLowerCase().trim();
-                    if ("settings".includes(q)) {
-                      setActiveView("settings");
-                    } else if ("campaigns".includes(q)) {
-                      setActiveView("campaigns");
-                    } else if ("dashboard".includes(q)) {
-                      setActiveView("dashboard");
-                    } else if ("reports".includes(q)) {
-                      setActiveView("reports");
-                    }
-                  }
+                placeholder="Search links, pages, actions... (Ctrl+K)"
+                readOnly
+                onFocus={(e) => {
+                  e.target.blur();
+                  setIsCommandPaletteOpen(true);
                 }}
-                aria-label={`Search in ${searchScope}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCommandPaletteOpen(true);
+                }}
+                aria-label="Open command palette (Ctrl+K)"
+                style={{ cursor: "pointer" }}
               />
               <kbd className="ui-input-shortcut" aria-hidden="true">
                 Ctrl+K
@@ -6329,8 +6483,10 @@ function App() {
           </div>
         </header>
 
-        {/* 4. Announcement Banner (dismissible below topbar) */}
-        <AnnouncementBanner onNavigate={navigateTo} />
+        {/* 4. Announcement Banner (dismissible below topbar, hidden on Geo Analytics page) */}
+        {activeView !== "geo-analytics" && (
+          <AnnouncementBanner onNavigate={navigateTo} />
+        )}
 
         {/* Main View Switcher: Dashboard vs Campaigns */}
         {/* CHANGE: Added separate Campaign Analytics frontend view — 2026-11-02 */}
@@ -7109,6 +7265,43 @@ function App() {
           onSessionExpired={handleSessionExpired}
         />
       )}
+
+      {/* Command Palette (Ctrl+K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        token={token}
+        apiUrl={API_URL}
+        currentTheme={effectiveTheme || theme}
+        onToggleTheme={() => setTheme((effectiveTheme || theme) === "dark" ? "light" : "dark")}
+        onNavigateView={(view) => {
+          if (view === "links") {
+            if (activeView !== "dashboard") {
+              setActiveView("dashboard");
+              setTimeout(() => {
+                const tableEl = document.querySelector(".links-table-card");
+                if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
+              }, 80);
+            } else {
+              const tableEl = document.querySelector(".links-table-card");
+              if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
+            }
+          } else {
+            setActiveView(view);
+          }
+        }}
+        onNavigateRoute={(route) => {
+          navigateTo(route);
+        }}
+        onOpenCreateLink={() => {
+          setShowCreateModal(true);
+        }}
+        onSelectLink={(link) => {
+          setSelectedLink(link);
+          setActiveView("dashboard");
+        }}
+        initialLinks={links}
+      />
     </div>
   );
 }

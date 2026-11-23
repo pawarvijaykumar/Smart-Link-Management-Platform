@@ -1,0 +1,788 @@
+/* =============================================================================
+   SmartLink Pricing Page Styles
+   Distinct visual style scoped strictly to .pricing-page
+   - Blur-in entrance animations with ghost flight & staggered item reveals
+   - Pro card tinted frame with integrated "Recommended" top edge
+   - Unified "$25" price typography (Geist 600 44px tabular-nums)
+   - Faint line art tattoo illustrations behind card text
+   - Pricing-only background: Light vertical gradient, Dark var(--bg),
+     soft 700x400px radial glow, 56px "+" SVG tile mask fading toward bottom
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   1. Root Page Wrapper & Scoped Theme Variables
+   ----------------------------------------------------------------------------- */
+.pricing-page {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  padding-bottom: 96px;
+  isolation: isolate;
+  --pricing-bg-gradient: var(--bg, #0E1116);
+  --plus-color: rgba(255, 255, 255, 0.10);
+  --pricing-glow-opacity: 0.20;
+  --tattoo-line: rgba(255, 255, 255, 0.08);
+  --tattoo-line-pro: rgba(255, 255, 255, 0.12);
+}
+
+/* Dark theme background variables */
+html[data-theme="dark"] .pricing-page {
+  --pricing-bg-gradient: var(--bg, #0E1116);
+  --plus-color: rgba(255, 255, 255, 0.10);
+  --pricing-glow-opacity: 0.20;
+  --tattoo-line: rgba(255, 255, 255, 0.08);
+  --tattoo-line-pro: rgba(255, 255, 255, 0.12);
+}
+
+/* Light theme background variables */
+html[data-theme="light"] .pricing-page {
+  --pricing-bg-gradient: linear-gradient(180deg, #F3F8FF 0%, #EEF4FF 40%, #F7F8FA 100%);
+  --plus-color: rgba(100, 116, 139, 0.35);
+  --pricing-glow-opacity: 0.12;
+  --tattoo-line: rgba(15, 23, 42, 0.08);
+  --tattoo-line-pro: rgba(15, 23, 42, 0.12);
+}
+
+/* -----------------------------------------------------------------------------
+   2. Pricing-Only Background Layers
+   ----------------------------------------------------------------------------- */
+.pricing-bg-layer {
+  position: absolute;
+  inset: 0;
+  height: 840px;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: var(--pricing-bg-gradient);
+}
+
+/* Soft radial glow behind the middle card (~700x400px) */
+.pricing-bg-glow {
+  position: absolute;
+  top: 140px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  height: 400px;
+  background: radial-gradient(
+    ellipse 700px 400px at 50% 50%,
+    color-mix(in srgb, var(--accent, #6366F1) calc(var(--pricing-glow-opacity) * 100%), transparent),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* "+" mark pattern: 56px SVG tile fading out toward bottom with linear mask */
+.pricing-pattern-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000000 0%, #000000 35%, transparent 85%);
+  mask-image: linear-gradient(to bottom, #000000 0%, #000000 35%, transparent 85%);
+}
+
+.pricing-pattern-tiles {
+  width: 100%;
+  height: 100%;
+  background-color: var(--plus-color);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M28 23v10M23 28h10' stroke='black' stroke-width='1'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M28 23v10M23 28h10' stroke='black' stroke-width='1'/%3E%3C/svg%3E");
+  -webkit-mask-size: 56px 56px;
+  mask-size: 56px 56px;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+}
+
+/* Foreground content sitting on top of background */
+.pricing-content-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+/* -----------------------------------------------------------------------------
+   3. Header Section (Centered, No badges/pills)
+   ----------------------------------------------------------------------------- */
+.pricing-header {
+  text-align: center;
+  padding: 56px 20px 24px;
+  max-width: 680px;
+  margin: 0 auto;
+  animation: headerBlurIn 450ms cubic-bezier(0.2, 0.8, 0.2, 1) 0ms both;
+}
+
+.pricing-title {
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.pricing-subtitle {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 0 0 28px;
+}
+
+/* -----------------------------------------------------------------------------
+   4. Rounded Pill Billing Toggle
+   ----------------------------------------------------------------------------- */
+.pricing-toggle-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 56px;
+  animation: headerBlurIn 450ms cubic-bezier(0.2, 0.8, 0.2, 1) 0ms both;
+}
+
+.pricing-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04);
+}
+
+.pricing-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.pricing-toggle-btn:hover:not(.active) {
+  color: var(--text);
+}
+
+.pricing-toggle-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  border-color: var(--border);
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+}
+
+.pricing-toggle-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 10% off tag: plain small text on tinted background */
+.pricing-discount-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
+  line-height: 1.2;
+}
+
+/* -----------------------------------------------------------------------------
+   5. Pricing Cards Grid & Layout
+   ----------------------------------------------------------------------------- */
+.pricing-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 1080px;
+  margin: 0 auto 72px;
+  align-items: stretch;
+}
+
+/* Base Card */
+.pricing-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04);
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease,
+              box-shadow 0.25s ease;
+}
+
+/* Card content elevated above tattoo line art */
+.pricing-card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Side Card Ghost Blur-In Entrance */
+.pricing-card--free {
+  animation: freeCardBlurIn 800ms cubic-bezier(0.2, 0.8, 0.2, 1) 350ms both;
+}
+
+.pricing-card--team {
+  animation: teamCardBlurIn 800ms cubic-bezier(0.2, 0.8, 0.2, 1) 350ms both;
+}
+
+/* Free & Team Hover Lifts 4px */
+.pricing-card:not(.pricing-card--pro):hover {
+  transform: translateY(-4px) !important;
+  border-color: color-mix(in srgb, var(--text) 22%, var(--border));
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
+}
+
+/* -----------------------------------------------------------------------------
+   6. Pro Card Tinted Frame
+   Padding 6px, radius 20px, integrated "Recommended" top edge (28px tall, 12px/500)
+   ----------------------------------------------------------------------------- */
+.pricing-pro-frame {
+  position: relative;
+  padding: 0 6px 6px 6px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  display: flex;
+  flex-direction: column;
+  transform: translateY(-16px);
+  z-index: 2;
+  box-shadow: 0 4px 20px rgba(16, 24, 40, 0.06),
+              0 0 24px color-mix(in srgb, var(--accent) 10%, transparent);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s ease;
+  animation: proCardBlurIn 800ms cubic-bezier(0.2, 0.8, 0.2, 1) 200ms both;
+}
+
+html[data-theme="dark"] .pricing-pro-frame {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+}
+
+/* Pro Frame Top Edge Header */
+.pricing-pro-frame-header {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.pricing-pro-frame-header span {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: inline-block;
+  animation: tabDropDown 350ms cubic-bezier(0.2, 0.8, 0.2, 1) 650ms both;
+}
+
+/* Inner Pro Card sits inside frame with its own 1px border and 16px radius */
+.pricing-pro-frame .pricing-card--pro {
+  flex: 1;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  background: var(--surface);
+  padding: 24px;
+  margin: 0;
+  box-shadow: none;
+  transform: none !important;
+  animation: none !important;
+}
+
+/* Pro Frame Hover: Lifts 4px (to -20px) and gets faint accent glow */
+.pricing-pro-frame:hover {
+  transform: translateY(-20px) !important;
+  box-shadow: 0 12px 36px rgba(16, 24, 40, 0.10),
+              0 0 32px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.pricing-pro-frame:hover .pricing-card--pro {
+  border-color: var(--accent);
+}
+
+/* -----------------------------------------------------------------------------
+   7. Tattoo Line Art Illustrations (Inside Cards)
+   ----------------------------------------------------------------------------- */
+.pricing-tattoo {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 150px;
+  height: 150px;
+  stroke: var(--tattoo-line);
+  stroke-width: 1;
+  fill: none;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.2s ease, stroke 0.2s ease;
+}
+
+.pricing-tattoo--pro {
+  width: 170px;
+  height: 170px;
+  stroke: var(--tattoo-line-pro);
+}
+
+.pricing-card:hover .pricing-tattoo {
+  opacity: 1;
+}
+
+/* -----------------------------------------------------------------------------
+   8. Card Contents & Staggered Blur-In (700ms Onward)
+   ----------------------------------------------------------------------------- */
+.pricing-plan-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px;
+  animation: itemBlurIn 350ms cubic-bezier(0.2, 0.8, 0.2, 1) 700ms both;
+}
+
+.pricing-plan-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 20px;
+  line-height: 1.45;
+  min-height: 38px;
+  animation: itemBlurIn 350ms cubic-bezier(0.2, 0.8, 0.2, 1) 740ms both;
+}
+
+/* Price Row: "$25" in one piece, Geist 600, 44px tabular-nums, no gap */
+.pricing-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  animation: itemBlurIn 350ms cubic-bezier(0.2, 0.8, 0.2, 1) 780ms both;
+}
+
+.pricing-price-full {
+  font-size: 44px;
+  font-weight: 600;
+  font-family: var(--font-sans, "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  display: inline-block;
+  animation: priceCrossFade 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pricing-price-period {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* Toggle transition for numbers */
+@keyframes priceCrossFade {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* What's included label & features list */
+.pricing-features-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+  letter-spacing: 0.01em;
+  animation: itemBlurIn 350ms cubic-bezier(0.2, 0.8, 0.2, 1) 820ms both;
+}
+
+.pricing-features-list {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.pricing-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text);
+  animation: itemBlurIn 350ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.pricing-feature-item:nth-child(1) { animation-delay: 860ms; }
+.pricing-feature-item:nth-child(2) { animation-delay: 900ms; }
+.pricing-feature-item:nth-child(3) { animation-delay: 940ms; }
+.pricing-feature-item:nth-child(4) { animation-delay: 980ms; }
+.pricing-feature-item:nth-child(5) { animation-delay: 1020ms; }
+.pricing-feature-item:nth-child(6) { animation-delay: 1060ms; }
+
+.pricing-feature-item svg {
+  flex-shrink: 0;
+  margin-top: 2.5px;
+  color: var(--accent);
+}
+
+/* Full-width CTA Buttons */
+.pricing-cta-btn {
+  width: 100%;
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-btn, 10px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  font-family: inherit;
+  box-sizing: border-box;
+  animation: itemBlurIn 350ms cubic-bezier(0.2, 0.8, 0.2, 1) 1100ms both;
+}
+
+.pricing-cta-btn--outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.pricing-cta-btn--outline:hover {
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--text) 25%, var(--border));
+}
+
+.pricing-cta-btn--outline:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pricing-cta-btn--solid {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #FFFFFF;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+}
+
+.pricing-cta-btn--solid:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.pricing-cta-btn--solid:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* -----------------------------------------------------------------------------
+   9. Entrance Animation Keyframes (Easing: cubic-bezier(0.2, 0.8, 0.2, 1))
+   ----------------------------------------------------------------------------- */
+@keyframes headerBlurIn {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes proCardBlurIn {
+  0% {
+    opacity: 0;
+    filter: blur(18px);
+    transform: translate(0, 8px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(0, -16px) scale(1);
+  }
+}
+
+@keyframes freeCardBlurIn {
+  0% {
+    opacity: 0;
+    filter: blur(18px);
+    transform: translate(45%, 24px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes teamCardBlurIn {
+  0% {
+    opacity: 0;
+    filter: blur(18px);
+    transform: translate(-45%, 24px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes tabDropDown {
+  0% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes itemBlurIn {
+  0% {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+/* will-change applied ONLY during animation */
+.pricing-animating .pricing-header,
+.pricing-animating .pricing-toggle-wrap,
+.pricing-animating .pricing-card,
+.pricing-animating .pricing-pro-frame,
+.pricing-animating .pricing-pro-frame-header span,
+.pricing-animating .pricing-plan-name,
+.pricing-animating .pricing-plan-desc,
+.pricing-animating .pricing-price-row,
+.pricing-animating .pricing-features-label,
+.pricing-animating .pricing-feature-item,
+.pricing-animating .pricing-cta-btn {
+  will-change: filter, transform, opacity;
+}
+
+/* -----------------------------------------------------------------------------
+   10. Feature Comparison Table Section
+   ----------------------------------------------------------------------------- */
+.pricing-comparison-section {
+  max-width: 1080px;
+  margin: 0 auto 64px;
+  animation: headerBlurIn 450ms cubic-bezier(0.2, 0.8, 0.2, 1) 400ms both;
+}
+
+.pricing-comparison-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.pricing-comparison-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+
+.pricing-comparison-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.pricing-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04);
+}
+
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  text-align: left;
+}
+
+.pricing-table th,
+.pricing-table td {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pricing-table th {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+
+.pricing-table-cat-row td {
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding-top: 14px;
+  padding-bottom: 8px;
+}
+
+.pricing-table-check {
+  color: var(--accent);
+}
+
+.pricing-table-cross {
+  color: var(--text-dim);
+}
+
+/* -----------------------------------------------------------------------------
+   11. Responsive Layout (<900px Tablet & Mobile)
+   ----------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .pricing-cards-grid {
+    grid-template-columns: 1fr;
+    max-width: 440px;
+    gap: 24px;
+    margin-bottom: 56px;
+  }
+
+  .pricing-pro-frame {
+    order: -1; /* Pro first! */
+    transform: none !important;
+  }
+
+  .pricing-card:not(.pricing-card--pro):hover,
+  .pricing-pro-frame:hover {
+    transform: translateY(-3px) !important;
+  }
+
+  .pricing-title {
+    font-size: 28px;
+  }
+
+  .pricing-header {
+    padding: 36px 16px 20px;
+  }
+
+  .pricing-toggle-wrap {
+    margin-bottom: 40px;
+  }
+
+  @keyframes proCardBlurIn {
+    0% {
+      opacity: 0;
+      filter: blur(18px);
+      transform: translateY(24px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes freeCardBlurIn {
+    0% {
+      opacity: 0;
+      filter: blur(18px);
+      transform: translateY(24px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes teamCardBlurIn {
+    0% {
+      opacity: 0;
+      filter: blur(18px);
+      transform: translateY(24px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0) scale(1);
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .pricing-title {
+    font-size: 24px;
+  }
+
+  .pricing-toggle-btn {
+    padding: 6px 12px;
+    font-size: 12.5px;
+  }
+
+  .pricing-card {
+    padding: 20px;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   12. Prefers Reduced Motion
+   ----------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .pricing-page *,
+  .pricing-page *::before,
+  .pricing-page *::after {
+    animation: none !important;
+    transition: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+
+  .pricing-pro-frame {
+    transform: translateY(-16px) !important;
+  }
+
+  @media (max-width: 900px) {
+    .pricing-pro-frame {
+      transform: none !important;
+    }
+  }
+}

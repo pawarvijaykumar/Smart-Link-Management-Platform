@@ -30,7 +30,7 @@ export default function MarketingFooter({ onNavigate }) {
               <span>SmartLink</span>
             </a>
             <p>
-              Enterprise-grade short links, real-time campaign attribution, and click intelligence.
+              Short links, real-time campaign attribution, and click intelligence.
             </p>
 
             <a

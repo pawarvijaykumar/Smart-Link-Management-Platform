@@ -62,7 +62,7 @@ export default function LandingPage({ token, onNavigate }) {
   return (
     <MarketingLayout
       title="SmartLink — Short links you can actually measure"
-      description="Enterprise-grade URL shortening, real-time campaign attribution, and click intelligence built for modern teams."
+      description="Create short links and track every click by country, device and campaign."
       token={token}
       currentPath="/"
       onNavigate={onNavigate}
@@ -70,37 +70,22 @@ export default function LandingPage({ token, onNavigate }) {
       {/* 1. HERO SECTION */}
       <section className="mkt-hero" aria-labelledby="hero-title">
         <div className="mkt-container">
-          <div className="mkt-hero-badge">
-            <span className="mkt-hero-badge-dot" aria-hidden="true"></span>
-            <span>Version 2.4 — Complete Linear SaaS Dashboard</span>
-          </div>
-
           <h1 id="hero-title" className="mkt-hero-title">
             Short links you can actually measure
           </h1>
 
           <p className="mkt-hero-subtitle">
-            Enterprise-grade URL shortening, real-time campaign attribution, and click
-            intelligence built for high-growth marketing and engineering teams.
+            Create short links and track every click by country, device and campaign.
           </p>
 
           <div className="mkt-hero-ctas">
             <button
               type="button"
               className="mkt-btn mkt-btn-primary mkt-btn-lg"
-              onClick={(e) => handleNav(token ? "/dashboard" : "/register", e)}
+              onClick={(e) => handleNav("/register", e)}
             >
-              <span>{token ? "Go to dashboard" : "Get started free"}</span>
+              <span>Get started free</span>
               <ArrowRight size={16} />
-            </button>
-
-            <button
-              type="button"
-              className="mkt-btn mkt-btn-secondary mkt-btn-lg"
-              onClick={(e) => handleNav("/docs", e)}
-            >
-              <span>Explore developer docs</span>
-              <ExternalLink size={15} />
             </button>
           </div>
 

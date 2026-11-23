@@ -132,9 +132,9 @@ export default function DocsPage({ token, onNavigate }) {
           {/* Right Main Content */}
           <article className="mkt-docs-content">
             {/* Header */}
-            <div style={{ marginBottom: "48px" }}>
+            <div style={{ margin: "0 0 40px", textAlign: "left" }}>
               <div className="mkt-section-tag">REST API v1</div>
-              <h1 className="mkt-section-title" style={{ fontSize: "38px", margin: "8px 0 12px" }}>
+              <h1 className="mkt-section-title" style={{ fontSize: "36px", margin: "8px 0 12px" }}>
                 SmartLink Developer Reference
               </h1>
               <p className="mkt-section-subtitle" style={{ margin: 0 }}>

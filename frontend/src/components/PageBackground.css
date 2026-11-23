@@ -1,0 +1,55 @@
+/* =============================================================================
+   PageBackground Styles
+   CSS-only background pattern with bottom fade mask & hero top glow
+   Rendered as the first child of .page with z-index: 0
+   ============================================================================= */
+
+.page-bg {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 600px;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(to bottom, #000000 0%, #000000 40%, transparent 84%);
+  mask-image: linear-gradient(to bottom, #000000 0%, #000000 40%, transparent 84%);
+}
+
+/* DARK theme default: grid */
+html[data-theme="dark"] .page-bg,
+.page-bg--theme-dark.page-bg--grid {
+  background-image:
+    radial-gradient(700px 320px at 50% 0%,
+      var(--bg-glow, color-mix(in srgb, var(--accent) 22%, transparent)), transparent 70%),
+    linear-gradient(to right, var(--bg-grid-line, rgba(255, 255, 255, 0.07)) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--bg-grid-line, rgba(255, 255, 255, 0.07)) 1px, transparent 1px);
+  background-size: auto, 56px 56px, 56px 56px;
+}
+
+/* LIGHT theme default: dots */
+html[data-theme="light"] .page-bg,
+.page-bg--theme-light.page-bg--dots {
+  background-image:
+    radial-gradient(700px 320px at 50% 0%,
+      var(--bg-glow, color-mix(in srgb, var(--accent) 10%, transparent)), transparent 70%),
+    radial-gradient(var(--bg-dots, rgba(15, 23, 42, 0.22)) 1px, transparent 1px);
+  background-size: auto, 22px 22px;
+}
+
+/* Explicit Grid variant (e.g. forced via Settings in light mode) */
+.page-bg--grid {
+  background-image:
+    radial-gradient(700px 320px at 50% 0%,
+      var(--bg-glow, color-mix(in srgb, var(--accent) 20%, transparent)), transparent 70%),
+    linear-gradient(to right, var(--bg-grid-line, rgba(255, 255, 255, 0.07)) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--bg-grid-line, rgba(255, 255, 255, 0.07)) 1px, transparent 1px);
+  background-size: auto, 56px 56px, 56px 56px;
+}
+
+/* Explicit Dots variant (e.g. forced via Settings in dark mode) */
+.page-bg--dots {
+  background-image:
+    radial-gradient(700px 320px at 50% 0%,
+      var(--bg-glow, color-mix(in srgb, var(--accent) 10%, transparent)), transparent 70%),
+    radial-gradient(var(--bg-dots, rgba(15, 23, 42, 0.22)) 1px, transparent 1px);
+  background-size: auto, 22px 22px;
+}

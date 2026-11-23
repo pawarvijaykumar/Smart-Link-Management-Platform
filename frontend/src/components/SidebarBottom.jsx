@@ -21,8 +21,8 @@ import {
   PLAN_LIMITS,
   CURRENT_PLAN,
   APP_INFO,
-  WHATS_NEW_UPDATES,
 } from "../config/plans.config";
+import { CHANGELOG } from "../data/changelog";
 import "./SidebarBottom.css";
 
 export default function SidebarBottom({
@@ -43,6 +43,21 @@ export default function SidebarBottom({
   const maxClicks = plan.maxClicks || 10000;
   const linksPct = Math.min(100, Math.round((totalLinks / maxLinks) * 100));
   const clicksPct = Math.min(100, Math.round((totalClicks / maxClicks) * 100));
+
+  // Latest 3 updates from single source of truth changelog data
+  const latestUpdates = CHANGELOG.slice(0, 3).map((entry) => {
+    const parts = entry.date.split("-");
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    const formattedDate = monthNames[m] ? `${monthNames[m]} ${d}` : entry.date;
+    return {
+      version: entry.version || entry.category.toUpperCase(),
+      title: entry.title,
+      desc: entry.description,
+      date: formattedDate,
+    };
+  });
 
   // Check unread state for What's New by version
   useEffect(() => {
@@ -223,7 +238,7 @@ export default function SidebarBottom({
               </div>
 
               <div className="popover-body whats-new-list">
-                {WHATS_NEW_UPDATES.map((update, idx) => (
+                {latestUpdates.map((update, idx) => (
                   <div key={idx} className="whats-new-item">
                     <div className="whats-new-meta">
                       <span className="whats-new-version">{update.version}</span>

@@ -1,14 +1,16 @@
 import React, { useEffect } from "react";
 import MarketingNavbar from "./MarketingNavbar";
 import MarketingFooter from "./MarketingFooter";
+import PageBackground from "../components/PageBackground";
 import "./Marketing.css";
 
 export default function MarketingLayout({
   title = "SmartLink — Short links you can actually measure",
-  description = "Enterprise-grade URL shortening, real-time campaign attribution, and click intelligence built for modern teams.",
+  description = "Create short links, track campaign attribution, and analyze clicks in real time.",
   token,
   currentPath = "/",
   onNavigate,
+  backgroundVariant,
   children,
 }) {
   useEffect(() => {
@@ -24,15 +26,20 @@ export default function MarketingLayout({
   }, [title, description]);
 
   return (
-    <div className="mkt-wrapper">
+    <div className="page mkt-wrapper">
+      <PageBackground variant={backgroundVariant} />
       <MarketingNavbar
         token={token}
         currentPath={currentPath}
         onNavigate={onNavigate}
       />
-      <main id="main-content" tabIndex="-1" style={{ outline: "none", flex: 1 }}>
-        {children}
-      </main>
+      <div className="mkt-frame-outer">
+        <div className="mkt-frame-lines">
+          <main id="main-content" tabIndex="-1" style={{ outline: "none", flex: 1, minHeight: "100%" }}>
+            {children}
+          </main>
+        </div>
+      </div>
       <MarketingFooter onNavigate={onNavigate} />
     </div>
   );

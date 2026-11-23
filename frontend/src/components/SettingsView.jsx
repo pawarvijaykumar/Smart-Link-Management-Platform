@@ -111,12 +111,15 @@ export default function SettingsView({
     accent,
     density,
     sidebar,
+    pattern,
     effectiveTheme,
+    effectivePattern,
     setTheme,
     setBg,
     setAccent,
     setDensity,
     setSidebar,
+    setPattern,
   } = useTheme();
 
   // Profile Form State
@@ -195,6 +198,11 @@ export default function SettingsView({
 
   const handleSidebarChange = (newSidebar) => {
     setSidebar(newSidebar);
+    showToast("Appearance saved");
+  };
+
+  const handlePatternChange = (newPattern) => {
+    setPattern(newPattern);
     showToast("Appearance saved");
   };
 
@@ -545,6 +553,43 @@ export default function SettingsView({
                     <span className="density-card-desc">Minimalist icon-only sidebar for focused work.</span>
                   </button>
                 </div>
+              </div>
+
+              {/* Background Pattern: Grid / Dots / None */}
+              <div className="settings-form-group">
+                <label className="settings-label">Background pattern</label>
+                <div className="density-options-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+                  <button
+                    type="button"
+                    className={`density-card ${(pattern === "grid" || (!pattern && effectivePattern === "grid")) ? "active" : ""}`}
+                    onClick={() => handlePatternChange("grid")}
+                    aria-pressed={pattern === "grid" || (!pattern && effectivePattern === "grid")}
+                  >
+                    <span className="density-card-title">Grid</span>
+                    <span className="density-card-desc">Subtle 48px linear grid lines with edge fade.</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`density-card ${(pattern === "dots" || (!pattern && effectivePattern === "dots")) ? "active" : ""}`}
+                    onClick={() => handlePatternChange("dots")}
+                    aria-pressed={pattern === "dots" || (!pattern && effectivePattern === "dots")}
+                  >
+                    <span className="density-card-title">Dots</span>
+                    <span className="density-card-desc">Minimalist 20px radial dot matrix with soft glow.</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`density-card ${pattern === "none" ? "active" : ""}`}
+                    onClick={() => handlePatternChange("none")}
+                    aria-pressed={pattern === "none"}
+                  >
+                    <span className="density-card-title">None</span>
+                    <span className="density-card-desc">Pure solid background without texture or glow.</span>
+                  </button>
+                </div>
+                <span className="settings-hint">
+                  Saved in appearance preferences and applied across public pages.
+                </span>
               </div>
             </div>
           )}

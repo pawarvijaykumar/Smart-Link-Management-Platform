@@ -20,11 +20,19 @@
   --text-muted: #8B95A5;
   --text-dim: #606B7D;
 
-  --accent: #6C7CFF;
-  --accent-soft: rgba(108, 124, 255, 0.15);
-  --accent-hover: #7E8DFF;
-  --accent-active: #5B6BE6;
-  --accent-glass: rgba(108, 124, 255, 0.35);
+  --accent: #6366F1;
+  --accent-soft: rgba(99, 102, 241, 0.15);
+  --accent-hover: #4F46E5;
+  --accent-active: #4338CA;
+  --accent-glass: rgba(99, 102, 241, 0.35);
+
+  /* Geo Map Land */
+  --map-land: #1B212A;
+
+  /* Background Grid & Glow Patterns */
+  --bg-grid-line: rgba(255, 255, 255, 0.07);
+  --bg-dots: rgba(255, 255, 255, 0.12);
+  --bg-glow: color-mix(in srgb, var(--accent) 22%, transparent);
 
   /* Status Colors */
   --success: #3DD68C;
@@ -111,6 +119,14 @@ html[data-theme="dark"][data-bg="slate"] {
   --text: #E6EAF0;
   --text-muted: #8B95A5;
   --text-dim: #8B95A5;
+  --accent: #6366F1;
+  --accent-soft: rgba(99, 102, 241, 0.15);
+  --accent-hover: #4F46E5;
+  --accent-active: #4338CA;
+  --accent-glass: rgba(99, 102, 241, 0.35);
+
+  /* Geo Map Land */
+  --map-land: #1B212A;
   --glass-secondary-bg: rgba(255, 255, 255, 0.06);
   --glass-secondary-border: rgba(255, 255, 255, 0.12);
 }
@@ -128,6 +144,14 @@ html[data-theme="dark"][data-bg="midnight"] {
   --text: #E6EEFA;
   --text-muted: #8696B0;
   --text-dim: #8696B0;
+  --accent: #6366F1;
+  --accent-soft: rgba(99, 102, 241, 0.15);
+  --accent-hover: #4F46E5;
+  --accent-active: #4338CA;
+  --accent-glass: rgba(99, 102, 241, 0.35);
+
+  /* Geo Map Land */
+  --map-land: #1B212A;
   --glass-secondary-bg: rgba(255, 255, 255, 0.06);
   --glass-secondary-border: rgba(255, 255, 255, 0.12);
 }
@@ -145,6 +169,14 @@ html[data-theme="dark"][data-bg="graphite"] {
   --text: #E8E9EC;
   --text-muted: #8D9099;
   --text-dim: #8D9099;
+  --accent: #6366F1;
+  --accent-soft: rgba(99, 102, 241, 0.15);
+  --accent-hover: #4F46E5;
+  --accent-active: #4338CA;
+  --accent-glass: rgba(99, 102, 241, 0.35);
+
+  /* Geo Map Land */
+  --map-land: #1B212A;
   --glass-secondary-bg: rgba(255, 255, 255, 0.06);
   --glass-secondary-border: rgba(255, 255, 255, 0.12);
 }
@@ -162,6 +194,14 @@ html[data-theme="dark"][data-bg="ink"] {
   --text: #EFEFF3;
   --text-muted: #888894;
   --text-dim: #888894;
+  --accent: #6366F1;
+  --accent-soft: rgba(99, 102, 241, 0.15);
+  --accent-hover: #4F46E5;
+  --accent-active: #4338CA;
+  --accent-glass: rgba(99, 102, 241, 0.35);
+
+  /* Geo Map Land */
+  --map-land: #1B212A;
   --glass-secondary-bg: rgba(255, 255, 255, 0.05);
   --glass-secondary-border: rgba(255, 255, 255, 0.1);
 }
@@ -189,6 +229,10 @@ html[data-theme="light"][data-bg="slate"] {
   --accent-hover: #4338CA;
   --accent-active: #3730A3;
   --accent-violet: #4F46E5;
+  --map-land: #E6E9EF;
+  --bg-grid-line: rgba(15, 23, 42, 0.07);
+  --bg-dots: rgba(15, 23, 42, 0.22);
+  --bg-glow: color-mix(in srgb, var(--accent) 10%, transparent);
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
   --shadow-md: 0 4px 16px rgba(16, 24, 40, 0.08);
   --shadow-lg: 0 8px 30px rgba(16, 24, 40, 0.12);
@@ -213,6 +257,10 @@ html[data-theme="light"][data-bg="midnight"] {
   --accent: #4F46E5;
   --accent-soft: rgba(79, 70, 229, 0.10);
   --accent-violet: #4F46E5;
+  --map-land: #E6E9EF;
+  --bg-grid-line: rgba(15, 23, 42, 0.07);
+  --bg-dots: rgba(15, 23, 42, 0.22);
+  --bg-glow: color-mix(in srgb, var(--accent) 10%, transparent);
   --shadow-sm: 0 1px 2px rgba(12, 25, 48, 0.06);
   --shadow-md: 0 4px 16px rgba(12, 25, 48, 0.08);
   --shadow-lg: 0 8px 30px rgba(12, 25, 48, 0.12);
@@ -237,6 +285,10 @@ html[data-theme="light"][data-bg="graphite"] {
   --accent: #4F46E5;
   --accent-soft: rgba(79, 70, 229, 0.10);
   --accent-violet: #4F46E5;
+  --map-land: #E6E9EF;
+  --bg-grid-line: rgba(15, 23, 42, 0.07);
+  --bg-dots: rgba(15, 23, 42, 0.22);
+  --bg-glow: color-mix(in srgb, var(--accent) 10%, transparent);
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
   --shadow-md: 0 4px 16px rgba(24, 24, 27, 0.08);
   --shadow-lg: 0 8px 30px rgba(24, 24, 27, 0.12);
@@ -261,6 +313,10 @@ html[data-theme="light"][data-bg="ink"] {
   --accent: #4F46E5;
   --accent-soft: rgba(79, 70, 229, 0.10);
   --accent-violet: #4F46E5;
+  --map-land: #E6E9EF;
+  --bg-grid-line: rgba(15, 23, 42, 0.07);
+  --bg-dots: rgba(15, 23, 42, 0.22);
+  --bg-glow: color-mix(in srgb, var(--accent) 10%, transparent);
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
   --shadow-md: 0 4px 16px rgba(9, 9, 11, 0.08);
   --shadow-lg: 0 8px 30px rgba(9, 9, 11, 0.12);
@@ -275,16 +331,37 @@ html[data-theme="light"][data-bg="ink"] {
 
 /* 1. Indigo (Default) */
 html[data-accent="indigo"],
+html[data-theme="dark"][data-accent="indigo"],
 :root {
-  --accent: #6C7CFF;
-  --accent-soft: rgba(108, 124, 255, 0.15);
-  --accent-hover: #7E8DFF;
-  --accent-active: #5B6BE6;
-  --accent-glass: rgba(108, 124, 255, 0.35);
+  --accent: #6366F1;
+  --accent-soft: rgba(99, 102, 241, 0.15);
+  --accent-hover: #4F46E5;
+  --accent-active: #4338CA;
+  --accent-glass: rgba(99, 102, 241, 0.35);
+
+  /* Geo Map Land */
+  --map-land: #1B212A;
+
+  /* Background Grid & Glow Patterns */
+  --bg-grid-line: rgba(255, 255, 255, 0.07);
+  --bg-dots: rgba(255, 255, 255, 0.12);
+  --bg-glow: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+html[data-theme="light"],
+html[data-theme="light"][data-accent="indigo"],
+html[data-theme="light"][data-bg][data-accent="indigo"] {
+  --accent: #4F46E5;
+  --accent-soft: rgba(79, 70, 229, 0.10);
+  --accent-hover: #4338CA;
+  --accent-active: #3730A3;
+  --accent-glass: rgba(79, 70, 229, 0.35);
 }
 
 /* 2. Violet */
-html[data-accent="violet"] {
+html[data-accent="violet"],
+html[data-theme][data-accent="violet"],
+html[data-theme][data-bg][data-accent="violet"] {
   --accent: #8B5CF6;
   --accent-soft: rgba(139, 92, 246, 0.15);
   --accent-hover: #9D75F8;
@@ -293,7 +370,9 @@ html[data-accent="violet"] {
 }
 
 /* 3. Teal */
-html[data-accent="teal"] {
+html[data-accent="teal"],
+html[data-theme][data-accent="teal"],
+html[data-theme][data-bg][data-accent="teal"] {
   --accent: #14B8A6;
   --accent-soft: rgba(20, 184, 166, 0.15);
   --accent-hover: #2DD4BF;
@@ -302,7 +381,9 @@ html[data-accent="teal"] {
 }
 
 /* 4. Emerald */
-html[data-accent="emerald"] {
+html[data-accent="emerald"],
+html[data-theme][data-accent="emerald"],
+html[data-theme][data-bg][data-accent="emerald"] {
   --accent: #10B981;
   --accent-soft: rgba(16, 185, 129, 0.15);
   --accent-hover: #34D399;
@@ -311,7 +392,9 @@ html[data-accent="emerald"] {
 }
 
 /* 5. Amber */
-html[data-accent="amber"] {
+html[data-accent="amber"],
+html[data-theme][data-accent="amber"],
+html[data-theme][data-bg][data-accent="amber"] {
   --accent: #F59E0B;
   --accent-soft: rgba(245, 158, 11, 0.15);
   --accent-hover: #FBBF24;
@@ -320,7 +403,9 @@ html[data-accent="amber"] {
 }
 
 /* 6. Rose */
-html[data-accent="rose"] {
+html[data-accent="rose"],
+html[data-theme][data-accent="rose"],
+html[data-theme][data-bg][data-accent="rose"] {
   --accent: #F43F5E;
   --accent-soft: rgba(244, 63, 94, 0.15);
   --accent-hover: #FB7185;

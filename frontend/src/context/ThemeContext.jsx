@@ -8,16 +8,19 @@ export const DEFAULT_APPEARANCE = {
   accent: "indigo",     // "indigo" | "violet" | "teal" | "emerald" | "amber" | "rose"
   density: "comfortable", // "comfortable" | "compact"
   sidebar: "expanded",  // "expanded" | "collapsed"
+  pattern: "auto",      // "auto" | "grid" | "dots" | "none"
 };
 
 const ThemeContext = createContext({
   ...DEFAULT_APPEARANCE,
   effectiveTheme: "dark",
+  effectivePattern: "grid",
   setTheme: () => {},
   setBg: () => {},
   setAccent: () => {},
   setDensity: () => {},
   setSidebar: () => {},
+  setPattern: () => {},
   updateAppearance: () => {},
 });
 
@@ -62,6 +65,13 @@ export const ThemeProvider = ({ children }) => {
         : "light"
       : appearance.theme;
 
+  const effectivePattern =
+    appearance.pattern && appearance.pattern !== "auto"
+      ? appearance.pattern
+      : effectiveTheme === "dark"
+      ? "grid"
+      : "dots";
+
   // Apply DOM attributes and persist
   useEffect(() => {
     const docEl = document.documentElement;
@@ -69,11 +79,12 @@ export const ThemeProvider = ({ children }) => {
     docEl.setAttribute("data-bg", appearance.bg);
     docEl.setAttribute("data-accent", appearance.accent);
     docEl.setAttribute("data-density", appearance.density);
+    docEl.setAttribute("data-pattern", effectivePattern);
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appearance));
     } catch (_) {}
-  }, [appearance, effectiveTheme]);
+  }, [appearance, effectiveTheme, effectivePattern]);
 
   const updateAppearance = useCallback((updates) => {
     setAppearance((prev) => {
@@ -87,15 +98,18 @@ export const ThemeProvider = ({ children }) => {
   const setAccent = useCallback((accent) => updateAppearance({ accent }), [updateAppearance]);
   const setDensity = useCallback((density) => updateAppearance({ density }), [updateAppearance]);
   const setSidebar = useCallback((sidebar) => updateAppearance({ sidebar }), [updateAppearance]);
+  const setPattern = useCallback((pattern) => updateAppearance({ pattern }), [updateAppearance]);
 
   const contextValue = {
     ...appearance,
     effectiveTheme,
+    effectivePattern,
     setTheme,
     setBg,
     setAccent,
     setDensity,
     setSidebar,
+    setPattern,
     updateAppearance,
   };
 

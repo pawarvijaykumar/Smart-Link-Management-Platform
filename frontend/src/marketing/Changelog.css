@@ -1,0 +1,660 @@
+/* =============================================================================
+   SmartLink Changelog Styles (Linear / Vercel Minimalist Aesthetic)
+   2-Column Desktop Layout (Sticky Months Sidebar + 760px Timeline Column)
+   Full-width "Get product updates" strip below timeline with 1px top border
+   1px dashed vertical line connecting dots from first to last entry
+   Unified Indigo Accent across glow, subscribe button, focus ring, and CTA
+   ============================================================================= */
+
+.cl-page-root {
+  background: transparent;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  --accent: #6366F1;
+  --accent-hover: #4F46E5;
+  --accent-active: #4338CA;
+  --accent-soft: rgba(99, 102, 241, 0.15);
+  --border-focus: var(--accent);
+}
+
+html[data-theme="light"] .cl-page-root {
+  --accent: #4F46E5;
+  --accent-hover: #4338CA;
+  --accent-active: #3730A3;
+  --accent-soft: rgba(79, 70, 229, 0.10);
+  --border-focus: var(--accent);
+}
+
+/* =============================================================================
+   Header Section
+   ============================================================================= */
+.cl-header {
+  position: relative;
+  text-align: center;
+  padding: 48px 20px 28px;
+  width: 100%;
+  background: transparent;
+}
+
+.cl-title {
+  margin: 0 0 8px;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text);
+  letter-spacing: -0.03em;
+}
+
+.cl-subtitle {
+  margin: 0 0 24px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* Category Filter Chips */
+.cl-filters-wrapper {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  padding: 4px;
+  scrollbar-width: none;
+}
+.cl-filters-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.cl-filters-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn, 8px);
+  padding: 4px;
+}
+
+.cl-filter-chip {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.cl-filter-chip:hover:not(.cl-filter-chip--active) {
+  color: var(--text);
+}
+
+.cl-filter-chip--active {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+  font-weight: 600;
+}
+
+/* 1px Divider Line between Header and Timeline */
+.cl-header-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+  opacity: 0.8;
+  margin: 0;
+}
+
+/* =============================================================================
+   Main Layout: Left Sticky Months + Centre Max-760px Timeline
+   ============================================================================= */
+.cl-main-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 48px;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 44px 24px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* -----------------------------------------------------------------------------
+   Left Column: Sticky Month Navigation
+   ----------------------------------------------------------------------------- */
+.cl-col-left {
+  width: 180px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 88px;
+  align-self: flex-start;
+  z-index: 5;
+}
+
+.cl-sticky-months {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Plain small "Months" label (replaces TIMELINE) */
+.cl-months-nav-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 0 8px 4px;
+  display: block;
+  letter-spacing: 0.02em;
+}
+
+.cl-months-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cl-month-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cl-month-nav-btn:hover:not(.active) {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.cl-month-nav-btn.active {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  font-weight: 600;
+}
+
+.cl-month-nav-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.4;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.cl-month-nav-btn.active .cl-month-nav-dot {
+  background: var(--accent);
+  opacity: 1;
+  transform: scale(1.3);
+}
+
+/* -----------------------------------------------------------------------------
+   Centre Column: Max 760px Timeline
+   ----------------------------------------------------------------------------- */
+.cl-timeline-column {
+  flex: 1;
+  max-width: 760px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Empty Filter State (clean short line, normal spacing, no large box) */
+.cl-empty-line {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14.5px;
+  margin: 48px auto;
+  padding: 0;
+  background: transparent;
+  border: none;
+  width: 100%;
+}
+
+/* Month Section */
+.cl-month-section {
+  position: relative;
+  margin-bottom: 48px;
+}
+
+/* 1px Divider Line between months */
+.cl-month-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+  opacity: 0.7;
+  margin: 0 0 36px 0;
+}
+
+.cl-month-heading-row {
+  margin-bottom: 24px;
+}
+
+.cl-month-heading {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+/* Release Grouping */
+.cl-release-group {
+  margin-bottom: 32px;
+}
+
+.cl-release-heading-row {
+  margin-bottom: 16px;
+  margin-top: 4px;
+}
+
+.cl-release-heading {
+  margin: 0;
+  font-family: var(--font-mono, "Geist Mono", monospace);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+/* Timeline Track with continuous 1px dashed vertical line */
+.cl-timeline-track {
+  position: relative;
+  padding-left: 28px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 1px dashed line running from first to last dot */
+.cl-timeline-line {
+  position: absolute;
+  left: 3px;
+  width: 1px;
+  border-left: 1px dashed var(--border);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.cl-timeline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.cl-timeline-item {
+  position: relative;
+}
+
+/* Neutral Grey Dot aligned vertically with meta line */
+.cl-timeline-dot {
+  position: absolute;
+  top: 5.5px;
+  left: -28px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  box-shadow: 0 0 0 3px var(--bg);
+  z-index: 2;
+  opacity: 0.7;
+}
+
+/* Entry Meta Line: aligned vertically with the dot */
+.cl-entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.cl-mono-meta {
+  font-family: var(--font-mono, "Geist Mono", monospace);
+  color: var(--text);
+  font-weight: 500;
+  font-size: 12.5px;
+}
+
+.cl-meta-separator {
+  color: var(--text-muted);
+  opacity: 0.5;
+  font-size: 12px;
+}
+
+.cl-category-plain {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-weight: 400;
+  text-transform: capitalize;
+}
+
+/* "New" label: plain muted text ONLY on the single latest entry */
+.cl-new-label {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* Entry Card: 1px border, 12px radius, NO internal dividers, NO heavy shadows */
+.cl-entry-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card, 12px);
+  padding: 20px 22px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.cl-entry-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: 0 3px 12px rgba(16, 24, 40, 0.06);
+}
+
+.cl-card-title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+  letter-spacing: -0.015em;
+}
+
+/* Descriptions strictly 1 short sentence */
+.cl-card-description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* "Learn more" link: rendered ONLY when link field exists */
+.cl-learn-more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s ease, gap 0.15s ease;
+}
+
+.cl-learn-more-link:hover {
+  color: var(--accent);
+  gap: 7px;
+  text-decoration: underline;
+}
+
+/* Card highlight animation when navigated from URL anchor */
+@keyframes clHighlightCard {
+  0% {
+    box-shadow: 0 0 0 0 var(--accent);
+    border-color: var(--accent);
+  }
+  35% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 30%, transparent);
+    border-color: var(--accent);
+  }
+  70% {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+    border-color: var(--accent);
+  }
+  100% {
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04);
+    border-color: var(--border);
+  }
+}
+
+.cl-card--highlighted {
+  animation: clHighlightCard 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Load Older Updates */
+.cl-pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 36px;
+}
+
+/* =============================================================================
+   Full-Width Strip Below Timeline (1px top border, 40px padding)
+   ============================================================================= */
+.cl-subscribe-strip {
+  width: 100%;
+  border-top: 1px solid var(--border);
+  padding: 40px 0;
+  margin-top: 64px;
+}
+
+.cl-subscribe-strip-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+.cl-subscribe-strip-left {
+  flex: 1;
+}
+
+.cl-subscribe-strip-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.015em;
+}
+
+.cl-subscribe-strip-desc {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.cl-subscribe-form-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  flex-shrink: 0;
+}
+
+.cl-subscribe-input-wrap {
+  flex: 1;
+}
+
+.cl-subscribe-input-wrap .ui-input-container:focus-within,
+.cl-subscribe-input-wrap input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent-soft) !important;
+  outline: none !important;
+}
+
+.cl-subscribe-submit-btn {
+  background: var(--accent) !important;
+  color: #FFFFFF !important;
+  border-color: var(--accent) !important;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.cl-subscribe-submit-btn:hover {
+  background: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+}
+
+.cl-subscribe-submit-btn:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+
+.cl-subscribe-toast {
+  max-width: 1040px;
+  margin: 12px auto 0;
+  padding: 0 24px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.cl-subscribe-toast--error {
+  color: var(--danger, #EF4444);
+}
+
+/* =============================================================================
+   Responsive Layout (<768px Tablet & Mobile)
+   ============================================================================= */
+@media (max-width: 767px) {
+  .cl-header {
+    padding: 32px 16px 20px;
+  }
+
+  .cl-title {
+    font-size: 28px;
+  }
+
+  .cl-main-layout {
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px 16px 0;
+  }
+
+  /* Left column becomes horizontal scroll chips at top */
+  .cl-col-left {
+    width: 100%;
+    position: static;
+    top: auto;
+  }
+
+  .cl-months-nav-title {
+    display: none;
+  }
+
+  .cl-months-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+  .cl-months-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cl-month-nav-btn {
+    white-space: nowrap;
+    width: auto;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .cl-month-nav-btn.active {
+    background: var(--surface);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .cl-timeline-column {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .cl-timeline-track {
+    padding-left: 22px;
+  }
+
+  .cl-timeline-line {
+    left: 2px;
+  }
+
+  .cl-timeline-dot {
+    left: -22px;
+  }
+
+  .cl-entry-card {
+    padding: 16px;
+  }
+
+  /* Full-width strip stacks on mobile */
+  .cl-subscribe-strip-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 0 16px;
+  }
+
+  .cl-subscribe-form-inline {
+    max-width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cl-subscribe-submit-btn {
+    width: 100%;
+  }
+
+  .cl-subscribe-toast {
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cl-title {
+    font-size: 24px;
+  }
+
+  .cl-subtitle {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .cl-filter-chip,
+  .cl-month-nav-btn,
+  .cl-entry-card,
+  .cl-learn-more-link {
+    transition: none !important;
+  }
+
+  .cl-card--highlighted {
+    animation: none !important;
+    border-color: var(--accent) !important;
+  }
+}
