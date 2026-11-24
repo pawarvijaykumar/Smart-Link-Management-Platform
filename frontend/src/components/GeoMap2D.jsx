@@ -103,35 +103,28 @@ export default function GeoMap2D({
     return "";
   }, []);
 
-  // Helper: Determine country fill using ONE hue (var(--accent)) with 4 opacity steps
+  // Helper: Determine country fill - mint-green highlight for visited countries
   const getCountryFill = useCallback(
     (data) => {
       if (!data || !data.totalClicks || data.totalClicks <= 0) {
         return "var(--map-land)";
       }
       const ratio = data.totalClicks / maxCountryClicks;
-      if (ratio <= 0.25) {
-        return "color-mix(in srgb, var(--accent) 25%, var(--map-land))";
-      }
-      if (ratio <= 0.50) {
-        return "color-mix(in srgb, var(--accent) 45%, var(--map-land))";
-      }
-      if (ratio <= 0.75) {
-        return "color-mix(in srgb, var(--accent) 70%, var(--map-land))";
-      }
-      return "var(--accent)";
+      if (ratio > 0.5) return "#10B981"; // Mint-green / emerald for high traffic
+      if (ratio > 0.2) return "#8B5CF6"; // Purple for moderate traffic
+      return "#6366F1"; // Indigo for lower traffic
     },
     [maxCountryClicks]
   );
 
-  // 2D Projection and Path Generator (Natural Earth projection)
+  // 2D Projection and Path Generator (Natural Earth projection - filling card height & width)
   const { pathGenerator, graticulePath } = useMemo(() => {
     const width = 960;
-    const height = 500;
+    const height = 480;
     const proj = d3
       .geoNaturalEarth1()
-      .scale(165)
-      .translate([width / 2, height / 2]);
+      .scale(175)
+      .translate([width / 2, height / 2 + 10]);
     const pathGen = d3.geoPath().projection(proj);
     const grat = d3.geoGraticule().step([20, 20])();
     return { pathGenerator: pathGen, graticulePath: pathGen(grat) };
@@ -549,7 +542,7 @@ export default function GeoMap2D({
           {/* SVG Map: Natural Earth Projection, Transparent Ocean, 0.5px borders, 6% graticule */}
           <svg
             ref={svgRef}
-            viewBox="0 0 960 500"
+            viewBox="0 0 960 480"
             className="geo-2d-svg"
             style={{
               width: "100%",
@@ -560,6 +553,13 @@ export default function GeoMap2D({
             }}
             preserveAspectRatio="xMidYMid meet"
           >
+            <defs>
+              <filter id="countryGlow2D" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+
             <g ref={gRef} className="geo-zoom-layer">
               {/* Faint Graticule lines at 6% opacity */}
               <path
@@ -596,11 +596,16 @@ export default function GeoMap2D({
                       d={pathGenerator(feature)}
                       fill={fill}
                       stroke={
-                        isHovered || isSelected
-                          ? "var(--accent)"
+                        isSelected
+                          ? "#38BDF8"
+                          : isHovered
+                          ? "#34D399"
+                          : hasData
+                          ? "#10B981"
                           : "var(--border)"
                       }
-                      strokeWidth={isHovered || isSelected ? 1 : 0.5}
+                      strokeWidth={isSelected ? 2 : isHovered ? 1.5 : hasData ? 1 : 0.5}
+                      filter={hasData && (isHovered || isSelected) ? "url(#countryGlow2D)" : "none"}
                       className="geo-country-path"
                       style={{
                         cursor: "pointer",
@@ -652,7 +657,7 @@ export default function GeoMap2D({
               {hoveredCountry.percentage !== undefined && (
                 <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", gap: "12px", marginTop: "2px" }}>
                   <span>Share of total:</span>
-                  <span style={{ fontWeight: "600", color: "var(--accent)" }}>
+                  <span style={{ fontWeight: "600", color: "#10B981" }}>
                     {hoveredCountry.percentage}%
                   </span>
                 </div>
@@ -660,31 +665,41 @@ export default function GeoMap2D({
             </div>
           )}
 
-          {/* Small Gradient Bar Legend: "0 to max visits" */}
+          {/* Legend Row: High / Moderate / Low / Unvisited with Drilldown Hint */}
           <div
-            className="geo-gradient-legend"
+            className="globe-footer-legend"
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "flex-end",
-              gap: "8px",
-              marginTop: "8px",
-              padding: "4px 8px",
-              fontSize: "11px",
+              justifyContent: "space-between",
+              gap: "16px",
+              marginTop: "12px",
+              padding: "8px 16px",
+              borderRadius: "999px",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              fontSize: "11.5px",
               color: "var(--text-muted)",
+              flexWrap: "wrap",
             }}
           >
-            <span>0</span>
-            <div
-              style={{
-                width: "90px",
-                height: "6px",
-                borderRadius: "3px",
-                background: `linear-gradient(to right, var(--map-land), color-mix(in srgb, var(--accent) 45%, var(--map-land)), var(--accent))`,
-                border: "1px solid var(--border)",
-              }}
-            />
-            <span>{maxCountryClicks} {maxCountryClicks === 1 ? "visit" : "visits"}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+              <span className="legend-tag" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <span className="dot-sample green-dot" style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#10B981", boxShadow: "0 0 6px #10B981", display: "inline-block" }} /> High
+              </span>
+              <span className="legend-tag" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <span className="dot-sample purple-dot" style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#8B5CF6", boxShadow: "0 0 6px #8B5CF6", display: "inline-block" }} /> Moderate
+              </span>
+              <span className="legend-tag" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <span className="dot-sample" style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#6366F1", display: "inline-block" }} /> Low
+              </span>
+              <span className="legend-tag" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <span className="dot-sample slate-dot" style={{ width: "9px", height: "9px", borderRadius: "50%", background: "var(--map-land)", border: "1px solid var(--border)", display: "inline-block" }} /> Unvisited
+              </span>
+            </div>
+            <span className="legend-hint" style={{ fontStyle: "italic", color: "var(--text-muted)" }}>
+              Click any coloured country to drill down
+            </span>
           </div>
         </div>
       ) : (

@@ -27,7 +27,7 @@
   --accent-glass: rgba(99, 102, 241, 0.35);
 
   /* Geo Map Land */
-  --map-land: #1B212A;
+  --map-land: #2A3340;
 
   /* Background Grid & Glow Patterns */
   --bg-grid-line: rgba(255, 255, 255, 0.07);
@@ -126,7 +126,7 @@ html[data-theme="dark"][data-bg="slate"] {
   --accent-glass: rgba(99, 102, 241, 0.35);
 
   /* Geo Map Land */
-  --map-land: #1B212A;
+  --map-land: #2A3340;
   --glass-secondary-bg: rgba(255, 255, 255, 0.06);
   --glass-secondary-border: rgba(255, 255, 255, 0.12);
 }
@@ -151,7 +151,7 @@ html[data-theme="dark"][data-bg="midnight"] {
   --accent-glass: rgba(99, 102, 241, 0.35);
 
   /* Geo Map Land */
-  --map-land: #1B212A;
+  --map-land: #2A3340;
   --glass-secondary-bg: rgba(255, 255, 255, 0.06);
   --glass-secondary-border: rgba(255, 255, 255, 0.12);
 }
@@ -176,7 +176,7 @@ html[data-theme="dark"][data-bg="graphite"] {
   --accent-glass: rgba(99, 102, 241, 0.35);
 
   /* Geo Map Land */
-  --map-land: #1B212A;
+  --map-land: #2A3340;
   --glass-secondary-bg: rgba(255, 255, 255, 0.06);
   --glass-secondary-border: rgba(255, 255, 255, 0.12);
 }
@@ -201,7 +201,7 @@ html[data-theme="dark"][data-bg="ink"] {
   --accent-glass: rgba(99, 102, 241, 0.35);
 
   /* Geo Map Land */
-  --map-land: #1B212A;
+  --map-land: #2A3340;
   --glass-secondary-bg: rgba(255, 255, 255, 0.05);
   --glass-secondary-border: rgba(255, 255, 255, 0.1);
 }
@@ -229,7 +229,7 @@ html[data-theme="light"][data-bg="slate"] {
   --accent-hover: #4338CA;
   --accent-active: #3730A3;
   --accent-violet: #4F46E5;
-  --map-land: #E6E9EF;
+  --map-land: #D9DEE6;
   --bg-grid-line: rgba(15, 23, 42, 0.07);
   --bg-dots: rgba(15, 23, 42, 0.22);
   --bg-glow: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -257,7 +257,7 @@ html[data-theme="light"][data-bg="midnight"] {
   --accent: #4F46E5;
   --accent-soft: rgba(79, 70, 229, 0.10);
   --accent-violet: #4F46E5;
-  --map-land: #E6E9EF;
+  --map-land: #D9DEE6;
   --bg-grid-line: rgba(15, 23, 42, 0.07);
   --bg-dots: rgba(15, 23, 42, 0.22);
   --bg-glow: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -285,7 +285,7 @@ html[data-theme="light"][data-bg="graphite"] {
   --accent: #4F46E5;
   --accent-soft: rgba(79, 70, 229, 0.10);
   --accent-violet: #4F46E5;
-  --map-land: #E6E9EF;
+  --map-land: #D9DEE6;
   --bg-grid-line: rgba(15, 23, 42, 0.07);
   --bg-dots: rgba(15, 23, 42, 0.22);
   --bg-glow: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -313,7 +313,7 @@ html[data-theme="light"][data-bg="ink"] {
   --accent: #4F46E5;
   --accent-soft: rgba(79, 70, 229, 0.10);
   --accent-violet: #4F46E5;
-  --map-land: #E6E9EF;
+  --map-land: #D9DEE6;
   --bg-grid-line: rgba(15, 23, 42, 0.07);
   --bg-dots: rgba(15, 23, 42, 0.22);
   --bg-glow: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -340,7 +340,7 @@ html[data-theme="dark"][data-accent="indigo"],
   --accent-glass: rgba(99, 102, 241, 0.35);
 
   /* Geo Map Land */
-  --map-land: #1B212A;
+  --map-land: #2A3340;
 
   /* Background Grid & Glow Patterns */
   --bg-grid-line: rgba(255, 255, 255, 0.07);
