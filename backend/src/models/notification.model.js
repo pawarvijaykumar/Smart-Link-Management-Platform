@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 
-// CHANGE: Notifications Step 1 — 2026-11-03
 const notificationSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -20,15 +19,12 @@ const notificationSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    // CHANGE: Added anomaly and experiment notification types — 2026-11-17
     enum: ["link", "milestone", "campaign", "system", "anomaly", "experiment"],
   },
   isRead: {
     type: Boolean,
     default: false,
   },
-  // CHANGE: Notifications Step 3B/4E — 2026-11-05
-  // Unique idempotency key for database-enforced duplicate prevention (omitted by default for sparse indexing)
   idempotencyKey: {
     type: String,
   },
@@ -38,12 +34,8 @@ const notificationSchema = new mongoose.Schema({
   },
 });
 
-// Useful indexes for retrieving user notifications in newest-first order and filtering unread notifications
 notificationSchema.index({ user: 1, createdAt: -1 });
 notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
-
-// CHANGE: Notifications Step 3B — 2026-11-04
-// Database-enforced uniqueness guarantee: prevents duplicate notifications under concurrent requests
 notificationSchema.index(
   { idempotencyKey: 1 },
   { unique: true, sparse: true }

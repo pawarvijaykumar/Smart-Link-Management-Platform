@@ -1,4 +1,4 @@
-import express from "express";
+import { Router } from "express";
 import {
   createExperiment,
   getExperiments,
@@ -9,12 +9,7 @@ import {
 } from "../controllers/experiment.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 
-// =============================================================================
-// CHANGE: Stage 13 A/B Testing Routes — 2026-11-17
-// Authenticated endpoints for A/B experiment creation, management, lifecycle,
-// and statistical analytics.
-// =============================================================================
-const router = express.Router();
+const router = Router();
 
 router.use(verifyJWT);
 

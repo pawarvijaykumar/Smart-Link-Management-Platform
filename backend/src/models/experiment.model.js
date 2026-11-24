@@ -1,10 +1,5 @@
 import mongoose from "mongoose";
 
-// =============================================================================
-// CHANGE: Stage 13 A/B Testing Experiment Model — 2026-11-17
-// Dedicated model for managing A/B link split testing experiments with
-// 50/50 traffic allocation, fallback routing, and lifecycle states.
-// =============================================================================
 const experimentSchema = new mongoose.Schema(
   {
     user: {

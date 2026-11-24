@@ -9,18 +9,12 @@ import {
   getMyLinks,
   getCampaignAnalytics,
   getQRAnalytics,
-  // CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
   updateLinkAccess,
   togglePauseLink,
-  // CHANGE: Stage 8 — Geo-Location Analytics — 2026-11-08
   getGeoAnalytics,
-  // CHANGE: Stage 9 Device & Browser Intelligence — 2026-11-14
   getDeviceAnalytics,
-  // CHANGE: Stage 10 Advanced Traffic Visualization — 2026-11-16
   getTrafficAnalytics,
-  // CHANGE: Stage 11 Link Comparison Analytics — 2026-11-16
   getLinkComparisonAnalytics,
-  // CHANGE: Stage 12 Smart Traffic Anomaly Detection — 2026-11-16
   getTrafficAnomalies,
   updateAnomalyStatus,
   acknowledgeAnomaly,
@@ -39,32 +33,18 @@ router.get("/my-links", verifyJWT, getMyLinks);
 router.get("/user/analytics/all-links", verifyJWT, getAllLinksAnalytics);
 router.get("/all/analytics", verifyJWT, getAllLinksAnalytics);
 
-// CHANGE: Added user-scoped campaign analytics aggregation — 2026-11-01
 router.get("/user/analytics/campaigns", verifyJWT, getCampaignAnalytics);
-
-// CHANGE: QR analytics API — 2026-11-06
 router.get("/user/analytics/qr", verifyJWT, getQRAnalytics);
-
-// CHANGE: Stage 8 — Geo-Location Analytics API — 2026-11-08
 router.get("/user/analytics/geo", verifyJWT, getGeoAnalytics);
-
-// CHANGE: Stage 9 Device & Browser Intelligence — 2026-11-14
 router.get("/user/analytics/devices", verifyJWT, getDeviceAnalytics);
-
-// CHANGE: Stage 10 Advanced Traffic Visualization — 2026-11-16
 router.get("/user/analytics/traffic", verifyJWT, getTrafficAnalytics);
-
-// CHANGE: Stage 11 Link Comparison Analytics — 2026-11-16
 router.get("/user/analytics/comparison", verifyJWT, getLinkComparisonAnalytics);
 router.post("/user/analytics/comparison", verifyJWT, getLinkComparisonAnalytics);
-
-// CHANGE: Stage 12 Smart Traffic Anomaly Detection — 2026-11-16
 router.get("/user/analytics/anomalies", verifyJWT, getTrafficAnomalies);
 router.patch("/user/analytics/anomalies/:id/status", verifyJWT, updateAnomalyStatus);
 router.patch("/user/analytics/anomalies/:id/acknowledge", verifyJWT, acknowledgeAnomaly);
 router.patch("/user/analytics/anomalies/:id/resolve", verifyJWT, resolveAnomaly);
 
-// CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
 router.patch("/:id/access", verifyJWT, updateLinkAccess);
 router.patch("/:id/pause", verifyJWT, togglePauseLink);
 router.patch("/:id/toggle-pause", verifyJWT, togglePauseLink);
@@ -78,8 +58,5 @@ router.get("/:shortCode/history", verifyJWT, getClickHistory);
 
 // Redirect visitors to the original URL
 router.get("/:shortCode", redirectLink);
-
-
-//this all the backend logics
 
 export default router;

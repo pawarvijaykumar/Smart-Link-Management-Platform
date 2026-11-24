@@ -1,15 +1,9 @@
-// =============================================================================
-// MongoDB Connection Configuration
-// CHANGE: Stage 14 PDF & Reports Fix: Resilient DB Connection with Local Fallback — 2026-11-19
-// =============================================================================
-
 import mongoose from "mongoose";
 
 const connectDB = async () => {
   const remoteUri = process.env.MONGO_URI;
   const localUri = process.env.LOCAL_MONGO_URI || "mongodb://127.0.0.1:27017/smartlink";
 
-  // First attempt remote MongoDB (e.g. Atlas) if configured
   if (remoteUri) {
     try {
       console.log("Connecting to primary MongoDB URI...");
@@ -21,7 +15,6 @@ const connectDB = async () => {
     }
   }
 
-  // Graceful fallback to local MongoDB instance
   try {
     await mongoose.connect(localUri, { serverSelectionTimeoutMS: 4000 });
     console.log(`MongoDB connected successfully to local database (${localUri})`);

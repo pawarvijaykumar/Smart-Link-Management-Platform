@@ -5237,6 +5237,8 @@ function App() {
           </button>
         </div>
 
+        {/* Scrollable Nav Area (The ONLY scrolling element in sidebar) */}
+        <div className="sidebar-nav-scroll">
         {/* 1. OVERVIEW Group */}
         <div className="sidebar-nav-group">
           <p className="sidebar-nav-heading">OVERVIEW</p>
@@ -5500,7 +5502,9 @@ function App() {
           </nav>
         </div>
 
-        {/* Enhanced Sticky Sidebar Bottom Block */}
+        </div>
+
+        {/* Enhanced Solid Sidebar Bottom Block */}
         <SidebarBottom
           isCollapsed={isSidebarCollapsed}
           totalLinks={dashboardAnalytics?.totalLinks ?? links.length}

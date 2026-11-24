@@ -1,10 +1,5 @@
 import mongoose from "mongoose";
 
-// =============================================================================
-// CHANGE: Stage 12 Smart Traffic Anomaly Model — 2026-11-16
-// Persistent schema for storing detected traffic anomalies, human-readable
-// diagnostics, audit trails, and user acknowledge/resolve lifecycle states.
-// =============================================================================
 const anomalySchema = new mongoose.Schema(
   {
     user: {
@@ -77,7 +72,7 @@ const anomalySchema = new mongoose.Schema(
       default: 0,
     },
     date: {
-      type: String, // YYYY-MM-DD in IST timezone (+05:30)
+      type: String,
       required: true,
     },
     detectionTimestamp: {

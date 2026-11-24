@@ -18,7 +18,6 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    // CHANGE: Added password recovery — 2026-10-20
     resetPasswordToken: {
       type: String,
       default: null,
@@ -29,7 +28,6 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    // CHANGE: Added persistent session refresh tokens — 2026-10-21
     refreshTokens: [
       {
         tokenHash: {

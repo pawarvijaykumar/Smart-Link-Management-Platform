@@ -1,6 +1,5 @@
 import { Router } from "express";
 
-// CHANGE: Added persistent session refresh tokens — 2026-10-21
 import {
   createUser,
   getUsers,
@@ -27,25 +26,8 @@ router.post("/logout", logoutUser);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.get("/", verifyJWT, getUsers);
-router.patch("/:id", verifyJWT, updateUser);//PATCH
-router.delete("/:id",verifyJWT, deleteUser);//DELETE
+router.patch("/:id", verifyJWT, updateUser);
+router.delete("/:id", verifyJWT, deleteUser);
 router.get("/me", verifyJWT, getMyProfile);
-/* why usee the "/"-->
-/api/v1/users
-       +
-router.get("/")
-       =
-GET /api/v1/users*/
-
-// If a POST request comes to /register, execute createUser.
-
-/*
-POST /users
-    ↓
-Router checks the URL + method
-    ↓
-"Okay, this is /users with POST"
-    ↓
-Call createUser()*/
 
 export default router;

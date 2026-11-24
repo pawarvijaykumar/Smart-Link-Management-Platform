@@ -1,47 +1,66 @@
 /* =============================================================================
-   SidebarBottom.css - Modular Bottom Area for SmartLink Sidebar
-   Includes Usage Card, What's New, Help & Docs, About, and Profile row with Popovers
+   SidebarBottom.css - Compact Bottom Area for SmartLink Dashboard Sidebar
+   Includes Slim Plan Usage Card, 3-Icon Actions Row, and Profile Row
    ============================================================================= */
 
+/* -----------------------------------------------------------------------------
+   Container: Solid opaque background, 1px top border, NO sticky positioning
+   ----------------------------------------------------------------------------- */
 .sidebar-bottom-block {
-  margin-top: auto;
-  position: sticky;
-  bottom: 0;
-  border-top: 1px solid var(--border);
-  padding: 12px 0 4px;
+  flex: none !important;
+  position: relative !important;
+  background: var(--sidebar, var(--bg-sidebar, #12161D)) !important;
+  border-top: 1px solid var(--border) !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  padding: 10px 14px 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  background: var(--sidebar);
-  flex-shrink: 0;
+  gap: 8px;
   width: 100%;
-  z-index: 60;
+  z-index: 30;
+  box-sizing: border-box;
 }
 
 .sidebar-bottom-block.is-collapsed {
-  padding: 12px 0;
+  padding: 10px 8px 12px 8px;
   align-items: center;
   gap: 8px;
 }
 
 /* -----------------------------------------------------------------------------
-   1. Usage Card
+   1. Slim Plan Usage Card (Auto-hides when viewport height < 760px)
    ----------------------------------------------------------------------------- */
 .sidebar-usage-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-card, 10px);
-  padding: 12px;
+  border-radius: var(--radius-card, 8px);
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  box-shadow: var(--shadow-sm);
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive compact requirement: hide plan usage card on short screens (<760px) */
+@media (max-height: 760px) {
+  .sidebar-usage-card {
+    display: none !important;
+  }
 }
 
 .usage-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
+}
+
+.usage-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .usage-card-title {
@@ -49,30 +68,51 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-dim);
+  color: var(--text-dim, var(--text-muted));
 }
 
 .usage-card-plan {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 1px 6px;
-  border-radius: var(--radius-pill);
+  padding: 1px 5px;
+  border-radius: var(--radius-pill, 9999px);
   background: var(--accent-soft);
   color: var(--accent);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+}
+
+.usage-upgrade-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+}
+
+.usage-upgrade-link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
 }
 
 .usage-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .usage-label-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11.5px;
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .usage-label {
@@ -87,12 +127,11 @@
 }
 
 .usage-track {
-  height: 4px;
+  height: 3px;
   width: 100%;
   background: var(--surface-2);
   border-radius: 2px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .usage-fill {
@@ -102,41 +141,22 @@
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.usage-card-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 2px;
-  border-top: 1px solid var(--border);
-  margin-top: 2px;
-}
-
-.usage-upgrade-link {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 0;
-  transition: color 0.15s;
-}
-
-.usage-upgrade-link:hover {
-  color: var(--accent-hover);
-  text-decoration: underline;
-}
-
 /* -----------------------------------------------------------------------------
-   2. Navigation Rows (What's New, Help, About)
+   2. Actions Row (Three Icon Buttons: What's new, Help & docs, About)
    ----------------------------------------------------------------------------- */
-.sidebar-bottom-nav {
+.sidebar-actions-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+.is-collapsed .sidebar-actions-row {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   width: 100%;
+  align-items: center;
 }
 
 .sidebar-popover-anchor {
@@ -144,46 +164,42 @@
   width: 100%;
 }
 
-.sidebar-bottom-row {
+.sidebar-icon-btn {
   width: 100%;
+  height: 30px;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: var(--radius-input, 8px);
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
+  justify-content: center;
   cursor: pointer;
-  text-align: left;
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   outline: none;
+  padding: 0;
 }
 
-.sidebar-bottom-row:hover {
+.sidebar-icon-btn:hover {
   background: var(--surface-hover);
   color: var(--text);
+  border-color: var(--border-hover, var(--border));
 }
 
-.sidebar-bottom-row.active {
+.sidebar-icon-btn.active {
   background: var(--surface-2);
-  color: var(--text);
-  border-color: var(--border);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
-.sidebar-bottom-row:focus-visible {
+.sidebar-icon-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
 }
 
-.is-collapsed .sidebar-bottom-row {
-  justify-content: center;
-  padding: 9px;
-  width: 44px;
-  height: 44px;
-  margin: 0 auto;
+.is-collapsed .sidebar-icon-btn {
+  width: 38px;
+  height: 32px;
 }
 
 .row-icon-wrap {
@@ -198,45 +214,27 @@
   position: absolute;
   top: -2px;
   right: -2px;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
+  box-shadow: 0 0 5px var(--accent);
   border: 1px solid var(--sidebar);
-}
-
-.row-label {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.badge-new-pill {
-  font-size: 9.5px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-  color: var(--accent);
-  letter-spacing: 0.04em;
 }
 
 /* -----------------------------------------------------------------------------
    3. Profile Row
    ----------------------------------------------------------------------------- */
 .profile-anchor {
-  padding-top: 4px;
-  border-top: 1px solid var(--border);
+  width: 100%;
 }
 
 .sidebar-profile-row {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 9px;
+  padding: 6px 8px;
   border-radius: var(--radius-input, 8px);
   background: transparent;
   border: 1px solid transparent;
@@ -244,10 +242,12 @@
   text-align: left;
   transition: background-color 0.15s ease, border-color 0.15s ease;
   outline: none;
+  box-sizing: border-box;
 }
 
 .sidebar-profile-row:hover {
   background: var(--surface-hover);
+  border-color: var(--border);
 }
 
 .sidebar-profile-row.active {
@@ -262,9 +262,9 @@
 
 .is-collapsed .sidebar-profile-row {
   justify-content: center;
-  padding: 6px;
-  width: 44px;
-  height: 44px;
+  padding: 4px;
+  width: 40px;
+  height: 40px;
   margin: 0 auto;
 }
 
@@ -274,12 +274,12 @@
 }
 
 .sidebar-avatar {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: var(--accent);
   color: #ffffff;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   display: grid;
   place-items: center;
@@ -290,8 +290,8 @@
   position: absolute;
   bottom: 0px;
   right: 0px;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #10b981;
   border: 1.5px solid var(--sidebar);
@@ -309,11 +309,11 @@
 .profile-name-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .profile-username {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -322,26 +322,26 @@
 }
 
 .profile-plan-badge {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 4px;
+  padding: 0.5px 4.5px;
+  border-radius: 3px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--accent);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
 }
 
 .profile-email {
-  font-size: 11px;
-  color: var(--text-dim);
+  font-size: 10.5px;
+  color: var(--text-dim, var(--text-muted));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .profile-chevron-icon {
-  color: var(--text-dim);
+  color: var(--text-dim, var(--text-muted));
   display: flex;
   align-items: center;
   transition: transform 0.15s ease;
@@ -352,15 +352,16 @@
 }
 
 /* -----------------------------------------------------------------------------
-   4. Popovers (Shared & Contextual)
+   4. Popovers (What's New, About, Profile Menu)
    ----------------------------------------------------------------------------- */
 .sidebar-popover {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card, 12px);
-  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-card, 10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   z-index: 1000;
   animation: popoverFadeIn 0.15s ease-out;
+  overflow: hidden;
 }
 
 @keyframes popoverFadeIn {
@@ -379,19 +380,19 @@
   bottom: calc(100% + 8px);
   left: 0;
   width: 100%;
-  min-width: 230px;
+  min-width: 216px;
 }
 
 .popover-flyout {
   position: fixed;
   left: 78px;
-  bottom: 20px;
-  width: 280px;
+  bottom: 12px;
+  width: 270px;
   z-index: 1200;
 }
 
 .popover-header {
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -402,7 +403,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text);
 }
@@ -414,7 +415,7 @@
 .popover-close-btn {
   background: transparent;
   border: none;
-  color: var(--text-dim);
+  color: var(--text-dim, var(--text-muted));
   cursor: pointer;
   padding: 3px;
   border-radius: 4px;
@@ -437,15 +438,13 @@
   padding: 8px 12px;
   border-top: 1px solid var(--border);
   background: var(--surface-2);
-  border-bottom-left-radius: var(--radius-card, 12px);
-  border-bottom-right-radius: var(--radius-card, 12px);
 }
 
 .popover-link-btn {
   background: transparent;
   border: none;
   color: var(--accent);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   cursor: pointer;
   display: inline-flex;
@@ -459,21 +458,21 @@
   text-decoration: underline;
 }
 
-/* What's New Popover Content */
+/* What's New Popover List */
 .whats-new-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 260px;
+  gap: 9px;
+  max-height: 240px;
   overflow-y: auto;
 }
 
 .whats-new-item {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-muted, rgba(255, 255, 255, 0.05));
+  gap: 2px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
 }
 
 .whats-new-item:last-child {
@@ -485,7 +484,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10.5px;
+  font-size: 10px;
 }
 
 .whats-new-version {
@@ -494,28 +493,28 @@
 }
 
 .whats-new-date {
-  color: var(--text-dim);
+  color: var(--text-dim, var(--text-muted));
 }
 
 .whats-new-item-title {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--text);
   margin: 0;
 }
 
 .whats-new-item-desc {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--text-muted);
-  line-height: 1.4;
+  line-height: 1.35;
   margin: 0;
 }
 
-/* About Popover Content */
+/* About Popover */
 .about-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .about-app-info {
@@ -525,13 +524,13 @@
 }
 
 .about-app-name {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
 }
 
 .about-app-version {
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--text-muted);
   font-family: var(--font-mono, monospace);
 }
@@ -539,8 +538,8 @@
 .about-status-card {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: var(--radius-input, 8px);
-  padding: 8px 10px;
+  border-radius: var(--radius-input, 6px);
+  padding: 7px 9px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -550,23 +549,23 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--text);
 }
 
 .status-dot-pulse {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #10b981;
-  box-shadow: 0 0 6px #10b981;
+  box-shadow: 0 0 5px #10b981;
 }
 
 .status-action-link {
   background: none;
   border: none;
   color: var(--accent);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   cursor: pointer;
   padding: 0;
@@ -579,7 +578,7 @@
 .about-links-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .about-link-row {
@@ -588,9 +587,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 4px;
+  padding: 5px 4px;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   cursor: pointer;
   border-radius: 4px;
@@ -604,29 +603,29 @@
 }
 
 .about-copyright {
-  font-size: 10.5px;
-  color: var(--text-dim);
+  font-size: 10px;
+  color: var(--text-dim, var(--text-muted));
 }
 
 /* Profile Menu Popover Content */
 .profile-menu-popover {
-  width: 240px;
+  width: 220px;
 }
 
 .profile-menu-header {
-  padding: 10px 12px;
+  padding: 9px 12px;
 }
 
 .profile-menu-user-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
 }
 
 .profile-menu-avatar {
-  width: 32px;
-  height: 32px;
-  font-size: 13px;
+  width: 30px;
+  height: 30px;
+  font-size: 12.5px;
 }
 
 .profile-menu-user-info {
@@ -636,7 +635,7 @@
 }
 
 .profile-menu-name {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -645,8 +644,8 @@
 }
 
 .profile-menu-email {
-  font-size: 11px;
-  color: var(--text-dim);
+  font-size: 10.5px;
+  color: var(--text-dim, var(--text-muted));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -659,7 +658,7 @@
 }
 
 .profile-menu-items {
-  padding: 4px 6px;
+  padding: 4px 5px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -670,12 +669,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 8px;
+  padding: 6px 8px;
   border-radius: 6px;
   background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
@@ -697,9 +696,9 @@
 }
 
 .theme-current-badge {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 4px;
   background: var(--surface-2);
   border: 1px solid var(--border);

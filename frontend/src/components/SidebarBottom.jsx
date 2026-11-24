@@ -11,9 +11,6 @@ import {
   ChevronUp,
   ExternalLink,
   X,
-  Zap,
-  CheckCircle2,
-  Check,
 } from "lucide-react";
 import { Badge } from "./ui/Badge";
 import { useTheme } from "../context/ThemeContext";
@@ -97,7 +94,6 @@ export default function SidebarBottom({
       setActivePopover(null);
     } else {
       setActivePopover("whatsNew");
-      // Mark as read
       try {
         localStorage.setItem("smartlink_whats_new_version", APP_INFO.version);
         setHasUnreadWhatsNew(false);
@@ -127,12 +123,26 @@ export default function SidebarBottom({
       ref={containerRef}
       className={`sidebar-bottom-block ${isCollapsed ? "is-collapsed" : ""}`}
     >
-      {/* 1. Usage Card (Expanded mode only) */}
+      {/* 1. Slim Plan Usage Card (Expanded mode only; hidden below 760px viewport height) */}
       {!isCollapsed && (
         <div className="sidebar-usage-card">
           <div className="usage-card-header">
-            <span className="usage-card-title">Plan Usage</span>
-            <span className="usage-card-plan">{plan.name}</span>
+            <div className="usage-card-title-group">
+              <span className="usage-card-title">Plan usage</span>
+              <span className="usage-card-plan">{plan.name}</span>
+            </div>
+            {!plan.isHighest && (
+              <button
+                type="button"
+                className="usage-upgrade-link"
+                onClick={() => onNavigate && onNavigate("/pricing")}
+                title="Upgrade your plan"
+                aria-label="Upgrade your plan"
+              >
+                <span>Upgrade plan</span>
+                <ChevronRight size={11} />
+              </button>
+            )}
           </div>
 
           {/* Links Progress */}
@@ -143,7 +153,14 @@ export default function SidebarBottom({
                 {totalLinks} / {maxLinks}
               </span>
             </div>
-            <div className="usage-track" role="progressbar" aria-valuenow={totalLinks} aria-valuemin="0" aria-valuemax={maxLinks}>
+            <div
+              className="usage-track"
+              role="progressbar"
+              aria-valuenow={totalLinks}
+              aria-valuemin="0"
+              aria-valuemax={maxLinks}
+              aria-label="Links usage progress"
+            >
               <div
                 className="usage-fill"
                 style={{ width: `${Math.max(linksPct, 2)}%` }}
@@ -159,46 +176,43 @@ export default function SidebarBottom({
                 {totalClicks.toLocaleString()} / {maxClicks.toLocaleString()}
               </span>
             </div>
-            <div className="usage-track" role="progressbar" aria-valuenow={totalClicks} aria-valuemin="0" aria-valuemax={maxClicks}>
+            <div
+              className="usage-track"
+              role="progressbar"
+              aria-valuenow={totalClicks}
+              aria-valuemin="0"
+              aria-valuemax={maxClicks}
+              aria-label="Clicks usage progress"
+            >
               <div
                 className="usage-fill"
                 style={{ width: `${Math.max(clicksPct, 2)}%` }}
               />
             </div>
           </div>
-
-          {/* Upgrade Text Link */}
-          {!plan.isHighest && (
-            <div className="usage-card-footer">
-              <button
-                type="button"
-                className="usage-upgrade-link"
-                onClick={() => onNavigate && onNavigate("/pricing")}
-              >
-                <span>Upgrade plan</span>
-                <ChevronRight size={12} />
-              </button>
-            </div>
-          )}
         </div>
       )}
 
-      {/* 2. Secondary Navigation Rows */}
-      <nav className="sidebar-bottom-nav" aria-label="Support & Meta Navigation">
-        {/* Row B: What's New */}
+      {/* 2. One Row of Three Small Icon Buttons: What's New, Help & Docs, About */}
+      <div
+        className="sidebar-actions-row"
+        role="toolbar"
+        aria-label="Meta & Support navigation"
+      >
+        {/* Action 1: What's New */}
         <div className="sidebar-popover-anchor">
           <button
             type="button"
-            className={`sidebar-bottom-row ${activePopover === "whatsNew" ? "active" : ""}`}
+            className={`sidebar-icon-btn ${activePopover === "whatsNew" ? "active" : ""}`}
             onClick={handleToggleWhatsNew}
             aria-expanded={activePopover === "whatsNew"}
             aria-haspopup="dialog"
             aria-label="What's new"
             data-tooltip="What's new"
-            title={isCollapsed ? "What's new" : undefined}
+            title="What's new"
           >
             <span className="row-icon-wrap">
-              <Sparkles size={16} />
+              <Sparkles size={15} />
               {hasUnreadWhatsNew && (
                 <span
                   className="row-unread-dot"
@@ -206,10 +220,6 @@ export default function SidebarBottom({
                 />
               )}
             </span>
-            {!isCollapsed && <span className="row-label">What&apos;s new</span>}
-            {!isCollapsed && hasUnreadWhatsNew && (
-              <span className="badge-new-pill">NEW</span>
-            )}
           </button>
 
           {/* What's New Popover */}
@@ -267,37 +277,35 @@ export default function SidebarBottom({
           )}
         </div>
 
-        {/* Row C: Help & Docs */}
+        {/* Action 2: Help & Docs */}
         <button
           type="button"
-          className="sidebar-bottom-row"
+          className="sidebar-icon-btn"
           onClick={() => onNavigate && onNavigate("/docs")}
           aria-label="Help & documentation"
           data-tooltip="Help & docs"
-          title={isCollapsed ? "Help & docs" : undefined}
+          title="Help & docs"
         >
           <span className="row-icon-wrap">
-            <BookOpen size={16} />
+            <BookOpen size={15} />
           </span>
-          {!isCollapsed && <span className="row-label">Help & docs</span>}
         </button>
 
-        {/* Row D: About */}
+        {/* Action 3: About */}
         <div className="sidebar-popover-anchor">
           <button
             type="button"
-            className={`sidebar-bottom-row ${activePopover === "about" ? "active" : ""}`}
+            className={`sidebar-icon-btn ${activePopover === "about" ? "active" : ""}`}
             onClick={handleToggleAbout}
             aria-expanded={activePopover === "about"}
             aria-haspopup="dialog"
             aria-label="About SmartLink"
             data-tooltip="About"
-            title={isCollapsed ? "About" : undefined}
+            title="About"
           >
             <span className="row-icon-wrap">
-              <Info size={16} />
+              <Info size={15} />
             </span>
-            {!isCollapsed && <span className="row-label">About</span>}
           </button>
 
           {/* About Popover */}
@@ -379,9 +387,9 @@ export default function SidebarBottom({
             </div>
           )}
         </div>
-      </nav>
+      </div>
 
-      {/* Row E: Profile Row */}
+      {/* 3. Profile Row with Account Menu Popover */}
       <div className="sidebar-popover-anchor profile-anchor">
         <button
           type="button"
