@@ -1,0 +1,83 @@
+/* =============================================================================
+   TimeRangeToggle: Unified Segmented Date Range Toggle (7D | 30D | All)
+   Height: 40px | Gap: 4px | Min-width: 48px | Min-height: 36px | Font: 13px/500
+   ============================================================================= */
+
+.time-range-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  height: 40px;
+  min-height: 40px;
+  box-sizing: border-box;
+  gap: 4px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.time-range-toggle-btn {
+  height: 36px;
+  min-height: 36px;
+  min-width: 48px;
+  padding: 0 14px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  outline: none;
+}
+
+/* Inactive button hover: bg var(--surface-2) / var(--surface), text var(--text).
+   Never looks like the active style (which is filled with var(--primary)) */
+.time-range-toggle-btn:hover:not(:disabled):not(.active) {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] .time-range-toggle-btn:hover:not(:disabled):not(.active) {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* Active state: bg var(--primary), text var(--on-primary), font-weight 600 */
+.time-range-toggle-btn.active {
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+  cursor: default;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Pressed state: slight darken (var(--primary-hover)) */
+.time-range-toggle-btn:not(:disabled):active,
+.time-range-toggle-btn.active:active {
+  background: var(--primary-hover);
+  color: var(--on-primary);
+}
+
+/* Focus visible: 2px outline */
+.time-range-toggle-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.time-range-toggle-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

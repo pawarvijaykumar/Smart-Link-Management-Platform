@@ -53,7 +53,7 @@ export default function TrafficSourcesCard({
   return (
     <SpotlightCard
       className="traffic-sources-card"
-      spotlightColor="var(--accent-soft, rgba(79, 70, 229, 0.12))"
+      spotlightColor="var(--accent-soft, rgba(122, 74, 43, 0.05))"
       borderColor="var(--border)"
       radius={320}
     >
@@ -171,7 +171,7 @@ export default function TrafficSourcesCard({
       ) : (
         <div className="traffic-sources-empty">
           <div className="sources-empty-icon-wrap">
-            <Compass size={28} className="text-purple" />
+            <Compass size={28} style={{ color: "var(--primary)" }} />
           </div>
           <h4>No Traffic Source Attribution Yet</h4>
           <p>

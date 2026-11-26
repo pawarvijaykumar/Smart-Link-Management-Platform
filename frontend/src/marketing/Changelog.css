@@ -12,19 +12,19 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  --accent: #6366F1;
-  --accent-hover: #4F46E5;
-  --accent-active: #4338CA;
-  --accent-soft: rgba(99, 102, 241, 0.15);
-  --border-focus: var(--accent);
+  --accent: var(--primary);
+  --accent-hover: var(--primary-hover);
+  --accent-active: var(--primary-hover);
+  --accent-soft: var(--accent-soft);
+  --border-focus: var(--primary);
 }
 
 html[data-theme="light"] .cl-page-root {
-  --accent: #4F46E5;
-  --accent-hover: #4338CA;
-  --accent-active: #3730A3;
-  --accent-soft: rgba(79, 70, 229, 0.10);
-  --border-focus: var(--accent);
+  --accent: var(--primary);
+  --accent-hover: var(--primary-hover);
+  --accent-active: var(--primary-hover);
+  --accent-soft: var(--accent-soft);
+  --border-focus: var(--primary);
 }
 
 /* =============================================================================

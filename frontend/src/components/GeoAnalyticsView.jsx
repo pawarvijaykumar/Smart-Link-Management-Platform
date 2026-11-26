@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import SpotlightCard from "./SpotlightCard.jsx";
 import SpecularButton from "./SpecularButton.jsx";
+import TimeRangeToggle from "./ui/TimeRangeToggle.jsx";
 import GeoPinMap2D from "./GeoPinMap2D.jsx";
 import { getCountryFlagEmoji } from "../data/geoLookup.js";
 import "./GeoAnalytics.css";
@@ -194,30 +195,12 @@ export default function GeoAnalyticsView({
           </div>
 
           {/* Date Range Filters */}
-          <div className="geo-range-group" role="group" aria-label="Date range selection">
-            {[
-              { id: "7d", label: "Last 7 Days" },
-              { id: "30d", label: "Last 30 Days" },
-              { id: "all", label: "All Time" },
-            ].map((btn) => (
-              <SpecularButton
-                key={btn.id}
-                size="sm"
-                variant={geoRange === btn.id ? "primary" : "ghost"}
-                radius={6}
-                onClick={() => onRangeChange?.(btn.id)}
-                disabled={refreshingActive && geoRange === btn.id}
-                aria-pressed={geoRange === btn.id}
-                style={{
-                  padding: "5px 11px",
-                  fontSize: "12px",
-                  height: "30px",
-                }}
-              >
-                {btn.label}
-              </SpecularButton>
-            ))}
-          </div>
+          <TimeRangeToggle
+            value={geoRange}
+            onChange={(val) => onRangeChange?.(val)}
+            disabled={refreshingActive}
+            ariaLabel="Geo Analytics timeframe"
+          />
 
           {/* 2D / 3D Visualization Switch */}
           <div className="geo-view-mode-group" role="group" aria-label="Visualization mode">
@@ -337,11 +320,7 @@ export default function GeoAnalyticsView({
       {/* 2. Analytics Summary Cards (6 Cards wrapped in SpotlightCard) */}
       <div className="geo-metrics-grid-6">
         {/* Card 1: Total Global Clicks */}
-        <SpotlightCard
-          className="geo-stat-card"
-          spotlightColor="rgba(99, 102, 241, 0.28)"
-          borderColor="rgba(99, 102, 241, 0.6)"
-        >
+        <SpotlightCard className="geo-stat-card">
           <div className="geo-stat-card-header">
             <span>Global Clicks</span>
             <div className="geo-stat-icon-wrap">
@@ -356,11 +335,7 @@ export default function GeoAnalyticsView({
         </SpotlightCard>
 
         {/* Card 2: Total Countries */}
-        <SpotlightCard
-          className="geo-stat-card"
-          spotlightColor="rgba(6, 182, 212, 0.28)"
-          borderColor="rgba(6, 182, 212, 0.6)"
-        >
+        <SpotlightCard className="geo-stat-card">
           <div className="geo-stat-card-header">
             <span>Countries</span>
             <div className="geo-stat-icon-wrap cyan">
@@ -374,11 +349,7 @@ export default function GeoAnalyticsView({
         </SpotlightCard>
 
         {/* Card 3: Top Country */}
-        <SpotlightCard
-          className="geo-stat-card"
-          spotlightColor="rgba(16, 185, 129, 0.28)"
-          borderColor="rgba(16, 185, 129, 0.6)"
-        >
+        <SpotlightCard className="geo-stat-card">
           <div className="geo-stat-card-header">
             <span>Top Country</span>
             <div className="geo-stat-icon-wrap emerald">
@@ -407,11 +378,7 @@ export default function GeoAnalyticsView({
         </SpotlightCard>
 
         {/* Card 4: Top City */}
-        <SpotlightCard
-          className="geo-stat-card"
-          spotlightColor="rgba(245, 158, 11, 0.28)"
-          borderColor="rgba(245, 158, 11, 0.6)"
-        >
+        <SpotlightCard className="geo-stat-card">
           <div className="geo-stat-card-header">
             <span>Top City</span>
             <div className="geo-stat-icon-wrap amber">
@@ -436,11 +403,7 @@ export default function GeoAnalyticsView({
         </SpotlightCard>
 
         {/* Card 5: QR Traffic */}
-        <SpotlightCard
-          className="geo-stat-card"
-          spotlightColor="rgba(139, 92, 246, 0.28)"
-          borderColor="rgba(139, 92, 246, 0.6)"
-        >
+        <SpotlightCard className="geo-stat-card">
           <div className="geo-stat-card-header">
             <span>QR Scans</span>
             <div className="geo-stat-icon-wrap purple">
@@ -456,11 +419,7 @@ export default function GeoAnalyticsView({
         </SpotlightCard>
 
         {/* Card 6: Direct Traffic */}
-        <SpotlightCard
-          className="geo-stat-card"
-          spotlightColor="rgba(6, 182, 212, 0.28)"
-          borderColor="rgba(6, 182, 212, 0.6)"
-        >
+        <SpotlightCard className="geo-stat-card">
           <div className="geo-stat-card-header">
             <span>Direct Traffic</span>
             <div className="geo-stat-icon-wrap cyan">

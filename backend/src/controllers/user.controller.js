@@ -104,7 +104,7 @@ const updateUser = async (req, res) => {
       });
     }
 
-    const { username, email } = req.body;
+    const { username, email, appearance } = req.body;
     const updateData = {};
 
     if (username && typeof username === "string" && username.trim()) {
@@ -120,6 +120,10 @@ const updateUser = async (req, res) => {
         });
       }
       updateData.email = email.trim().toLowerCase();
+    }
+
+    if (appearance && typeof appearance === "object") {
+      updateData.appearance = appearance;
     }
 
     const user = await User.findByIdAndUpdate(

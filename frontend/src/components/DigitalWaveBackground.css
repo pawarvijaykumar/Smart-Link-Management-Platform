@@ -1,0 +1,48 @@
+/* =============================================================================
+   DigitalWaveBackground Styles
+   High-performance futuristic wave & particle background for Auth Screen
+   ============================================================================= */
+
+.digital-wave-bg {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0 !important;
+  background-color: #040714;
+}
+
+.digital-wave-canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  pointer-events: none;
+}
+
+.digital-wave-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    transparent 45%,
+    rgba(2, 4, 10, 0.4) 80%,
+    rgba(2, 4, 10, 0.75) 100%
+  );
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .digital-wave-bg * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

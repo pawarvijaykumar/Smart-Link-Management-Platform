@@ -1,10 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link2, Menu, X, Sun, Moon, ArrowRight, LayoutDashboard } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 
 export default function MarketingNavbar({ token, currentPath = "/", onNavigate }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { effectiveTheme, setTheme } = useTheme();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (currentPath === "/") {
+        const hero = document.querySelector(".mkt-hero");
+        if (hero) {
+          const rect = hero.getBoundingClientRect();
+          // Navbar is ~64px tall; hero bottom reaching near navbar switches to cream
+          setIsScrolled(rect.bottom <= 72);
+        } else {
+          setIsScrolled(window.scrollY > 50);
+        }
+      } else {
+        setIsScrolled(true);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll, { passive: true });
+    handleScroll();
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, [currentPath]);
 
   const handleNavClick = (path, e) => {
     if (e) e.preventDefault();
@@ -21,8 +47,15 @@ export default function MarketingNavbar({ token, currentPath = "/", onNavigate }
     setTheme(effectiveTheme === "dark" ? "light" : "dark");
   };
 
+  const isHeroState = currentPath === "/" && !isScrolled;
+
   return (
-    <header className="mkt-navbar" role="banner">
+    <header
+      className={`mkt-navbar ${isHeroState ? "mkt-navbar--hero" : "mkt-navbar--scrolled"} ${
+        mobileMenuOpen ? "mkt-navbar--open" : ""
+      }`}
+      role="banner"
+    >
       <div className="mkt-container">
         <div className="mkt-navbar-inner">
           {/* Logo */}

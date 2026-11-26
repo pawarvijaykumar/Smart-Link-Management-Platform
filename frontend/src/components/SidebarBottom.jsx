@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
-  Sparkles,
+  Newspaper,
   BookOpen,
   Info,
   Settings as SettingsIcon,
@@ -33,7 +34,13 @@ export default function SidebarBottom({
   const { effectiveTheme, setTheme } = useTheme();
   const [activePopover, setActivePopover] = useState(null); // "whatsNew" | "about" | "profile" | null
   const [hasUnreadWhatsNew, setHasUnreadWhatsNew] = useState(false);
+  const [popoverStyle, setPopoverStyle] = useState({});
+
   const containerRef = useRef(null);
+  const whatsNewBtnRef = useRef(null);
+  const aboutBtnRef = useRef(null);
+  const profileBtnRef = useRef(null);
+  const popoverRef = useRef(null);
 
   const plan = PLAN_LIMITS[CURRENT_PLAN] || PLAN_LIMITS.pro;
   const maxLinks = plan.maxLinks || 50;
@@ -66,28 +73,113 @@ export default function SidebarBottom({
     } catch (_) {}
   }, []);
 
-  // Close on Escape or click outside
+  // Compute fixed position for the active popover so it's never clipped by sidebar overflow
+  const updatePosition = useCallback(() => {
+    if (!activePopover) return;
+    let targetEl = null;
+    if (activePopover === "whatsNew") targetEl = whatsNewBtnRef.current;
+    else if (activePopover === "about") targetEl = aboutBtnRef.current;
+    else if (activePopover === "profile") targetEl = profileBtnRef.current;
+
+    if (!targetEl) return;
+    const rect = targetEl.getBoundingClientRect();
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+
+    if (isCollapsed) {
+      // Collapsed: flyout to the right of the button
+      const left = Math.min(rect.right + 10, viewportW - 290);
+      const bottom = Math.max(12, Math.min(viewportH - 60, viewportH - rect.bottom));
+      setPopoverStyle({
+        position: "fixed",
+        left: `${Math.max(10, left)}px`,
+        bottom: `${bottom}px`,
+        top: "auto",
+        right: "auto",
+        minWidth: "260px",
+        maxWidth: "320px",
+        maxHeight: `${viewportH - 24}px`,
+        zIndex: 99999,
+      });
+    } else {
+      // Expanded sidebar: popover opens upward from the button
+      const width = activePopover === "profile" ? 250 : 280;
+      let left = rect.left;
+      if (left + width > viewportW - 12) {
+        left = Math.max(12, viewportW - width - 12);
+      }
+
+      const spaceAbove = rect.top;
+      const spaceBelow = viewportH - rect.bottom;
+      const estimatedHeight = activePopover === "whatsNew" ? 340 : 250;
+
+      if (spaceAbove < estimatedHeight && spaceBelow > spaceAbove) {
+        // Flip downward if not enough room above
+        setPopoverStyle({
+          position: "fixed",
+          left: `${Math.max(12, left)}px`,
+          top: `${rect.bottom + 8}px`,
+          bottom: "auto",
+          right: "auto",
+          minWidth: "260px",
+          maxWidth: "320px",
+          maxHeight: `${Math.max(200, spaceBelow - 16)}px`,
+          zIndex: 99999,
+        });
+      } else {
+        // Open upward
+        setPopoverStyle({
+          position: "fixed",
+          left: `${Math.max(12, left)}px`,
+          bottom: `${viewportH - rect.top + 8}px`,
+          top: "auto",
+          right: "auto",
+          minWidth: "260px",
+          maxWidth: "320px",
+          maxHeight: `${Math.max(200, spaceAbove - 16)}px`,
+          zIndex: 99999,
+        });
+      }
+    }
+  }, [activePopover, isCollapsed]);
+
+  // Reposition on trigger change, resize, scroll
   useEffect(() => {
+    if (!activePopover) return;
+    updatePosition();
+
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
         setActivePopover(null);
       }
     };
+
     const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setActivePopover(null);
+      if (popoverRef.current && popoverRef.current.contains(e.target)) {
+        return;
       }
+      if (
+        (whatsNewBtnRef.current && whatsNewBtnRef.current.contains(e.target)) ||
+        (aboutBtnRef.current && aboutBtnRef.current.contains(e.target)) ||
+        (profileBtnRef.current && profileBtnRef.current.contains(e.target))
+      ) {
+        return;
+      }
+      setActivePopover(null);
     };
 
-    if (activePopover) {
-      window.addEventListener("keydown", handleKeyDown);
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => {
-        window.removeEventListener("keydown", handleKeyDown);
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }
-  }, [activePopover]);
+    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [activePopover, updatePosition]);
 
   const handleToggleWhatsNew = () => {
     if (activePopover === "whatsNew") {
@@ -202,6 +294,7 @@ export default function SidebarBottom({
         {/* Action 1: What's New */}
         <div className="sidebar-popover-anchor">
           <button
+            ref={whatsNewBtnRef}
             type="button"
             className={`sidebar-icon-btn ${activePopover === "whatsNew" ? "active" : ""}`}
             onClick={handleToggleWhatsNew}
@@ -212,7 +305,7 @@ export default function SidebarBottom({
             title="What's new"
           >
             <span className="row-icon-wrap">
-              <Sparkles size={15} />
+              <Newspaper size={15} />
               {hasUnreadWhatsNew && (
                 <span
                   className="row-unread-dot"
@@ -221,60 +314,6 @@ export default function SidebarBottom({
               )}
             </span>
           </button>
-
-          {/* What's New Popover */}
-          {activePopover === "whatsNew" && (
-            <div
-              className={`sidebar-popover whats-new-popover ${isCollapsed ? "popover-flyout" : "popover-upward"}`}
-              role="dialog"
-              aria-label="Latest product updates"
-            >
-              <div className="popover-header">
-                <div className="popover-header-title">
-                  <Sparkles size={15} className="popover-title-icon" />
-                  <span>What&apos;s new</span>
-                  <Badge variant="accent" size="sm">
-                    {APP_INFO.version}
-                  </Badge>
-                </div>
-                <button
-                  type="button"
-                  className="popover-close-btn"
-                  onClick={() => setActivePopover(null)}
-                  aria-label="Close updates"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-
-              <div className="popover-body whats-new-list">
-                {latestUpdates.map((update, idx) => (
-                  <div key={idx} className="whats-new-item">
-                    <div className="whats-new-meta">
-                      <span className="whats-new-version">{update.version}</span>
-                      <span className="whats-new-date">{update.date}</span>
-                    </div>
-                    <h4 className="whats-new-item-title">{update.title}</h4>
-                    <p className="whats-new-item-desc">{update.desc}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="popover-footer">
-                <button
-                  type="button"
-                  className="popover-link-btn"
-                  onClick={() => {
-                    setActivePopover(null);
-                    onNavigate && onNavigate("/changelog");
-                  }}
-                >
-                  <span>View full changelog</span>
-                  <ExternalLink size={12} />
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Action 2: Help & Docs */}
@@ -294,6 +333,7 @@ export default function SidebarBottom({
         {/* Action 3: About */}
         <div className="sidebar-popover-anchor">
           <button
+            ref={aboutBtnRef}
             type="button"
             className={`sidebar-icon-btn ${activePopover === "about" ? "active" : ""}`}
             onClick={handleToggleAbout}
@@ -307,91 +347,13 @@ export default function SidebarBottom({
               <Info size={15} />
             </span>
           </button>
-
-          {/* About Popover */}
-          {activePopover === "about" && (
-            <div
-              className={`sidebar-popover about-popover ${isCollapsed ? "popover-flyout" : "popover-upward"}`}
-              role="dialog"
-              aria-label="About SmartLink"
-            >
-              <div className="popover-header">
-                <div className="popover-header-title">
-                  <Info size={15} className="popover-title-icon" />
-                  <span>About SmartLink</span>
-                </div>
-                <button
-                  type="button"
-                  className="popover-close-btn"
-                  onClick={() => setActivePopover(null)}
-                  aria-label="Close about popover"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-
-              <div className="popover-body about-body">
-                <div className="about-app-info">
-                  <span className="about-app-name">SmartLink Platform</span>
-                  <span className="about-app-version">{APP_INFO.version}</span>
-                </div>
-
-                <div className="about-status-card">
-                  <div className="status-indicator-row">
-                    <span className="status-dot-pulse" aria-hidden="true" />
-                    <span className="status-text">
-                      System status: <strong>{APP_INFO.status}</strong>
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="status-action-link"
-                    onClick={() => {
-                      setActivePopover(null);
-                      onNavigate && onNavigate(APP_INFO.statusUrl);
-                    }}
-                  >
-                    Status page &rarr;
-                  </button>
-                </div>
-
-                <div className="about-links-list">
-                  <button
-                    type="button"
-                    className="about-link-row"
-                    onClick={() => {
-                      setActivePopover(null);
-                      onNavigate && onNavigate(APP_INFO.privacyUrl);
-                    }}
-                  >
-                    <span>Privacy Policy</span>
-                    <ExternalLink size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    className="about-link-row"
-                    onClick={() => {
-                      setActivePopover(null);
-                      onNavigate && onNavigate(APP_INFO.termsUrl);
-                    }}
-                  >
-                    <span>Terms of Service</span>
-                    <ExternalLink size={12} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="popover-footer about-footer">
-                <span className="about-copyright">&copy; 2026 SmartLink Inc.</span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       {/* 3. Profile Row with Account Menu Popover */}
       <div className="sidebar-popover-anchor profile-anchor">
         <button
+          ref={profileBtnRef}
           type="button"
           className={`sidebar-profile-row ${activePopover === "profile" ? "active" : ""}`}
           onClick={handleToggleProfile}
@@ -428,81 +390,227 @@ export default function SidebarBottom({
             </span>
           )}
         </button>
+      </div>
 
-        {/* Profile Menu Popover */}
-        {activePopover === "profile" && (
-          <div
-            className={`sidebar-popover profile-menu-popover ${isCollapsed ? "popover-flyout" : "popover-upward"}`}
-            role="menu"
-            aria-label="User account menu"
-          >
-            <div className="profile-menu-header">
-              <div className="profile-menu-user-row">
-                <div className="user-avatar profile-menu-avatar">
-                  {userInitial}
+      {/* Portaled Popovers: Rendered outside the sidebar into document.body to prevent clipping */}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <>
+            {/* What's New Popover */}
+            {activePopover === "whatsNew" && (
+              <div
+                ref={popoverRef}
+                style={popoverStyle}
+                className="sidebar-popover whats-new-popover portal-popover"
+                role="dialog"
+                aria-label="Latest product updates"
+              >
+                <div className="popover-header">
+                  <div className="popover-header-title">
+                    <Newspaper size={15} className="popover-title-icon" />
+                    <span>What&apos;s new</span>
+                    <Badge variant="accent" size="sm">
+                      {APP_INFO.version}
+                    </Badge>
+                  </div>
+                  <button
+                    type="button"
+                    className="popover-close-btn"
+                    onClick={() => setActivePopover(null)}
+                    aria-label="Close updates"
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
-                <div className="profile-menu-user-info">
-                  <span className="profile-menu-name">{username}</span>
-                  <span className="profile-menu-email">
-                    {user?.email || "smartlink@user"}
-                  </span>
+
+                <div className="popover-body whats-new-list">
+                  {latestUpdates.map((update, idx) => (
+                    <div key={idx} className="whats-new-item">
+                      <div className="whats-new-meta">
+                        <span className="whats-new-version">{update.version}</span>
+                        <span className="whats-new-date">{update.date}</span>
+                      </div>
+                      <h4 className="whats-new-item-title">{update.title}</h4>
+                      <p className="whats-new-item-desc">{update.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="popover-footer">
+                  <button
+                    type="button"
+                    className="popover-link-btn"
+                    onClick={() => {
+                      setActivePopover(null);
+                      onNavigate && onNavigate("/changelog");
+                    }}
+                  >
+                    <span>View full changelog</span>
+                    <ExternalLink size={12} />
+                  </button>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="profile-menu-divider" />
-
-            <div className="profile-menu-items">
-              {/* Settings */}
-              <button
-                type="button"
-                className="profile-menu-item"
-                role="menuitem"
-                onClick={() => {
-                  setActivePopover(null);
-                  onNavigate && onNavigate("/settings");
-                }}
+            {/* About Popover */}
+            {activePopover === "about" && (
+              <div
+                ref={popoverRef}
+                style={popoverStyle}
+                className="sidebar-popover about-popover portal-popover"
+                role="dialog"
+                aria-label="About SmartLink"
               >
-                <SettingsIcon size={15} />
-                <span>Settings</span>
-              </button>
+                <div className="popover-header">
+                  <div className="popover-header-title">
+                    <Info size={15} className="popover-title-icon" />
+                    <span>About SmartLink</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="popover-close-btn"
+                    onClick={() => setActivePopover(null)}
+                    aria-label="Close about popover"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
 
-              {/* Appearance (Theme Toggle) */}
-              <button
-                type="button"
-                className="profile-menu-item theme-toggle-item"
-                role="menuitem"
-                onClick={toggleTheme}
-                aria-label={`Switch to ${effectiveTheme === "dark" ? "light" : "dark"} mode`}
+                <div className="popover-body about-body">
+                  <div className="about-app-info">
+                    <span className="about-app-name">SmartLink Platform</span>
+                    <span className="about-app-version">{APP_INFO.version}</span>
+                  </div>
+
+                  <div className="about-status-card">
+                    <div className="status-indicator-row">
+                      <span className="status-dot-pulse" aria-hidden="true" />
+                      <span className="status-text">
+                        System status: <strong>{APP_INFO.status}</strong>
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="status-action-link"
+                      onClick={() => {
+                        setActivePopover(null);
+                        onNavigate && onNavigate(APP_INFO.statusUrl);
+                      }}
+                    >
+                      Status page &rarr;
+                    </button>
+                  </div>
+
+                  <div className="about-links-list">
+                    <button
+                      type="button"
+                      className="about-link-row"
+                      onClick={() => {
+                        setActivePopover(null);
+                        onNavigate && onNavigate(APP_INFO.privacyUrl);
+                      }}
+                    >
+                      <span>Privacy Policy</span>
+                      <ExternalLink size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      className="about-link-row"
+                      onClick={() => {
+                        setActivePopover(null);
+                        onNavigate && onNavigate(APP_INFO.termsUrl);
+                      }}
+                    >
+                      <span>Terms of Service</span>
+                      <ExternalLink size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="popover-footer about-footer">
+                  <span className="about-copyright">&copy; 2026 SmartLink Inc.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Profile Menu Popover */}
+            {activePopover === "profile" && (
+              <div
+                ref={popoverRef}
+                style={popoverStyle}
+                className="sidebar-popover profile-menu-popover portal-popover"
+                role="menu"
+                aria-label="User account menu"
               >
-                {effectiveTheme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-                <span>Appearance</span>
-                <span className="theme-current-badge">
-                  {effectiveTheme === "dark" ? "Dark" : "Light"}
-                </span>
-              </button>
-            </div>
+                <div className="profile-menu-header">
+                  <div className="profile-menu-user-row">
+                    <div className="user-avatar profile-menu-avatar">
+                      {userInitial}
+                    </div>
+                    <div className="profile-menu-user-info">
+                      <span className="profile-menu-name">{username}</span>
+                      <span className="profile-menu-email">
+                        {user?.email || "smartlink@user"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-            <div className="profile-menu-divider" />
+                <div className="profile-menu-divider" />
 
-            {/* Logout */}
-            <div className="profile-menu-items">
-              <button
-                type="button"
-                className="profile-menu-item logout-item"
-                role="menuitem"
-                onClick={() => {
-                  setActivePopover(null);
-                  onLogout && onLogout();
-                }}
-              >
-                <LogOut size={15} />
-                <span>Log out</span>
-              </button>
-            </div>
-          </div>
+                <div className="profile-menu-items">
+                  {/* Settings */}
+                  <button
+                    type="button"
+                    className="profile-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setActivePopover(null);
+                      onNavigate && onNavigate("/settings");
+                    }}
+                  >
+                    <SettingsIcon size={15} />
+                    <span>Settings</span>
+                  </button>
+
+                  {/* Appearance (Theme Toggle) */}
+                  <button
+                    type="button"
+                    className="profile-menu-item theme-toggle-item"
+                    role="menuitem"
+                    onClick={toggleTheme}
+                    aria-label={`Switch to ${effectiveTheme === "dark" ? "light" : "dark"} mode`}
+                  >
+                    {effectiveTheme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+                    <span>Appearance</span>
+                    <span className="theme-current-badge">
+                      {effectiveTheme === "dark" ? "Dark" : "Light"}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="profile-menu-divider" />
+
+                {/* Logout */}
+                <div className="profile-menu-items">
+                  <button
+                    type="button"
+                    className="profile-menu-item logout-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setActivePopover(null);
+                      onLogout && onLogout();
+                    }}
+                  >
+                    <LogOut size={15} />
+                    <span>Log out</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </>,
+          document.body
         )}
-      </div>
     </div>
   );
 }

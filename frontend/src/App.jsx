@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense, lazy } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import axios from "axios";
 import Login from "./Login";
 import ClicksOverviewChart, {
@@ -28,18 +29,21 @@ import ABTestingView from "./components/ABTestingView";
 import ReportsView from "./components/ReportsView";
 // CHANGE: Integrated React Bits SplitText component — 2026-11-19
 import SplitText from "./components/SplitText";
+import { useTimeRange, toApiRange } from "./context/TimeRangeContext";
 // CHANGE: React Bits Specular Button & SpotlightCard Integration
 import SpecularButton from "./components/SpecularButton";
 import SpotlightCard from "./components/SpotlightCard";
 import CountUp from "./components/CountUp";
 import AnimatedContent from "./components/AnimatedContent";
 import TrafficSourcesCard from "./components/TrafficSourcesCard";
+import RankedBars from "./components/RankedBars";
 import {
   Button,
   Card,
   StatCard,
   Badge,
   SegmentedControl,
+  TimeRangeToggle,
   Input,
   Table,
   EmptyState,
@@ -82,13 +86,22 @@ import {
   Settings as SettingsIcon,
   HelpCircle,
   Info,
+  Tag,
+  Trash2,
+  Play,
+  Pause,
+  Clock,
+  Lock,
+  Sliders,
 } from "lucide-react";
+import LinkDetailDrawer from "./components/LinkDetailDrawer";
 import LandingPage from "./marketing/LandingPage";
 import PricingPage from "./marketing/PricingPage";
 import DocsPage from "./marketing/DocsPage";
 import ChangelogPage from "./marketing/ChangelogPage";
 import StatusPage from "./marketing/StatusPage";
 import SettingsView from "./components/SettingsView";
+import DashboardActivityView from "./components/DashboardActivityView";
 import SidebarBottom from "./components/SidebarBottom";
 import AnnouncementBanner from "./components/AnnouncementBanner";
 import CommandPalette from "./components/CommandPalette";
@@ -127,15 +140,6 @@ const requestTokenRefresh = () => {
   return refreshPromise;
 };
 
-// Default Donut Color Palette: Primary in accent, secondaries in neutral greys
-const DONUT_COLORS = [
-  "var(--accent)", // Primary accent
-  "#64748B",       // Slate neutral
-  "#94A3B8",       // Slate light
-  "#475569",       // Slate dark
-  "#CBD5E1",       // Slate extra light
-  "#334155",       // Slate extra dark
-];
 
 // CHANGE: Notifications Step 4D — 2026-11-05
 // Safe helper to format notification createdAt timestamp to Indian Standard Time (IST)
@@ -211,18 +215,111 @@ function MetricCards({
   activeLinks = 0,
   avgClicks = 0,
   intelligence = null,
+  timeRange = "all",
+  dailyTrends = [],
+  links = [],
+  loading = false,
 }) {
   const todayClicks = intelligence?.totalClicksToday || 0;
   const activePercent = totalLinks > 0 ? Math.round((activeLinks / totalLinks) * 100) : 0;
   const inactiveLinks = Math.max(0, totalLinks - activeLinks);
   const clicksPerActive = activeLinks > 0 ? (totalClicks / activeLinks).toFixed(1) : "0.0";
 
+  // Comparison vs previous period calculation
+  const normTimeRange = String(timeRange || "30d").toLowerCase();
+  const periodDays = normTimeRange === "7d" ? 7 : 30;
+  const periodLabel = normTimeRange === "7d" ? "previous 7 days" : "previous 30 days";
+
+  const { clicksDelta, clicksDeltaType, linksDelta, linksDeltaType, avgDelta, avgDeltaType, sparklineData } = useMemo(() => {
+    // 1. Clicks comparison
+    const sortedTrends = [...dailyTrends].sort((a, b) => (a.isoDate || "").localeCompare(b.isoDate || ""));
+    const currentSlice = sortedTrends.slice(-periodDays);
+    const priorSlice = sortedTrends.slice(-2 * periodDays, -periodDays);
+
+    const currentClicksSum = currentSlice.reduce((s, d) => s + (d.count || 0), 0);
+    const priorClicksSum = priorSlice.reduce((s, d) => s + (d.count || 0), 0);
+
+    let cDelta = null;
+    let cType = "neutral";
+    if (priorClicksSum > 0) {
+      const diff = currentClicksSum - priorClicksSum;
+      const pct = Math.round((diff / priorClicksSum) * 100);
+      cDelta = `${pct >= 0 ? `+${pct}%` : `${pct}%`} vs ${periodLabel}`;
+      cType = pct > 0 ? "positive" : pct < 0 ? "negative" : "neutral";
+    } else if (currentClicksSum > 0) {
+      cDelta = `+${currentClicksSum} vs ${periodLabel}`;
+      cType = "positive";
+    } else {
+      cDelta = `0% vs ${periodLabel}`;
+      cType = "neutral";
+    }
+
+    // 2. Links created comparison
+    const now = Date.now();
+    const periodMs = periodDays * 24 * 60 * 60 * 1000;
+    const currentCreated = links.filter((l) => now - new Date(l.createdAt || 0).getTime() <= periodMs).length;
+    const priorCreated = links.filter((l) => {
+      const age = now - new Date(l.createdAt || 0).getTime();
+      return age > periodMs && age <= 2 * periodMs;
+    }).length;
+
+    let lDelta = null;
+    let lType = "neutral";
+    if (priorCreated > 0) {
+      const diffL = currentCreated - priorCreated;
+      const pctL = Math.round((diffL / priorCreated) * 100);
+      lDelta = `${pctL >= 0 ? `+${pctL}%` : `${pctL}%`} vs ${periodLabel}`;
+      lType = pctL > 0 ? "positive" : pctL < 0 ? "negative" : "neutral";
+    } else if (currentCreated > 0) {
+      lDelta = `+${currentCreated} new vs ${periodLabel}`;
+      lType = "positive";
+    } else {
+      lDelta = `0 new vs ${periodLabel}`;
+      lType = "neutral";
+    }
+
+    // 3. Avg clicks comparison
+    let aDelta = null;
+    let aType = "neutral";
+    if (totalLinks > 0 && priorClicksSum > 0) {
+      const currentAvgPeriod = currentClicksSum / totalLinks;
+      const priorAvgPeriod = priorClicksSum / totalLinks;
+      if (priorAvgPeriod > 0) {
+        const diffA = currentAvgPeriod - priorAvgPeriod;
+        const pctA = Math.round((diffA / priorAvgPeriod) * 100);
+        aDelta = `${pctA >= 0 ? `+${pctA}%` : `${pctA}%`} vs ${periodLabel}`;
+        aType = pctA > 0 ? "positive" : pctA < 0 ? "negative" : "neutral";
+      }
+    }
+    if (!aDelta) {
+      aDelta = clicksPerActive > 0 ? `${clicksPerActive} / active` : "0% vs period";
+      aType = "neutral";
+    }
+
+    // 4. Sparkline series (defaults to clean 7-point series if fewer than 2 data points)
+    const spark = sortedTrends.length >= 2
+      ? sortedTrends.slice(-14).map((d) => d.count || 0)
+      : [0, 0, 0, 0, 0, 0, 0];
+
+    return {
+      clicksDelta: cDelta,
+      clicksDeltaType: cType,
+      linksDelta: lDelta,
+      linksDeltaType: lType,
+      avgDelta: aDelta,
+      avgDeltaType: aType,
+      sparklineData: spark,
+    };
+  }, [dailyTrends, periodDays, periodLabel, links, totalLinks, clicksPerActive]);
+
   const cards = [
     {
       id: "total_links",
       label: "Total links",
       value: totalLinks,
-      badgeText: null,
+      delta: linksDelta,
+      deltaType: linksDeltaType,
+      sparklineData: sparklineData,
       icon: <Link2 size={18} />,
       sub: totalLinks > 0 ? `${activeLinks} active, ${inactiveLinks} paused` : "No links created yet",
     },
@@ -230,16 +327,20 @@ function MetricCards({
       id: "total_clicks",
       label: "Total clicks",
       value: totalClicks,
-      badgeText: null,
+      delta: clicksDelta,
+      deltaType: clicksDeltaType,
+      sparklineData: sparklineData,
       icon: <MousePointerClick size={18} />,
-      sub: todayClicks > 0 ? `+${todayClicks} clicks today` : "All-time recorded clicks",
+      sub: todayClicks > 0 ? `+${todayClicks} clicks today` : "Total recorded link clicks",
     },
     {
       id: "avg_clicks",
       label: "Avg clicks per link",
       value: totalLinks > 0 ? avgClicks : 0,
       decimals: 1,
-      badgeText: null,
+      delta: avgDelta,
+      deltaType: avgDeltaType,
+      sparklineData: sparklineData,
       icon: <TrendingUp size={18} />,
       sub: totalLinks > 0 ? `${clicksPerActive} per active link` : "Average clicks per link",
     },
@@ -247,23 +348,24 @@ function MetricCards({
       id: "active_links",
       label: "Active links",
       value: activeLinks,
-      badgeText: activeLinks > 0 ? "Active" : "Paused",
-      badgeType: activeLinks > 0 ? "positive" : "neutral",
+      delta: `${activePercent}% capacity`,
+      deltaType: activePercent >= 70 ? "positive" : "neutral",
       icon: <Zap size={18} />,
-      sub: `${activePercent}% routing capacity`,
+      sub: `${activeLinks} of ${totalLinks} actively routing`,
     },
   ];
 
   return (
-    <div className="metrics-grid">
+    <div className={`metrics-grid ${loading ? "data-refreshing" : ""}`}>
       {cards.map((card) => (
         <StatCard
           key={card.id}
           label={card.label}
           value={card.value}
           decimals={card.decimals || 0}
-          delta={card.badgeText}
-          trend={card.badgeType === "positive" ? "up" : "neutral"}
+          delta={card.delta}
+          deltaType={card.deltaType}
+          sparklineData={card.sparklineData}
           helper={card.sub}
           icon={card.icon}
         />
@@ -275,155 +377,6 @@ function MetricCards({
 // ClicksOverviewChart is imported from ./ClicksOverviewChart
 // CHANGE: Prevent chart curve overshoot below zero — 2026-10-19
 
-// -----------------------------------------------------------------------------
-// Component: DonutChart (Device and Browser Breakdown Donut)
-// -----------------------------------------------------------------------------
-function DonutChart({ title, icon, data = [], emptyMessage = "No data recorded yet" }) {
-  const [hoveredIdx, setHoveredIdx] = useState(null);
-
-  const activeItems = useMemo(() => {
-    return (data || []).filter((d) => (d.count || 0) > 0);
-  }, [data]);
-
-  const total = useMemo(() => {
-    return activeItems.reduce((sum, d) => sum + (d.count || 0), 0);
-  }, [activeItems]);
-
-  const size = 124;
-  const strokeWidth = 13;
-  const radius = (size - strokeWidth) / 2 - 3;
-  const circumference = 2 * Math.PI * radius; // ~395.84
-
-  let accumulatedPercent = 0;
-  const slices = activeItems.map((item, idx) => {
-    const pct = total > 0 ? (item.count / total) * 100 : 0;
-    const strokeDasharray = `${(pct / 100) * circumference} ${circumference}`;
-    const strokeDashoffset = -((accumulatedPercent / 100) * circumference);
-    accumulatedPercent += pct;
-    const color = item.color || DONUT_COLORS[idx % DONUT_COLORS.length];
-    return {
-      ...item,
-      pct: Math.round(pct),
-      strokeDasharray,
-      strokeDashoffset,
-      color,
-    };
-  });
-
-  const activeSlice = hoveredIdx !== null ? slices[hoveredIdx] : null;
-
-  const spotlightColor = "var(--accent-soft, rgba(79, 70, 229, 0.12))";
-  const borderColor = "var(--border)";
-
-  return (
-    <SpotlightCard
-      className="donut-card"
-      spotlightColor={spotlightColor}
-      borderColor={borderColor}
-      radius={280}
-    >
-      <div className="donut-card-top">
-        <h4>
-          <span style={{ marginRight: "8px" }}>{icon}</span>
-          {title}
-        </h4>
-        <span className="donut-total-count">
-          {total > 0 ? `${total.toLocaleString()} clicks` : "0 recorded"}
-        </span>
-      </div>
-
-      {total > 0 ? (
-        <div className="donut-card-layout">
-          <div className="donut-svg-box">
-            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-              {/* Background Track Circle */}
-              <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                fill="transparent"
-                stroke="var(--border)"
-                strokeWidth={strokeWidth}
-              />
-              {/* Colored Slices */}
-              {slices.map((slice, idx) => {
-                const isHovered = hoveredIdx === idx;
-                return (
-                  <circle
-                    key={idx}
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    fill="transparent"
-                    stroke={slice.color}
-                    strokeWidth={isHovered ? strokeWidth + 3 : strokeWidth}
-                    strokeDasharray={slice.strokeDasharray}
-                    strokeDashoffset={slice.strokeDashoffset}
-                    strokeLinecap="round"
-                    style={{
-                      transform: "rotate(-90deg)",
-                      transformOrigin: "50% 50%",
-                      transition: "stroke-width 0.2s ease, opacity 0.2s ease",
-                      cursor: "pointer",
-                      opacity: hoveredIdx !== null && !isHovered ? 0.45 : 1,
-                    }}
-                    onMouseEnter={() => setHoveredIdx(idx)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                  />
-                );
-              })}
-              {/* Center text */}
-              <text
-                x="50%"
-                y="47%"
-                textAnchor="middle"
-                fill="var(--text)"
-                fontSize="16"
-                fontWeight="800"
-                fontFamily="Inter, sans-serif"
-              >
-                {activeSlice ? `${activeSlice.pct}%` : total.toLocaleString()}
-              </text>
-              <text
-                x="50%"
-                y="63%"
-                textAnchor="middle"
-                fill="#94A3B8"
-                fontSize="9.5"
-                fontFamily="Inter, sans-serif"
-              >
-                {activeSlice ? activeSlice.name : "Total Clicks"}
-              </text>
-            </svg>
-          </div>
-
-          <div className="donut-legend-list">
-            {slices.map((item, idx) => (
-              <div
-                key={idx}
-                className="donut-legend-row"
-                onMouseEnter={() => setHoveredIdx(idx)}
-                onMouseLeave={() => setHoveredIdx(null)}
-                style={{ cursor: "pointer" }}
-              >
-                <div className="donut-legend-item">
-                  <span className="legend-swatch" style={{ background: item.color }} />
-                  <span className="legend-label-name">{item.name}</span>
-                </div>
-                <div className="donut-legend-stats">
-                  <span className="legend-val-num">{item.count} {item.count === 1 ? "click" : "clicks"}</span>
-                  <span className="legend-val-pct">{item.pct}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <p className="donut-empty-text">{emptyMessage}</p>
-      )}
-    </SpotlightCard>
-  );
-}
 
 // -----------------------------------------------------------------------------
 // Component: ActivityHeatmap (7 Days x 24 Hours in IST)
@@ -582,906 +535,12 @@ function ActivityHeatmap({ history = [] }) {
 // Component: YearlyActivityGraph (GitHub-Style Yearly Contribution Activity in IST)
 // -----------------------------------------------------------------------------
 function YearlyActivityGraph({ history = [], dailyTrends = [], totalClicks = 0 }) {
-  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
-  const [hoveredDay, setHoveredDay] = useState(null);
-  const [hoveredMonth, setHoveredMonth] = useState(null);
-  const [hoveredWeek, setHoveredWeek] = useState(null);
-  const [hoveredDow, setHoveredDow] = useState(null);
-  const cardRef = useRef(null);
-
-  // 1. Build a fast lookup map of IST dates YYYY-MM-DD -> click count
-  const { dateClickMap, availableYears, currentYearClicks } = useMemo(() => {
-    const map = {};
-    const yearsSet = new Set();
-    const currentYr = new Date().getFullYear();
-    yearsSet.add(currentYr);
-    // Ensure previous 2 years are available for selection even if empty
-    yearsSet.add(currentYr - 1);
-    yearsSet.add(currentYr - 2);
-
-    // Populate from dailyTrends (already in IST YYYY-MM-DD)
-    (dailyTrends || []).forEach((t) => {
-      if (t.isoDate) {
-        map[t.isoDate] = (map[t.isoDate] || 0) + (t.count || 0);
-        const yr = parseInt(t.isoDate.split("-")[0], 10);
-        if (!isNaN(yr)) yearsSet.add(yr);
-      }
-    });
-
-    // Populate from click history (convert clickedAt to IST YYYY-MM-DD)
-    (history || []).forEach((c) => {
-      if (!c.clickedAt) return;
-      const d = new Date(c.clickedAt);
-      if (isNaN(d.getTime())) return;
-      // Convert to IST (+05:30)
-      const istTime = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
-      const iso = istTime.toISOString().slice(0, 10);
-      if (!map[iso]) {
-        map[iso] = (map[iso] || 0) + 1;
-      }
-      const yr = istTime.getUTCFullYear();
-      if (!isNaN(yr)) yearsSet.add(yr);
-    });
-
-    const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
-
-    // Calculate total clicks for the selected year
-    let yrClicks = 0;
-    Object.keys(map).forEach((dateKey) => {
-      if (dateKey.startsWith(`${selectedYear}-`)) {
-        yrClicks += map[dateKey];
-      }
-    });
-
-    return {
-      dateClickMap: map,
-      availableYears: sortedYears,
-      currentYearClicks: yrClicks,
-    };
-  }, [history, dailyTrends, selectedYear]);
-
-  // 2. Generate calendar weeks (52-53 weeks) for selectedYear
-  const { weeks, monthHeaders, maxDayClicks } = useMemo(() => {
-    const isLeap = (selectedYear % 4 === 0 && selectedYear % 100 !== 0) || selectedYear % 400 === 0;
-    const daysInYear = isLeap ? 366 : 365;
-
-    const startDate = new Date(Date.UTC(selectedYear, 0, 1));
-    const startDayOfWeek = (startDate.getUTCDay() + 6) % 7; // 0 for Mon ... 6 for Sun
-
-    const allWeeks = [];
-    let currentWeek = [];
-    const months = [];
-    let lastMonthSeen = -1;
-    let maxClicks = 0;
-
-    // Pad beginning of first week if Jan 1 is not Monday
-    for (let i = 0; i < startDayOfWeek; i++) {
-      currentWeek.push(null);
-    }
-
-    // Iterate through every day of the year
-    for (let dayOfYear = 0; dayOfYear < daysInYear; dayOfYear++) {
-      const curDate = new Date(Date.UTC(selectedYear, 0, 1 + dayOfYear));
-      const m = curDate.getUTCMonth();
-      const d = curDate.getUTCDate();
-      const isoDate = `${selectedYear}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      const clicks = dateClickMap[isoDate] || 0;
-      if (clicks > maxClicks) maxClicks = clicks;
-
-      if (m !== lastMonthSeen) {
-        lastMonthSeen = m;
-        months.push({
-          monthIndex: m,
-          name: curDate.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }),
-          weekColIndex: allWeeks.length,
-        });
-      }
-
-      currentWeek.push({
-        date: curDate,
-        isoDate,
-        month: m,
-        dayOfMonth: d,
-        clicks,
-        formattedDate: curDate.toLocaleDateString("en-US", {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-          timeZone: "UTC",
-        }),
-      });
-
-      if (currentWeek.length === 7) {
-        allWeeks.push(currentWeek);
-        currentWeek = [];
-      }
-    }
-
-    if (currentWeek.length > 0) {
-      while (currentWeek.length < 7) {
-        currentWeek.push(null);
-      }
-      allWeeks.push(currentWeek);
-    }
-
-    return {
-      weeks: allWeeks,
-      monthHeaders: months,
-      maxDayClicks: maxClicks,
-    };
-  }, [selectedYear, dateClickMap]);
-
-  // 3. Dynamic Statistics for Yearly Activity Summary Panel (Right Side)
-  const summaryStats = useMemo(() => {
-    const monthNamesShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const monthNamesFull = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
-    ];
-
-    const monthlyData = Array.from({ length: 12 }, (_, i) => ({
-      monthIndex: i,
-      nameShort: monthNamesShort[i],
-      nameFull: monthNamesFull[i],
-      clicks: 0,
-    }));
-
-    let totalYearClicks = 0;
-    let activeDaysCount = 0;
-    let busiestDay = null;
-    let maxClicksOnDay = 0;
-
-    Object.keys(dateClickMap).forEach((dateKey) => {
-      if (dateKey.startsWith(`${selectedYear}-`)) {
-        const count = dateClickMap[dateKey] || 0;
-        if (count > 0) {
-          totalYearClicks += count;
-          activeDaysCount += 1;
-
-          const parts = dateKey.split("-").map(Number);
-          const mIdx = parts[1] - 1;
-          const dayNum = parts[2];
-
-          if (mIdx >= 0 && mIdx < 12) {
-            monthlyData[mIdx].clicks += count;
-          }
-
-          if (count > maxClicksOnDay) {
-            maxClicksOnDay = count;
-            const d = new Date(Date.UTC(parts[0], mIdx, dayNum));
-            busiestDay = {
-              isoDate: dateKey,
-              formattedDate: d.toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-                timeZone: "UTC",
-              }),
-              clicks: count,
-            };
-          }
-        }
-      }
-    });
-
-    let busiestMonth = null;
-    let maxMonthClicks = 0;
-    monthlyData.forEach((m) => {
-      if (m.clicks > maxMonthClicks) {
-        maxMonthClicks = m.clicks;
-        busiestMonth = m;
-      }
-    });
-
-    const avgClicksPerActiveDay = activeDaysCount > 0
-      ? (totalYearClicks / activeDaysCount).toFixed(1)
-      : "0.0";
-
-    return {
-      totalYearClicks,
-      activeDaysCount,
-      busiestMonth: busiestMonth ? { name: busiestMonth.nameFull, nameShort: busiestMonth.nameShort, clicks: busiestMonth.clicks } : null,
-      busiestDay,
-      avgClicksPerActiveDay,
-      monthlyData,
-      maxMonthClicks,
-    };
-  }, [dateClickMap, selectedYear]);
-
-  // 4. Weekly Click Activity Data across up to 53 weeks (Indian Standard Time)
-  const weeklyData = useMemo(() => {
-    let maxClicks = 0;
-    let totalClicks = 0;
-
-    const list = weeks.map((week, idx) => {
-      const nonNullDays = week.filter(Boolean);
-      const weekClicks = week.reduce((sum, d) => sum + (d ? d.clicks : 0), 0);
-      if (weekClicks > maxClicks) maxClicks = weekClicks;
-      totalClicks += weekClicks;
-
-      const firstDay = nonNullDays[0];
-      const lastDay = nonNullDays[nonNullDays.length - 1];
-      const rangeLabel = firstDay && lastDay
-        ? `${firstDay.formattedDate.split(",")[1]?.trim() || firstDay.isoDate} – ${lastDay.formattedDate.split(",")[1]?.trim() || lastDay.isoDate}`
-        : `Week ${idx + 1}`;
-
-      return {
-        weekIndex: idx + 1,
-        clicks: weekClicks,
-        rangeLabel,
-      };
-    });
-
-    // Generate SVG path coordinates
-    let linePath = "";
-    let areaPath = "";
-
-    if (maxClicks > 0 && list.length > 0) {
-      const pts = list.map((w, idx) => {
-        const x = 36 + (idx / Math.max(1, list.length - 1)) * 709;
-        const y = 88 - (w.clicks / maxClicks) * 72;
-        return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
-      });
-
-      linePath = `M ${pts[0].x},${pts[0].y} ` + pts.slice(1).map((p) => `L ${p.x},${p.y}`).join(" ");
-      areaPath = `M ${pts[0].x},88 L ${pts[0].x},${pts[0].y} ` +
-        pts.slice(1).map((p) => `L ${p.x},${p.y}`).join(" ") +
-        ` L ${pts[pts.length - 1].x},88 Z`;
-    }
-
-    return {
-      list,
-      maxClicks,
-      totalClicks,
-      linePath,
-      areaPath,
-    };
-  }, [weeks]);
-
-  // 5. Day-of-Week Analysis Data (Monday through Sunday)
-  const dowData = useMemo(() => {
-    const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    const dayNamesShort = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const counts = [0, 0, 0, 0, 0, 0, 0];
-    let totalClicks = 0;
-
-    weeks.forEach((week) => {
-      week.forEach((day, dIdx) => {
-        if (day && day.clicks > 0) {
-          counts[dIdx] += day.clicks;
-          totalClicks += day.clicks;
-        }
-      });
-    });
-
-    let maxDayClicks = 0;
-    let busiestIdx = -1;
-    counts.forEach((c, idx) => {
-      if (c > maxDayClicks) {
-        maxDayClicks = c;
-        busiestIdx = idx;
-      }
-    });
-
-    const list = dayNames.map((name, idx) => ({
-      name,
-      nameShort: dayNamesShort[idx],
-      clicks: counts[idx],
-      percent: totalClicks > 0 ? ((counts[idx] / totalClicks) * 100).toFixed(1) : "0.0",
-      isBusiest: busiestIdx === idx && counts[idx] > 0,
-    }));
-
-    return {
-      list,
-      maxDayClicks,
-      totalClicks,
-      busiestDay: busiestIdx >= 0 && counts[busiestIdx] > 0 ? list[busiestIdx] : null,
-    };
-  }, [weeks]);
-
-  // 6. X-Axis Week Ticks for Weekly Click Activity (Week 1–53)
-  const weekTicks = useMemo(() => {
-    if (!weeklyData.list || weeklyData.list.length === 0) return [];
-    const totalWeeks = weeklyData.list.length;
-    const lastIdx = totalWeeks - 1;
-    // Step by 5 weeks: Week 1 (idx 0), Week 5 (idx 4), Week 10 (idx 9)... up to end
-    const tickIndices = [0];
-    for (let w = 5; w < totalWeeks; w += 5) {
-      tickIndices.push(w - 1);
-    }
-    if (!tickIndices.includes(lastIdx)) {
-      if (lastIdx - tickIndices[tickIndices.length - 1] < 2) {
-        tickIndices[tickIndices.length - 1] = lastIdx;
-      } else {
-        tickIndices.push(lastIdx);
-      }
-    }
-
-    return tickIndices.map((idx) => {
-      const w = weeklyData.list[idx];
-      const xPos = 36 + (idx / Math.max(1, totalWeeks - 1)) * 709;
-      const isFirst = idx === 0;
-      const isLast = idx === lastIdx;
-      return {
-        idx,
-        weekNum: idx + 1,
-        label: `W${idx + 1}`,
-        fullLabel: `Week ${idx + 1}`,
-        rangeLabel: w ? w.rangeLabel : `Week ${idx + 1}`,
-        xPos,
-        textAnchor: isFirst ? "start" : isLast ? "end" : "middle",
-      };
-    });
-  }, [weeklyData.list]);
-
-  // Intensity level calculation (0 to 4)
-  const getIntensityLevel = (count) => {
-    if (count === 0) return 0;
-    if (maxDayClicks <= 3) return Math.min(count, 4);
-    const ratio = count / maxDayClicks;
-    if (ratio >= 0.75) return 4;
-    if (ratio >= 0.5) return 3;
-    if (ratio >= 0.25) return 2;
-    return 1;
-  };
-
-  const dayLabels = ["Mon", "", "Wed", "", "Fri", "", "Sun"];
-
   return (
-    <div className="yearly-graph-card" ref={cardRef}>
-      {/* Top Header Row with Title and Year Selector */}
-      <div className="yearly-graph-topbar">
-        <div className="yearly-graph-title-group">
-          <h3>
-            <Calendar size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "8px", color: "var(--accent)" }} />
-            Click Activity Graph ({selectedYear})
-          </h3>
-          <p>Daily click activity and frequency.</p>
-        </div>
-
-        <div className="yearly-graph-actions">
-          <div className="yearly-total-badge">
-            <span className="yearly-total-num">{summaryStats.totalYearClicks.toLocaleString()}</span> clicks in {selectedYear}
-          </div>
-
-          <select
-            className="year-select-dropdown"
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            aria-label="Select Activity Year"
-          >
-            {availableYears.map((yr) => (
-              <option key={yr} value={yr}>
-                {yr}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Main Two-Column Side-by-Side Layout */}
-      <div className="yearly-main-layout">
-        {/* LEFT COLUMN: Contribution Calendar + Weekly Click Activity + Day-of-Week Analysis */}
-        <div className="yearly-calendar-panel">
-          {/* Block 1: Contribution Calendar (Top) */}
-          <SpotlightCard
-            className="yearly-panel-block calendar-sub-block"
-            spotlightColor="rgba(168, 85, 247, 0.22)"
-            borderColor="rgba(192, 132, 252, 0.65)"
-            radius={340}
-          >
-            <div className="yearly-panel-title">
-              <span>Contribution Calendar</span>
-              <span className="yearly-sub-hint">53 Weeks · Monday to Sunday (IST)</span>
-            </div>
-
-            <div className="yearly-graph-container">
-              <div className="yearly-graph-scroll">
-                {/* Month labels row */}
-                <div className="yearly-months-row">
-                  <div className="yearly-day-label-placeholder" />
-                  <div className="yearly-months-track">
-                    {monthHeaders.map((m, idx) => (
-                      <span
-                        key={idx}
-                        className="yearly-month-label"
-                        style={{ left: `${m.weekColIndex * 15}px` }}
-                      >
-                        {m.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Grid body: Weekday labels on left + 53 week columns on right */}
-                <div className="yearly-grid-body">
-                  <div className="yearly-day-labels-col">
-                    {dayLabels.map((lbl, idx) => (
-                      <span key={idx} className="yearly-day-label">
-                        {lbl}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="yearly-weeks-grid">
-                    {weeks.map((week, wIdx) => (
-                      <div key={wIdx} className="yearly-week-col">
-                        {week.map((day, dIdx) => {
-                          if (!day) {
-                            return <div key={dIdx} className="yearly-cell yearly-cell-empty" />;
-                          }
-                          const lvl = getIntensityLevel(day.clicks);
-                          return (
-                            <div
-                              key={dIdx}
-                              className={`yearly-cell yearly-cell-lvl-${lvl}`}
-                              onMouseEnter={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const cardRect = cardRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
-                                setHoveredDay({
-                                  ...day,
-                                  x: rect.left - cardRect.left + rect.width / 2,
-                                  y: rect.top - cardRect.top,
-                                });
-                              }}
-                              onMouseLeave={() => setHoveredDay(null)}
-                              aria-label={`${day.clicks} clicks on ${day.formattedDate}`}
-                            />
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating Tooltip */}
-              {hoveredDay && (
-                <div
-                  className="yearly-tooltip"
-                  style={{
-                    left: `${hoveredDay.x}px`,
-                    top: `${hoveredDay.y - 12}px`,
-                  }}
-                >
-                  <div className="yearly-tooltip-count">
-                    {hoveredDay.clicks > 0
-                      ? `${hoveredDay.clicks} ${hoveredDay.clicks === 1 ? "click" : "clicks"}`
-                      : "No clicks"}
-                  </div>
-                  <div className="yearly-tooltip-date">{hoveredDay.formattedDate} (IST)</div>
-                </div>
-              )}
-            </div>
-
-            {/* Legend & Stats footer */}
-            <div className="yearly-graph-footer">
-              <span className="yearly-footer-note">Hover over any day square to inspect recorded clicks in IST</span>
-              <div className="yearly-legend">
-                <span className="yearly-legend-text">Less</span>
-                <div className="yearly-legend-cell yearly-cell-lvl-0" />
-                <div className="yearly-legend-cell yearly-cell-lvl-1" />
-                <div className="yearly-legend-cell yearly-cell-lvl-2" />
-                <div className="yearly-legend-cell yearly-cell-lvl-3" />
-                <div className="yearly-legend-cell yearly-cell-lvl-4" />
-                <span className="yearly-legend-text">More</span>
-              </div>
-            </div>
-          </SpotlightCard>
-
-          {/* Block 2: Weekly Click Activity (Middle) */}
-          <SpotlightCard
-            className="yearly-panel-block weekly-chart-block"
-            spotlightColor="rgba(56, 189, 248, 0.24)"
-            borderColor="rgba(56, 189, 248, 0.70)"
-            radius={340}
-          >
-            <div className="weekly-chart-header">
-              <div className="weekly-title-group">
-                <h5>
-                  <TrendingUp size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px", color: "var(--accent)" }} />
-                  Weekly Click Activity ({selectedYear})
-                </h5>
-                <p>Weekly click totals across 52 weeks.</p>
-              </div>
-            </div>
-
-            <div className="weekly-chart-svg-wrap">
-              <svg viewBox="0 0 760 110" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="weeklyAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.45" />
-                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.02" />
-                  </linearGradient>
-                </defs>
-
-                {/* Horizontal reference grid lines */}
-                <line x1="36" y1="16" x2="745" y2="16" stroke="var(--border)" strokeDasharray="3,3" />
-                <line x1="36" y1="52" x2="745" y2="52" stroke="var(--border)" strokeDasharray="3,3" />
-                <line x1="36" y1="88" x2="745" y2="88" stroke="var(--border)" />
-
-                {/* Y-axis tick labels */}
-                <text x="30" y="19" fill="#64748b" fontSize="9" textAnchor="end">{weeklyData.maxClicks > 0 ? weeklyData.maxClicks : "-"}</text>
-                <text x="30" y="55" fill="#64748b" fontSize="9" textAnchor="end">{weeklyData.maxClicks > 0 ? Math.round(weeklyData.maxClicks / 2) : "-"}</text>
-                <text x="30" y="91" fill="#64748b" fontSize="9" textAnchor="end">0</text>
-
-                {/* X-axis Week Markers (Week 1–53) */}
-                {weekTicks.map((tick) => (
-                  <g key={tick.idx}>
-                    <line
-                      x1={tick.xPos}
-                      y1="88"
-                      x2={tick.xPos}
-                      y2="92"
-                      stroke="var(--border)"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x={tick.xPos}
-                      y="103"
-                      fill="#94a3b8"
-                      fontSize="8.5"
-                      fontWeight="500"
-                      textAnchor={tick.textAnchor}
-                    >
-                      {tick.label}
-                    </text>
-                  </g>
-                ))}
-
-                {/* Area and Line Path */}
-                {weeklyData.maxClicks > 0 ? (
-                  <>
-                    <path
-                      d={weeklyData.areaPath}
-                      fill="url(#weeklyAreaGrad)"
-                    />
-                    <path
-                      d={weeklyData.linePath}
-                      fill="none"
-                      stroke="#c084fc"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-
-                    {/* Data points on active weeks */}
-                    {weeklyData.list.map((w, wIdx) => {
-                      if (w.clicks === 0) return null;
-                      const x = 36 + (wIdx / Math.max(1, weeklyData.list.length - 1)) * 709;
-                      const y = 88 - (w.clicks / weeklyData.maxClicks) * 72;
-                      return (
-                        <circle
-                          key={wIdx}
-                          cx={x}
-                          cy={y}
-                          r="4"
-                          fill="#38bdf8"
-                          stroke="#0f172a"
-                          strokeWidth="2"
-                        />
-                      );
-                    })}
-                  </>
-                ) : (
-                  <text x="390" y="52" fill="#64748b" fontSize="11" textAnchor="middle">
-                    No weekly click activity recorded for {selectedYear}
-                  </text>
-                )}
-
-                {/* Interactive Hover Guideline & Tooltip Tag */}
-                {hoveredWeek && (
-                  <>
-                    <line
-                      x1={hoveredWeek.x}
-                      y1="16"
-                      x2={hoveredWeek.x}
-                      y2="88"
-                      stroke="#38bdf8"
-                      strokeWidth="1.5"
-                      strokeDasharray="2,2"
-                    />
-                    <circle
-                      cx={hoveredWeek.x}
-                      cy={hoveredWeek.y}
-                      r="5"
-                      fill="#38bdf8"
-                      stroke="var(--surface)"
-                      strokeWidth="2"
-                    />
-                    <g transform={`translate(${Math.min(680, Math.max(70, hoveredWeek.x))}, ${hoveredWeek.y > 45 ? hoveredWeek.y - 18 : hoveredWeek.y + 20})`}>
-                      <rect x="-46" y="-11" width="92" height="19" rx="4" fill="var(--surface-2)" stroke="var(--accent)" strokeWidth="1" />
-                      <text x="0" y="2" fill="#38bdf8" fontSize="9" fontWeight="700" textAnchor="middle" dominantBaseline="middle">
-                        W{hoveredWeek.weekIndex}: {hoveredWeek.clicks} {hoveredWeek.clicks === 1 ? "click" : "clicks"}
-                      </text>
-                    </g>
-                  </>
-                )}
-
-                {/* Transparent hover capture rects */}
-                {weeklyData.list.map((w, wIdx) => {
-                  const x = 36 + (wIdx / Math.max(1, weeklyData.list.length - 1)) * 709;
-                  const y = weeklyData.maxClicks > 0 ? 88 - (w.clicks / weeklyData.maxClicks) * 72 : 88;
-                  const sliceWidth = 709 / weeklyData.list.length;
-                  return (
-                    <rect
-                      key={wIdx}
-                      x={x - sliceWidth / 2}
-                      y="10"
-                      width={sliceWidth}
-                      height="80"
-                      fill="transparent"
-                      cursor="pointer"
-                      onMouseEnter={() => setHoveredWeek({ ...w, x, y })}
-                      onMouseLeave={() => setHoveredWeek(null)}
-                    />
-                  );
-                })}
-              </svg>
-            </div>
-
-            <div className="weekly-chart-footer">
-              {hoveredWeek ? (
-                <span className="weekly-hover-info">
-                  <strong>Week {hoveredWeek.weekIndex} ({hoveredWeek.rangeLabel})</strong>: {hoveredWeek.clicks} {hoveredWeek.clicks === 1 ? "click" : "clicks"}
-                </span>
-              ) : (
-                <span className="weekly-chart-hint">
-                  {weeklyData.totalClicks > 0
-                    ? `Hover curve to inspect weekly volume · ${weeklyData.totalClicks} clicks recorded across 52 weeks`
-                    : `No weekly click records for ${selectedYear}`}
-                </span>
-              )}
-            </div>
-          </SpotlightCard>
-
-          {/* Block 3: Day-of-Week Analysis (Bottom) */}
-          <SpotlightCard
-            className="yearly-panel-block dow-chart-block"
-            spotlightColor="rgba(168, 85, 247, 0.24)"
-            borderColor="rgba(192, 132, 252, 0.70)"
-            radius={340}
-          >
-            <div className="dow-chart-header">
-              <div className="dow-title-group">
-                <h5>
-                  <BarChart3 size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px", color: "var(--accent)" }} />
-                  Day-of-Week Analysis
-                </h5>
-                <p>Traffic distribution from Monday through Sunday.</p>
-              </div>
-            </div>
-
-            <div className="dow-bars-container">
-              {dowData.list.map((day, dIdx) => {
-                const ratio = dowData.maxDayClicks > 0 ? day.clicks / dowData.maxDayClicks : 0;
-                const heightPercent = dowData.maxDayClicks > 0
-                  ? Math.max(day.clicks > 0 ? 14 : 4, Math.round(ratio * 100))
-                  : 4;
-
-                return (
-                  <div
-                    key={dIdx}
-                    className={`dow-bar-col ${day.isBusiest ? "busiest-dow-col" : ""}`}
-                    onMouseEnter={() => setHoveredDow(day)}
-                    onMouseLeave={() => setHoveredDow(null)}
-                    title={`${day.name}: ${day.clicks} clicks (${day.percent}%)`}
-                  >
-                    {hoveredDow && hoveredDow.name === day.name && (
-                      <div className="dow-floating-tooltip">
-                        {day.clicks} {day.clicks === 1 ? "click" : "clicks"} ({day.percent}%)
-                      </div>
-                    )}
-                    <div className="dow-bar-val">
-                      {day.clicks > 0 ? day.clicks : ""}
-                    </div>
-
-                    <div className="dow-bar-track">
-                      <div
-                        className={`dow-bar-fill ${day.clicks > 0 ? "has-clicks" : "zero-clicks"}`}
-                        style={{ height: `${heightPercent}%` }}
-                      />
-                    </div>
-
-                    <span className={`dow-bar-label ${day.isBusiest ? "busiest-dow-label" : ""}`}>
-                      {day.nameShort}
-                    </span>
-                    <span className="dow-bar-percent">
-                      {dowData.totalClicks > 0 ? `${day.percent}%` : "0%"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="dow-chart-footer">
-              {hoveredDow ? (
-                <span className="dow-hover-info">
-                  <strong>{hoveredDow.name}</strong>: {hoveredDow.clicks} {hoveredDow.clicks === 1 ? "click" : "clicks"} ({hoveredDow.percent}% of yearly total)
-                </span>
-              ) : (
-                <span className="dow-chart-hint">
-                  {dowData.totalClicks > 0
-                    ? `Hover day column to inspect weekday concentration · Busiest: ${dowData.busiestDay ? dowData.busiestDay.name : "None"}`
-                    : `No weekday click data recorded in ${selectedYear}`}
-                </span>
-              )}
-            </div>
-          </SpotlightCard>
-        </div>
-
-        {/* RIGHT PANEL: Yearly Activity Summary */}
-        <div className="yearly-summary-panel">
-          <div className="yearly-summary-top">
-            <div className="yearly-summary-title">
-              <BarChart3 size={15} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px", color: "var(--accent)" }} />
-              <h4>Yearly Activity Summary</h4>
-            </div>
-            <span className="summary-year-tag">{selectedYear}</span>
-          </div>
-
-          {/* 5 KPI Metric Cards */}
-          <div className="yearly-summary-metrics-grid">
-            {/* Metric 1: Total Clicks */}
-            <SpotlightCard
-              className="summary-metric-card"
-              spotlightColor="rgba(99, 102, 241, 0.30)"
-              borderColor="rgba(129, 140, 248, 0.75)"
-              radius={190}
-            >
-              <div className="metric-card-header">
-                <span className="metric-card-label">Total Clicks</span>
-                <MousePointerClick size={14} style={{ color: "var(--accent)" }} />
-              </div>
-              <div className="metric-card-value">{summaryStats.totalYearClicks.toLocaleString()}</div>
-              <div className="metric-card-subtext">in {selectedYear}</div>
-            </SpotlightCard>
-
-            {/* Metric 2: Active Days */}
-            <SpotlightCard
-              className="summary-metric-card"
-              spotlightColor="rgba(168, 85, 247, 0.30)"
-              borderColor="rgba(192, 132, 252, 0.75)"
-              radius={190}
-            >
-              <div className="metric-card-header">
-                <span className="metric-card-label">Active Days</span>
-                <Calendar size={14} style={{ color: "var(--accent)" }} />
-              </div>
-              <div className="metric-card-value">
-                {summaryStats.activeDaysCount} <span className="metric-unit">{summaryStats.activeDaysCount === 1 ? "day" : "days"}</span>
-              </div>
-              <div className="metric-card-subtext">with &ge;1 recorded click</div>
-            </SpotlightCard>
-
-            {/* Metric 3: Avg Clicks / Active Day */}
-            <SpotlightCard
-              className="summary-metric-card"
-              spotlightColor="rgba(6, 182, 212, 0.30)"
-              borderColor="rgba(56, 189, 248, 0.75)"
-              radius={190}
-            >
-              <div className="metric-card-header">
-                <span className="metric-card-label">Avg / Active Day</span>
-                <Zap size={14} style={{ color: "var(--accent)" }} />
-              </div>
-              <div className="metric-card-value">
-                {summaryStats.avgClicksPerActiveDay}
-              </div>
-              <div className="metric-card-subtext">clicks per active day</div>
-            </SpotlightCard>
-
-            {/* Metric 4: Busiest Month */}
-            <SpotlightCard
-              className="summary-metric-card"
-              spotlightColor="rgba(245, 158, 11, 0.28)"
-              borderColor="rgba(251, 191, 36, 0.75)"
-              radius={190}
-            >
-              <div className="metric-card-header">
-                <span className="metric-card-label">Busiest Month</span>
-                <Trophy size={14} style={{ color: "var(--warning)" }} />
-              </div>
-              <div className="metric-card-value" title={summaryStats.busiestMonth ? summaryStats.busiestMonth.name : "None"}>
-                {summaryStats.busiestMonth ? summaryStats.busiestMonth.nameShort : "None"}
-              </div>
-              <div className="metric-card-subtext">
-                {summaryStats.busiestMonth ? `${summaryStats.busiestMonth.clicks} clicks` : "No clicks recorded"}
-              </div>
-            </SpotlightCard>
-
-            {/* Metric 5: Busiest Day */}
-            <SpotlightCard
-              className="summary-metric-card summary-metric-card-wide"
-              spotlightColor="rgba(244, 63, 94, 0.28)"
-              borderColor="rgba(251, 113, 133, 0.75)"
-              radius={240}
-            >
-              <div className="metric-card-header">
-                <span className="metric-card-label">Busiest Day</span>
-                <TrendingUp size={14} style={{ color: "var(--danger)" }} />
-              </div>
-              <div className="metric-card-value">
-                {summaryStats.busiestDay ? summaryStats.busiestDay.formattedDate : "None"}
-              </div>
-              <div className="metric-card-subtext">
-                {summaryStats.busiestDay ? `${summaryStats.busiestDay.clicks} clicks recorded (IST)` : "No clicks recorded in " + selectedYear}
-              </div>
-            </SpotlightCard>
-          </div>
-
-          {/* Metric 6: Monthly Activity Chart comparing all 12 months */}
-          <SpotlightCard
-            className="yearly-monthly-chart-box"
-            spotlightColor="rgba(168, 85, 247, 0.24)"
-            borderColor="rgba(192, 132, 252, 0.65)"
-            radius={280}
-          >
-            <div className="monthly-chart-header">
-              <span className="monthly-chart-title">Monthly Activity (12 Months)</span>
-              <span className="monthly-chart-legend">
-                {summaryStats.maxMonthClicks > 0
-                  ? `Peak: ${summaryStats.maxMonthClicks} clicks`
-                  : `0 clicks in ${selectedYear}`}
-              </span>
-            </div>
-
-            <div className="monthly-bars-container">
-              {summaryStats.monthlyData.map((m) => {
-                const ratio = summaryStats.maxMonthClicks > 0 ? m.clicks / summaryStats.maxMonthClicks : 0;
-                const heightPercent = summaryStats.maxMonthClicks > 0
-                  ? Math.max(m.clicks > 0 ? 14 : 4, Math.round(ratio * 100))
-                  : 4;
-                const isBusiest = summaryStats.busiestMonth && summaryStats.busiestMonth.nameShort === m.nameShort && m.clicks > 0;
-
-                return (
-                  <div
-                    key={m.monthIndex}
-                    className={`monthly-bar-col ${isBusiest ? "busiest-month-col" : ""}`}
-                    onMouseEnter={() => setHoveredMonth(m)}
-                    onMouseLeave={() => setHoveredMonth(null)}
-                  >
-                    {/* Click count label above bar if > 0 */}
-                    <div className="monthly-bar-val">
-                      {m.clicks > 0 ? m.clicks : ""}
-                    </div>
-
-                    {/* Bar track & fill */}
-                    <div className="monthly-bar-track">
-                      <div
-                        className={`monthly-bar-fill ${m.clicks > 0 ? "has-clicks" : "zero-clicks"}`}
-                        style={{ height: `${heightPercent}%` }}
-                      />
-                    </div>
-
-                    {/* Month label */}
-                    <span className={`monthly-bar-label ${isBusiest ? "busiest-label" : ""}`}>
-                      {m.nameShort}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Hover details / contextual helper */}
-            <div className="monthly-chart-footer">
-              {hoveredMonth ? (
-                <span className="monthly-hover-info">
-                  <strong>{hoveredMonth.nameFull} {selectedYear}</strong>: {hoveredMonth.clicks} {hoveredMonth.clicks === 1 ? "click" : "clicks"}
-                </span>
-              ) : (
-                <span className="monthly-chart-hint">
-                  {summaryStats.totalYearClicks > 0
-                    ? `Hover bar to inspect monthly volume · ${summaryStats.totalYearClicks} clicks total`
-                    : `No click activity recorded across 12 months for ${selectedYear}`}
-                </span>
-              )}
-            </div>
-          </SpotlightCard>
-        </div>
-      </div>
-    </div>
+    <DashboardActivityView
+      history={history}
+      dailyTrends={dailyTrends}
+      totalClicks={totalClicks}
+    />
   );
 }
 
@@ -1689,25 +748,31 @@ function getExpiryDisplayInfo(expiresAt) {
 }
 
 // -----------------------------------------------------------------------------
-// Component: RecentLinksTable (Links Table with Copy, Status, and Actions)
+// Component: RecentLinksTable (Links Table with Multi-Select, Bulk Actions, Drawer, Tags)
 // -----------------------------------------------------------------------------
 function RecentLinksTable({
   links = [],
+  loading = false,
   onCopy,
   copiedLinkId,
   onOpenAnalytics,
-  // CHANGE: QR Code Feature Stage 4 — 2026-11-05
   onOpenQRCode,
-  // CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
   onTogglePause,
   onOpenAccessModal,
+  onDeleteLink,
+  onBulkAction,
+  onRowClick,
   togglingLinkId,
   searchTerm,
   setSearchTerm,
   sortOrder,
   setSortOrder,
+  onCreateLink,
 }) {
   const tableBoxRef = useRef(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showBulkTagInput, setShowBulkTagInput] = useState(false);
+  const [bulkTagText, setBulkTagText] = useState("");
 
   const filteredLinks = useMemo(() => {
     let list = [...links];
@@ -1718,7 +783,8 @@ function RecentLinksTable({
         (l) =>
           l.shortCode?.toLowerCase().includes(q) ||
           l.originalUrl?.toLowerCase().includes(q) ||
-          l.utmCampaign?.toLowerCase().includes(q)
+          l.utmCampaign?.toLowerCase().includes(q) ||
+          (Array.isArray(l.tags) && l.tags.some((t) => t.toLowerCase().includes(q)))
       );
     }
 
@@ -1741,12 +807,53 @@ function RecentLinksTable({
     }
   }, [filteredLinks]);
 
+  const isAllSelected = filteredLinks.length > 0 && filteredLinks.every((l) => selectedIds.has(l._id));
+  const isSomeSelected = selectedIds.size > 0 && !isAllSelected;
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredLinks.map((l) => l._id)));
+    }
+  };
+
+  const toggleSelectOne = (id, e) => {
+    e.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleApplyBulkTag = () => {
+    if (!bulkTagText.trim()) return;
+    onBulkAction?.("addTag", Array.from(selectedIds), bulkTagText.trim());
+    setBulkTagText("");
+    setShowBulkTagInput(false);
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkActionClick = (action) => {
+    if (action === "delete") {
+      if (window.confirm(`Are you sure you want to delete ${selectedIds.size} selected link(s)?`)) {
+        onBulkAction?.("delete", Array.from(selectedIds));
+        setSelectedIds(new Set());
+      }
+    } else {
+      onBulkAction?.(action, Array.from(selectedIds));
+      setSelectedIds(new Set());
+    }
+  };
+
   return (
     <div className="links-table-card">
       <div className="table-topbar">
         <div className="table-topbar-title">
           <h3>Recent Links</h3>
-          <p>Manage and track your active short links.</p>
+          <p>Manage, organize, and track your active short links. Click any row for details.</p>
         </div>
 
         <div className="table-actions-group">
@@ -1763,10 +870,96 @@ function RecentLinksTable({
         </div>
       </div>
 
+      {/* Multi-Select Bulk Actions Toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="table-bulk-toolbar">
+          <div className="bulk-selected-count">
+            <span className="bulk-badge">{selectedIds.size}</span>
+            <span>link{selectedIds.size === 1 ? "" : "s"} selected</span>
+          </div>
+
+          <div className="bulk-actions-buttons">
+            <Button
+              size="xs"
+              variant="secondary"
+              icon={Pause}
+              onClick={() => handleBulkActionClick("pause")}
+            >
+              Pause
+            </Button>
+            <Button
+              size="xs"
+              variant="secondary"
+              icon={Play}
+              onClick={() => handleBulkActionClick("resume")}
+            >
+              Resume
+            </Button>
+            <Button
+              size="xs"
+              variant="secondary"
+              icon={Tag}
+              onClick={() => setShowBulkTagInput((p) => !p)}
+            >
+              Add Tag
+            </Button>
+            <Button
+              size="xs"
+              variant="danger"
+              icon={Trash2}
+              onClick={() => handleBulkActionClick("delete")}
+            >
+              Delete
+            </Button>
+            <Button
+              size="xs"
+              variant="ghost"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Clear
+            </Button>
+          </div>
+
+          {showBulkTagInput && (
+            <div className="bulk-tag-popover">
+              <input
+                type="text"
+                placeholder="Enter tag name (e.g. social)..."
+                value={bulkTagText}
+                onChange={(e) => setBulkTagText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleApplyBulkTag();
+                  if (e.key === "Escape") setShowBulkTagInput(false);
+                }}
+                className="bulk-tag-input"
+                autoFocus
+              />
+              <Button size="xs" variant="primary" onClick={handleApplyBulkTag}>
+                Apply
+              </Button>
+              <Button size="xs" variant="ghost" onClick={() => setShowBulkTagInput(false)}>
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="table-responsive-box" ref={tableBoxRef}>
         <table className="custom-links-table">
           <thead>
             <tr>
+              <th style={{ width: "36px", textAlign: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = isSomeSelected;
+                  }}
+                  onChange={toggleSelectAll}
+                  aria-label="Select all links"
+                />
+              </th>
               <th>Link Title & Destination</th>
               <th>Short URL</th>
               <th>Clicks</th>
@@ -1776,7 +969,35 @@ function RecentLinksTable({
             </tr>
           </thead>
           <tbody>
-            {filteredLinks.length > 0 ? (
+            {loading ? (
+              Array.from({ length: 4 }).map((_, rIdx) => (
+                <tr key={`skel-row-${rIdx}`}>
+                  <td style={{ textAlign: "center" }}>
+                    <Skeleton width="16px" height="16px" borderRadius="4px" />
+                  </td>
+                  <td>
+                    <Skeleton width="70%" height="16px" />
+                    <div style={{ height: "6px" }} />
+                    <Skeleton width="45%" height="12px" />
+                  </td>
+                  <td>
+                    <Skeleton width="90px" height="24px" borderRadius="6px" />
+                  </td>
+                  <td>
+                    <Skeleton width="36px" height="18px" />
+                  </td>
+                  <td>
+                    <Skeleton width="85px" height="14px" />
+                  </td>
+                  <td>
+                    <Skeleton width="60px" height="20px" borderRadius="10px" />
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    <Skeleton width="120px" height="24px" borderRadius="6px" style={{ marginLeft: "auto" }} />
+                  </td>
+                </tr>
+              ))
+            ) : filteredLinks.length > 0 ? (
               filteredLinks.map((link) => {
                 const shortUrl = `${API_URL}/${link.shortCode}`;
                 const isCopied = copiedLinkId === link._id;
@@ -1791,6 +1012,7 @@ function RecentLinksTable({
                 const statusObj = getLinkStatus(link);
                 const expiryInfo = getExpiryDisplayInfo(link.expiresAt);
                 const isToggling = togglingLinkId === link._id;
+                const isSelected = selectedIds.has(link._id);
 
                 const domainName = (() => {
                   try {
@@ -1801,7 +1023,20 @@ function RecentLinksTable({
                 })();
 
                 return (
-                  <tr key={link._id}>
+                  <tr
+                    key={link._id}
+                    onClick={() => onRowClick?.(link)}
+                    className={`table-clickable-row ${isSelected ? "row-selected" : ""}`}
+                    title="Click to view link details and insights"
+                  >
+                    <td style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => toggleSelectOne(link._id, e)}
+                        aria-label={`Select link ${link.shortCode}`}
+                      />
+                    </td>
                     <td className="original-url-cell">
                       <div className="link-title-cell-wrap">
                         <div className="link-title-row">
@@ -1816,6 +1051,24 @@ function RecentLinksTable({
                               {domainName}
                             </span>
                           )}
+
+                          {/* Link Tags */}
+                          {Array.isArray(link.tags) && link.tags.map((t, idx) => (
+                            <span key={`${t}-${idx}`} className="link-tag-chip" title={`Tag: #${t}`}>
+                              #{t}
+                            </span>
+                          ))}
+
+                          {link.password && (
+                            <span
+                              className="link-tag-chip"
+                              style={{ color: "var(--accent)", borderColor: "var(--border)" }}
+                              title="Password Protected"
+                            >
+                              <Lock size={10} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "3px" }} />
+                              Protected
+                            </span>
+                          )}
                         </div>
                         <a
                           href={link.originalUrl}
@@ -1823,12 +1076,13 @@ function RecentLinksTable({
                           rel="noreferrer"
                           className="original-url-link"
                           title={link.originalUrl}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {link.originalUrl}
                         </a>
                       </div>
                     </td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                         <a
                           href={shortUrl}
@@ -1894,9 +1148,8 @@ function RecentLinksTable({
                         {statusObj.label}
                       </span>
                     </td>
-                    <td style={{ textAlign: "right" }}>
+                    <td style={{ textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
                       <div className="table-actions-cell" style={{ justifyContent: "flex-end" }}>
-                        {/* CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07 */}
                         <SpecularButton
                           variant={link.isPaused ? "secondary" : "ghost"}
                           size="xs"
@@ -1930,7 +1183,6 @@ function RecentLinksTable({
                         >
                           <span>Access</span>
                         </SpecularButton>
-                        {/* CHANGE: QR Code Feature Stage 4 — 2026-11-05 */}
                         <SpecularButton
                           variant="ghost"
                           size="xs"
@@ -1980,10 +1232,24 @@ function RecentLinksTable({
               })
             ) : (
               <tr>
-                <td colSpan="6" className="table-empty-row">
-                  {links.length === 0
-                    ? "No links created yet. Click '+ Create New Link' above to get started!"
-                    : "No links match your search filter."}
+                <td colSpan="7" style={{ padding: "40px 16px", textAlign: "center" }}>
+                  {links.length === 0 ? (
+                    <EmptyState
+                      icon={Link2}
+                      title="No links created yet"
+                      description="Create your first trackable short link to start monitoring live performance and audience velocity."
+                      actionLabel="Create Short Link"
+                      onAction={onCreateLink}
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={Search}
+                      title="No matching links"
+                      description={`No links found matching "${searchTerm}". Try a different keyword or clear the search filter.`}
+                      actionLabel="Clear Filter"
+                      onAction={() => setSearchTerm?.("")}
+                    />
+                  )}
                 </td>
               </tr>
             )}
@@ -2635,12 +1901,9 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
               <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.0" />
             </linearGradient>
             <linearGradient id="campaignChartLineGradient" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="var(--accent)" />
-              <stop offset="100%" stopColor="var(--accent)" />
+              <stop offset="0%" stopColor="var(--chart-1)" />
+              <stop offset="100%" stopColor="var(--chart-1)" />
             </linearGradient>
-            <filter id="campaignPurpleGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="2" stdDeviation="3.5" floodColor="#8B5CF6" floodOpacity="0.4" />
-            </filter>
           </defs>
 
           {/* Horizontal Grid Lines & Y-Axis */}
@@ -2683,7 +1946,6 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
             strokeWidth="2.8"
             strokeLinecap="round"
             strokeLinejoin="round"
-            filter="url(#campaignPurpleGlow)"
           />
 
           {/* Hover Crosshair Line */}
@@ -2693,7 +1955,7 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
               y1={padTop}
               x2={hoveredPoint.x}
               y2={zeroY}
-              stroke="rgba(167, 139, 250, 0.45)"
+              stroke="var(--border)"
               strokeWidth="1.5"
               strokeDasharray="3 3"
             />
@@ -2746,9 +2008,9 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
                     cx={pt.x}
                     cy={pt.y}
                     r="9"
-                    fill="#8B5CF6"
+                    fill="var(--chart-1)"
                     fillOpacity="0.25"
-                    stroke="#A78BFA"
+                    stroke="var(--chart-1)"
                     strokeWidth="1"
                   />
                 )}
@@ -2756,8 +2018,8 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
                   cx={pt.x}
                   cy={pt.y}
                   r={isHovered ? "5" : points.length <= 10 ? "3.5" : "2.6"}
-                  fill={isHovered ? "#FFFFFF" : "#0B0F19"}
-                  stroke={isHovered ? "#8B5CF6" : "#A78BFA"}
+                  fill={isHovered ? "var(--surface)" : "var(--surface-2)"}
+                  stroke="var(--chart-1)"
                   strokeWidth={isHovered ? "2.5" : "1.8"}
                 />
                 {/* Date labels along bottom */}
@@ -2765,7 +2027,7 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
                   <text
                     x={pt.x}
                     y={zeroY + 18}
-                    fill={isHovered ? "#DDD6FE" : "#94A3B8"}
+                    fill={isHovered ? "var(--text)" : "var(--text-muted)"}
                     fontWeight={isHovered ? "600" : "500"}
                     fontSize="10"
                     textAnchor="middle"
@@ -2829,24 +2091,13 @@ function CampaignAnalyticsView({
           </div>
 
           <div className="campaign-controls-group">
-            {/* CHANGE: Stage 5C — 2026-11-03 */}
-            <div className="time-filter-pills" role="radiogroup" aria-label="Campaign time range">
-              {[
-                { id: "7d", label: "Last 7 Days" },
-                { id: "30d", label: "Last 30 Days" },
-                { id: "all", label: "All Time" },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={`time-pill-btn ${campaignRange === t.id ? "active" : ""}`}
-                  onClick={() => onRangeChange(t.id)}
-                  disabled={campaignLoading}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
+            {/* Unified 7D, 30D, All Timeframe Switch */}
+            <TimeRangeToggle
+              value={campaignRange}
+              onChange={onRangeChange}
+              disabled={campaignLoading}
+              ariaLabel="Campaign time range"
+            />
 
             <SpecularButton
               variant="secondary"
@@ -2900,15 +2151,15 @@ function CampaignAnalyticsView({
             loading={campaignLoading}
           />
 
-          {/* 3. Donut Charts (Sources & Mediums) */}
+          {/* 3. Ranked Bars (Sources & Mediums) */}
           <div className={`donuts-grid ${campaignLoading ? "data-refreshing" : ""}`}>
-            <DonutChart
+            <RankedBars
               title="Traffic Sources (utm_source)"
               icon={<Globe size={16} />}
               data={sources}
               emptyMessage="No traffic source data recorded yet. Share links with utm_source to view visitor sources."
             />
-            <DonutChart
+            <RankedBars
               title="Traffic Mediums (utm_medium)"
               icon={<Activity size={16} />}
               data={mediums}
@@ -3156,9 +2407,9 @@ function QRLinksTable({
                       <span
                         className="campaign-click-count-badge"
                         style={{
-                          background: (link.qrClicks || 0) > 0 ? "rgba(139, 92, 246, 0.2)" : "rgba(255, 255, 255, 0.04)",
-                          color: (link.qrClicks || 0) > 0 ? "#A78BFA" : "var(--text-muted)",
-                          border: (link.qrClicks || 0) > 0 ? "1px solid rgba(139, 92, 246, 0.35)" : "1px solid rgba(255, 255, 255, 0.06)",
+                          background: (link.qrClicks || 0) > 0 ? "var(--accent-soft)" : "var(--surface-2)",
+                          color: (link.qrClicks || 0) > 0 ? "var(--primary)" : "var(--text-muted)",
+                          border: "1px solid var(--border)",
                         }}
                       >
                         {link.qrClicks?.toLocaleString() ?? 0}
@@ -3448,9 +2699,9 @@ function QRScanInsights({
                         <span
                           className="campaign-click-count-badge"
                           style={{
-                            background: "rgba(139, 92, 246, 0.2)",
-                            color: "#A78BFA",
-                            border: "1px solid rgba(139, 92, 246, 0.35)",
+                            background: "var(--accent-soft)",
+                            color: "var(--primary)",
+                            border: "1px solid var(--border)",
                             fontWeight: 700,
                           }}
                         >
@@ -3565,23 +2816,12 @@ function QRAnalyticsView({
           </div>
 
           <div className="campaign-controls-group">
-            <div className="time-filter-pills" role="radiogroup" aria-label="QR Analytics time range">
-              {[
-                { id: "7d", label: "Last 7 Days" },
-                { id: "30d", label: "Last 30 Days" },
-                { id: "all", label: "All Time" },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={`time-pill-btn ${qrRange === t.id ? "active" : ""}`}
-                  onClick={() => onRangeChange(t.id)}
-                  disabled={qrLoading}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
+            <TimeRangeToggle
+              value={qrRange}
+              onChange={onRangeChange}
+              disabled={qrLoading}
+              ariaLabel="QR Analytics time range"
+            />
 
             <SpecularButton
               variant="secondary"
@@ -3627,15 +2867,16 @@ function QRAnalyticsView({
           {/* 1. Metric Cards */}
           <QRMetricCards summary={summary} loading={qrLoading} />
 
-          {/* 2. Donut Chart (QR vs Direct) & Insights Card */}
+          {/* 2. Channel Traffic (QR vs Direct) & Insights Card */}
           <div className={`donuts-grid ${qrLoading ? "data-refreshing" : ""}`}>
-            <DonutChart
+            <RankedBars
               title="Traffic Channel (QR Scans vs Direct Clicks)"
               icon={<QrCode size={16} />}
               data={[
-                { name: "QR Scans", count: summary?.qrClicks || 0, color: "var(--accent)" },
-                { name: "Direct Clicks", count: summary?.directClicks || 0, color: "#64748B" },
+                { name: "QR Scans", count: summary?.qrClicks || 0, color: "var(--chart-1)" },
+                { name: "Direct Clicks", count: summary?.directClicks || 0, color: "var(--chart-2)" },
               ]}
+              distinguishColors={true}
               emptyMessage="No traffic recorded in this time range. Scan the QR code or click your short link to view channel breakdown."
             />
 
@@ -3653,14 +2894,14 @@ function QRAnalyticsView({
                 <div className="qr-insight-stat-row">
                   <div className="qr-insight-stat-item">
                     <span className="qr-insight-stat-label">QR Scans</span>
-                    <span className="qr-insight-stat-val" style={{ color: "#8B5CF6" }}>
+                    <span className="qr-insight-stat-val" style={{ color: "var(--primary)" }}>
                       {summary?.qrClicks?.toLocaleString() ?? 0}
                     </span>
                     <span className="qr-insight-stat-pct">{summary?.qrPercentage ?? 0}%</span>
                   </div>
                   <div className="qr-insight-stat-item">
                     <span className="qr-insight-stat-label">Direct Clicks</span>
-                    <span className="qr-insight-stat-val" style={{ color: "#06B6D4" }}>
+                    <span className="qr-insight-stat-val" style={{ color: "var(--chart-2)" }}>
                       {summary?.directClicks?.toLocaleString() ?? 0}
                     </span>
                     <span className="qr-insight-stat-pct">
@@ -3669,7 +2910,7 @@ function QRAnalyticsView({
                   </div>
                   <div className="qr-insight-stat-item">
                     <span className="qr-insight-stat-label">Tracked Links</span>
-                    <span className="qr-insight-stat-val" style={{ color: "#10B981" }}>
+                    <span className="qr-insight-stat-val" style={{ color: "var(--success)" }}>
                       {links.length}
                     </span>
                     <span className="qr-insight-stat-pct">workspace</span>
@@ -3767,7 +3008,7 @@ function App() {
   const [authError, setAuthError] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
 
-  const { theme, setTheme, effectiveTheme } = useTheme();
+  const { theme, setTheme, effectiveTheme, sidebar: defaultSidebar } = useTheme();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -3806,10 +3047,12 @@ function App() {
   }, []);
 
   const [sortOrder, setSortOrder] = useState("newest");
-  const [timeRange, setTimeRange] = useState("7d");
+  const { timeRange, setTimeRange, apiRange } = useTimeRange();
+  const dashboardAbortControllerRef = useRef(null);
 
   // Selected link for dashboard focus and deep-dive
   const [selectedLink, setSelectedLink] = useState("__all__");
+  const [dashboardTab, setDashboardTab] = useState("overview"); // "overview" | "activity"
   const [dashboardAnalytics, setDashboardAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
@@ -3834,6 +3077,9 @@ function App() {
   // CHANGE: Stage 7 — Smart Link Expiration & Access Control State — 2026-11-07
   const [expiresAtInput, setExpiresAtInput] = useState("");
   const [maxClicksInput, setMaxClicksInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [tagsInput, setTagsInput] = useState("");
+  const [selectedDrawerLink, setSelectedDrawerLink] = useState(null);
   const [showAccessSection, setShowAccessSection] = useState(false);
   const [togglingLinkId, setTogglingLinkId] = useState(null);
   const [showAccessModal, setShowAccessModal] = useState(false);
@@ -3846,6 +3092,8 @@ function App() {
     setShowUtmSection(false);
     setExpiresAtInput("");
     setMaxClicksInput("");
+    setPasswordInput("");
+    setTagsInput("");
     setShowAccessSection(false);
     setCreateError("");
     setCreateSuccessLink(null);
@@ -3859,6 +3107,8 @@ function App() {
     setShowUtmSection(false);
     setExpiresAtInput("");
     setMaxClicksInput("");
+    setPasswordInput("");
+    setTagsInput("");
     setShowAccessSection(false);
     setCreateError("");
     setCreateSuccessLink(null);
@@ -3940,14 +3190,26 @@ function App() {
     } catch (_) {}
     return "dashboard";
   }); // "dashboard" | "campaigns" | "settings"
-  // CHANGE: Main Dashboard + Sidebar UI Redesign (Desktop collapse & Mobile drawer) — 2026-11-19
+  // Main Dashboard + Sidebar UI: respect sidebar default preference on load and updates
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try {
+      const raw = localStorage.getItem("smartlink.appearance") || localStorage.getItem("smartlink-appearance");
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p.sidebar) return p.sidebar === "collapsed";
+      }
       return localStorage.getItem("smartlink_sidebar_collapsed") === "true";
     } catch {
       return false;
     }
   });
+
+  // Sync when defaultSidebar setting updates in Appearance settings
+  useEffect(() => {
+    if (defaultSidebar) {
+      setIsSidebarCollapsed(defaultSidebar === "collapsed");
+    }
+  }, [defaultSidebar]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleSidebarCollapsed = useCallback(() => {
@@ -3959,45 +3221,57 @@ function App() {
       return next;
     });
   }, []);
+
+  // Auto-collapse sidebar below 1100px screen width
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1100) {
+        setIsSidebarCollapsed(true);
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   const [campaignAnalytics, setCampaignAnalytics] = useState(null);
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [campaignError, setCampaignError] = useState("");
-  // CHANGE: Stage 5C — 2026-11-03
-  const [campaignRange, setCampaignRange] = useState("all"); // "all" | "30d" | "7d"
+  // Unified global range driven by TimeRangeContext (persisted in "smartlink.range")
+  const campaignRange = apiRange;
   const campaignAbortControllerRef = useRef(null);
-  const activeCampaignRangeRef = useRef("all");
+  const activeCampaignRangeRef = useRef("30d");
 
   // CHANGE: QR analytics dashboard — 2026-11-06
   const [qrAnalytics, setQrAnalytics] = useState(null);
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState("");
-  const [qrRange, setQrRange] = useState("all"); // "7d" | "30d" | "all"
+  const qrRange = apiRange;
   const qrAbortControllerRef = useRef(null);
-  const activeQrRangeRef = useRef("all");
+  const activeQrRangeRef = useRef("30d");
 
   // CHANGE: Stage 8 — Geo-Location Analytics State — 2026-11-08
   const [geoAnalytics, setGeoAnalytics] = useState(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState("");
-  const [geoRange, setGeoRange] = useState("all"); // "7d" | "30d" | "all"
+  const geoRange = apiRange;
   const geoAbortControllerRef = useRef(null);
-  const activeGeoRangeRef = useRef("all");
+  const activeGeoRangeRef = useRef("30d");
 
   // CHANGE: Stage 9 Device & Browser Intelligence Dashboard — 2026-11-15
   const [deviceAnalytics, setDeviceAnalytics] = useState(null);
   const [deviceLoading, setDeviceLoading] = useState(false);
   const [deviceError, setDeviceError] = useState("");
-  const [deviceRange, setDeviceRange] = useState("all"); // "7d" | "30d" | "all"
+  const deviceRange = apiRange;
   const deviceAbortControllerRef = useRef(null);
-  const activeDeviceRangeRef = useRef("all");
+  const activeDeviceRangeRef = useRef("30d");
 
   // CHANGE: Stage 10 Advanced Traffic Visualization Dashboard — 2026-11-16
   const [trafficAnalytics, setTrafficAnalytics] = useState(null);
   const [trafficLoading, setTrafficLoading] = useState(false);
   const [trafficError, setTrafficError] = useState("");
-  const [trafficRange, setTrafficRange] = useState("7d"); // "7d" | "30d" | "all"
+  const trafficRange = apiRange;
   const trafficAbortControllerRef = useRef(null);
-  const activeTrafficRangeRef = useRef("7d");
+  const activeTrafficRangeRef = useRef("30d");
 
   // CHANGE: Notifications Step 4B/4D — 2026-11-05
   const [notifications, setNotifications] = useState([]);
@@ -4010,6 +3284,9 @@ function App() {
   // Handle session expiration
   const handleSessionExpired = useCallback(
     (message = "Your login session expired. Please log in again.") => {
+      if (dashboardAbortControllerRef.current) {
+        dashboardAbortControllerRef.current.abort();
+      }
       if (campaignAbortControllerRef.current) {
         campaignAbortControllerRef.current.abort();
       }
@@ -4023,7 +3300,6 @@ function App() {
         qrAbortControllerRef.current.abort();
       }
       setQrAnalytics(null);
-      setQrRange("all");
       setQrError("");
       setQrLoading(false);
       // CHANGE: Stage 8 — Geo-Location Analytics Reset — 2026-11-08
@@ -4031,7 +3307,6 @@ function App() {
         geoAbortControllerRef.current.abort();
       }
       setGeoAnalytics(null);
-      setGeoRange("all");
       setGeoError("");
       setGeoLoading(false);
       // CHANGE: Stage 9 Device & Browser Intelligence Reset — 2026-11-15
@@ -4039,7 +3314,6 @@ function App() {
         deviceAbortControllerRef.current.abort();
       }
       setDeviceAnalytics(null);
-      setDeviceRange("all");
       setDeviceError("");
       setDeviceLoading(false);
       // CHANGE: Notifications Step 4B/4D — 2026-11-05
@@ -4048,7 +3322,6 @@ function App() {
       setNotificationsError("");
       setShowNotificationsDropdown(false);
       setActiveView("dashboard");
-      setCampaignRange("all");
       setAuthError(message);
     },
     []
@@ -4100,6 +3373,12 @@ function App() {
             }
             return prev;
           });
+          setSelectedDrawerLink((prev) => {
+            if (prev && prev._id === updated._id) {
+              return { ...prev, ...updated };
+            }
+            return prev;
+          });
         }
       } catch (err) {
         if (err.response?.status === 401) {
@@ -4112,6 +3391,76 @@ function App() {
       }
     },
     [token, handleSessionExpired]
+  );
+
+  // Delete a link
+  const handleDeleteLink = useCallback(
+    async (link) => {
+      if (!link || !token) return;
+      try {
+        await axios.delete(`${API_URL}/${link._id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setLinks((prev) => prev.filter((l) => l._id !== link._id));
+        setSelectedDrawerLink((prev) => (prev?._id === link._id ? null : prev));
+        setSelectedLink((prev) => (prev?._id === link._id ? "__all__" : prev));
+      } catch (err) {
+        console.error("Failed to delete link:", err);
+        alert(err.response?.data?.message || "Failed to delete link.");
+      }
+    },
+    [token]
+  );
+
+  // Bulk actions on multiple links
+  const handleBulkAction = useCallback(
+    async (action, linkIds, tag) => {
+      if (!token || !Array.isArray(linkIds) || linkIds.length === 0) return;
+      try {
+        const res = await axios.post(
+          `${API_URL}/bulk`,
+          { action, linkIds, tag },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (action === "pause") {
+          setLinks((prev) =>
+            prev.map((l) => (linkIds.includes(l._id) ? { ...l, isPaused: true } : l))
+          );
+          setSelectedDrawerLink((prev) =>
+            prev && linkIds.includes(prev._id) ? { ...prev, isPaused: true } : prev
+          );
+        } else if (action === "resume") {
+          setLinks((prev) =>
+            prev.map((l) => (linkIds.includes(l._id) ? { ...l, isPaused: false } : l))
+          );
+          setSelectedDrawerLink((prev) =>
+            prev && linkIds.includes(prev._id) ? { ...prev, isPaused: false } : prev
+          );
+        } else if (action === "delete") {
+          setLinks((prev) => prev.filter((l) => !linkIds.includes(l._id)));
+          setSelectedDrawerLink((prev) =>
+            prev && linkIds.includes(prev._id) ? null : prev
+          );
+        } else if (action === "addTag" && tag) {
+          setLinks((prev) =>
+            prev.map((l) =>
+              linkIds.includes(l._id)
+                ? { ...l, tags: Array.from(new Set([...(l.tags || []), tag])) }
+                : l
+            )
+          );
+          setSelectedDrawerLink((prev) =>
+            prev && linkIds.includes(prev._id)
+              ? { ...prev, tags: Array.from(new Set([...(prev.tags || []), tag])) }
+              : prev
+          );
+        }
+      } catch (err) {
+        console.error("Bulk action failed:", err);
+        alert(err.response?.data?.message || "Failed to perform bulk action.");
+      }
+    },
+    [token]
   );
 
   // Handle logout
@@ -4170,7 +3519,12 @@ function App() {
   const handleLoginSuccess = useCallback((newToken, userData) => {
     setLoading(true);
     setToken(newToken);
-    if (userData) setUser(userData);
+    if (userData) {
+      setUser(userData);
+      try {
+        localStorage.setItem("user", JSON.stringify(userData));
+      } catch (_) {}
+    }
     setAuthError("");
     setError("");
 
@@ -4286,7 +3640,7 @@ function App() {
   // Development safe browser verification for Single-Flight Token Refresh
   useEffect(() => {
     window.__runSingleFlightVerification = async () => {
-      console.log("%c[Verification] Starting Single-Flight Token Refresh Browser Verification...", "color: #8b5cf6; font-weight: bold; font-size: 13px;");
+      console.log("%c[Verification] Starting Single-Flight Token Refresh Browser Verification...", "color: #7A4A2B; font-weight: bold; font-size: 13px;");
 
       const activeToken = localStorage.getItem("token") || token;
       if (!activeToken) {
@@ -4430,54 +3784,72 @@ function App() {
     };
   }, [token, handleSessionExpired]);
 
-  // Load analytics when selectedLink changes
+  // Fetch dashboard analytics on demand with AbortController and non-blanking retention
+  const fetchDashboardAnalytics = useCallback(
+    async (selectedRange = apiRange) => {
+      const activeToken = token || localStorage.getItem("token");
+      if (!activeToken) return;
+
+      if (dashboardAbortControllerRef.current) {
+        dashboardAbortControllerRef.current.abort();
+      }
+      dashboardAbortControllerRef.current = new AbortController();
+      const currentSignal = dashboardAbortControllerRef.current.signal;
+
+      setAnalyticsLoading(true);
+
+      const isAll =
+        !selectedLink ||
+        selectedLink === "__all__" ||
+        selectedLink.shortCode === "__all__";
+
+      const endpoint = isAll
+        ? `${API_URL}/user/analytics/all-links`
+        : `${API_URL}/${selectedLink.shortCode}/analytics`;
+
+      try {
+        const res = await axios.get(endpoint, {
+          headers: { Authorization: `Bearer ${activeToken}` },
+          params: { range: selectedRange },
+          signal: currentSignal,
+        });
+        if (res.data) {
+          setDashboardAnalytics(res.data);
+        }
+      } catch (err) {
+        if (axios.isCancel(err) || err.name === "CanceledError" || err.code === "ERR_CANCELED") {
+          return;
+        }
+        if (err.response?.status === 401) {
+          handleSessionExpired();
+        }
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    },
+    [token, selectedLink, apiRange, handleSessionExpired]
+  );
+
+  // Load analytics when selectedLink, token, or apiRange changes
   useEffect(() => {
     if (!token) {
       setDashboardAnalytics(null);
       return;
     }
-
-    let isMounted = true;
-    setAnalyticsLoading(true);
-
-    const isAll =
-      !selectedLink ||
-      selectedLink === "__all__" ||
-      selectedLink.shortCode === "__all__";
-
-    const endpoint = isAll
-      ? `${API_URL}/user/analytics/all-links`
-      : `${API_URL}/${selectedLink.shortCode}/analytics`;
-
-    axios
-      .get(endpoint, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        if (isMounted && res.data) {
-          setDashboardAnalytics(res.data);
-        }
-      })
-      .catch((err) => {
-        if (!isMounted) return;
-        if (err.response?.status === 401) {
-          handleSessionExpired();
-        }
-      })
-      .finally(() => {
-        if (isMounted) setAnalyticsLoading(false);
-      });
-
+    fetchDashboardAnalytics(apiRange);
     return () => {
-      isMounted = false;
+      if (dashboardAbortControllerRef.current) {
+        dashboardAbortControllerRef.current.abort();
+      }
     };
-  }, [token, selectedLink, handleSessionExpired]);
+  }, [token, selectedLink, apiRange, fetchDashboardAnalytics]);
 
   // Fetch campaign analytics on demand
   // CHANGE: Stage 5C — 2026-11-03
   const fetchCampaignAnalytics = useCallback(
-    async (selectedRange = campaignRange) => {
-      if (!token) return;
+    async (selectedRange = apiRange) => {
+      const activeToken = token || localStorage.getItem("token");
+      if (!activeToken) return;
 
       // Abort any in-flight campaign request to prevent race conditions & stale data
       if (campaignAbortControllerRef.current) {
@@ -4494,7 +3866,7 @@ function App() {
         const res = await axios.get(
           `${API_URL}/user/analytics/campaigns?range=${encodeURIComponent(selectedRange)}`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${activeToken}` },
             signal: currentSignal,
           }
         );
@@ -4520,25 +3892,7 @@ function App() {
         }
       }
     },
-    [token, campaignRange, handleSessionExpired]
-  );
-
-  const handleCampaignRangeChange = useCallback(
-    (newRange) => {
-      setCampaignRange(newRange);
-      fetchCampaignAnalytics(newRange);
-    },
-    [fetchCampaignAnalytics]
-  );
-
-  // CHANGE: Dashboard UI Redesign Pass 2 (Structural Improvements) — Global Date Range Selector — 2026-11-19
-  const handleGlobalRangeChange = useCallback(
-    (newRange) => {
-      setTimeRange(newRange);
-      setCampaignRange(newRange);
-      fetchCampaignAnalytics(newRange);
-    },
-    [fetchCampaignAnalytics]
+    [token, apiRange, handleSessionExpired]
   );
 
   useEffect(() => {
@@ -4548,7 +3902,7 @@ function App() {
 
     const timer = setTimeout(() => {
       if (isMounted) {
-        fetchCampaignAnalytics(campaignRange);
+        fetchCampaignAnalytics(apiRange);
       }
     }, 0);
 
@@ -4556,7 +3910,7 @@ function App() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [activeView, token, campaignRange, fetchCampaignAnalytics]);
+  }, [activeView, token, apiRange, fetchCampaignAnalytics]);
 
   // Fetch QR analytics on demand
   // CHANGE: QR analytics dashboard — 2026-11-06
@@ -4606,15 +3960,7 @@ function App() {
         }
       }
     },
-    [token, qrRange, handleSessionExpired]
-  );
-
-  const handleQrRangeChange = useCallback(
-    (newRange) => {
-      setQrRange(newRange);
-      fetchQrAnalytics(newRange);
-    },
-    [fetchQrAnalytics]
+    [token, apiRange, handleSessionExpired]
   );
 
   useEffect(() => {
@@ -4623,7 +3969,7 @@ function App() {
 
     const timer = setTimeout(() => {
       if (isMounted) {
-        fetchQrAnalytics(qrRange);
+        fetchQrAnalytics(apiRange);
       }
     }, 0);
 
@@ -4631,12 +3977,12 @@ function App() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [activeView, token, qrRange, fetchQrAnalytics]);
+  }, [activeView, token, apiRange, fetchQrAnalytics]);
 
   // Fetch Geo analytics on demand
   // CHANGE: Stage 8 — Geo-Location Analytics — 2026-11-08
   const fetchGeoAnalytics = useCallback(
-    async (selectedRange = geoRange) => {
+    async (selectedRange = apiRange) => {
       const activeToken = token || localStorage.getItem("token");
       if (!activeToken) return;
 
@@ -4681,15 +4027,7 @@ function App() {
         }
       }
     },
-    [token, geoRange, handleSessionExpired]
-  );
-
-  const handleGeoRangeChange = useCallback(
-    (newRange) => {
-      setGeoRange(newRange);
-      fetchGeoAnalytics(newRange);
-    },
-    [fetchGeoAnalytics]
+    [token, apiRange, handleSessionExpired]
   );
 
   useEffect(() => {
@@ -4698,7 +4036,7 @@ function App() {
 
     const timer = setTimeout(() => {
       if (isMounted) {
-        fetchGeoAnalytics(geoRange);
+        fetchGeoAnalytics(apiRange);
       }
     }, 0);
 
@@ -4706,12 +4044,12 @@ function App() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [activeView, token, geoRange, fetchGeoAnalytics]);
+  }, [activeView, token, apiRange, fetchGeoAnalytics]);
 
   // CHANGE: Stage 9 Device & Browser Intelligence Dashboard — 2026-11-15
   // Fetch device, browser, OS, hardware, and channel analytics on demand
   const fetchDeviceAnalytics = useCallback(
-    async (selectedRange = deviceRange) => {
+    async (selectedRange = apiRange) => {
       const activeToken = token || localStorage.getItem("token");
       if (!activeToken) return;
 
@@ -4754,15 +4092,7 @@ function App() {
         }
       }
     },
-    [token, deviceRange, handleSessionExpired]
-  );
-
-  const handleDeviceRangeChange = useCallback(
-    (newRange) => {
-      setDeviceRange(newRange);
-      fetchDeviceAnalytics(newRange);
-    },
-    [fetchDeviceAnalytics]
+    [token, apiRange, handleSessionExpired]
   );
 
   useEffect(() => {
@@ -4771,7 +4101,7 @@ function App() {
 
     const timer = setTimeout(() => {
       if (isMounted) {
-        fetchDeviceAnalytics(deviceRange);
+        fetchDeviceAnalytics(apiRange);
       }
     }, 0);
 
@@ -4779,12 +4109,12 @@ function App() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [activeView, token, deviceRange, fetchDeviceAnalytics]);
+  }, [activeView, token, apiRange, fetchDeviceAnalytics]);
 
   // CHANGE: Stage 10 Advanced Traffic Visualization Dashboard — 2026-11-16
   // Fetch daily, hourly, QR vs direct, device, campaign, and heatmap analytics
   const fetchTrafficAnalytics = useCallback(
-    async (selectedRange = trafficRange) => {
+    async (selectedRange = apiRange) => {
       const activeToken = token || localStorage.getItem("token");
       if (!activeToken) return;
 
@@ -4826,15 +4156,7 @@ function App() {
         }
       }
     },
-    [token, trafficRange, handleSessionExpired]
-  );
-
-  const handleTrafficRangeChange = useCallback(
-    (newRange) => {
-      setTrafficRange(newRange);
-      fetchTrafficAnalytics(newRange);
-    },
-    [fetchTrafficAnalytics]
+    [token, apiRange, handleSessionExpired]
   );
 
   useEffect(() => {
@@ -4843,7 +4165,7 @@ function App() {
 
     const timer = setTimeout(() => {
       if (isMounted) {
-        fetchTrafficAnalytics(trafficRange);
+        fetchTrafficAnalytics(apiRange);
       }
     }, 0);
 
@@ -4851,7 +4173,45 @@ function App() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [activeView, token, trafficRange, fetchTrafficAnalytics]);
+  }, [activeView, token, apiRange, fetchTrafficAnalytics]);
+
+  // Unified Global Date Range Selector
+  const handleGlobalRangeChange = useCallback(
+    (newRange) => {
+      setTimeRange(newRange);
+      const apiR = toApiRange(newRange);
+      if (activeView === "dashboard") {
+        fetchDashboardAnalytics(apiR);
+        fetchCampaignAnalytics(apiR);
+      } else if (activeView === "campaigns") {
+        fetchCampaignAnalytics(apiR);
+      } else if (activeView === "qr-analytics") {
+        fetchQrAnalytics(apiR);
+      } else if (activeView === "geo-analytics") {
+        fetchGeoAnalytics(apiR);
+      } else if (activeView === "device-analytics") {
+        fetchDeviceAnalytics(apiR);
+      } else if (activeView === "traffic-analytics") {
+        fetchTrafficAnalytics(apiR);
+      }
+    },
+    [
+      setTimeRange,
+      activeView,
+      fetchDashboardAnalytics,
+      fetchCampaignAnalytics,
+      fetchQrAnalytics,
+      fetchGeoAnalytics,
+      fetchDeviceAnalytics,
+      fetchTrafficAnalytics,
+    ]
+  );
+
+  const handleCampaignRangeChange = handleGlobalRangeChange;
+  const handleQrRangeChange = handleGlobalRangeChange;
+  const handleGeoRangeChange = handleGlobalRangeChange;
+  const handleDeviceRangeChange = handleGlobalRangeChange;
+  const handleTrafficRangeChange = handleGlobalRangeChange;
 
   // CHANGE: Notifications Step 4B/4D — 2026-11-05
   // Fetch notifications belonging strictly to the authenticated user
@@ -5079,6 +4439,10 @@ function App() {
         utmContent: utmInputs.utmContent.trim() || null,
         expiresAt: parsedExpiresAt,
         maxClicks: parsedMaxClicks,
+        password: passwordInput.trim() || null,
+        tags: tagsInput.trim()
+          ? tagsInput.split(",").map((t) => t.trim().replace(/^#/, "")).filter(Boolean)
+          : [],
       };
 
       const res = await axios.post(
@@ -5097,6 +4461,8 @@ function App() {
         setShowUtmSection(false);
         setExpiresAtInput("");
         setMaxClicksInput("");
+        setPasswordInput("");
+        setTagsInput("");
         setShowAccessSection(false);
         // CHANGE: Notifications Step 4B — 2026-11-04
         // Refresh notifications since new link creation generates a backend notification
@@ -5746,17 +5112,16 @@ function App() {
               )}
             </div>
 
-            {/* 3. Upgrade button (secondary glass style, hidden for highest plan) */}
+            {/* 3. Upgrade button (secondary style, hidden for highest plan) */}
             {!PLAN_LIMITS[CURRENT_PLAN]?.isHighest && (
               <button
                 type="button"
-                className="topbar-upgrade-btn"
+                className="btn btn-secondary"
                 onClick={() => navigateTo("/pricing")}
                 title="Upgrade plan"
                 aria-label="Upgrade subscription plan"
               >
-                <Zap size={14} className="upgrade-btn-icon" />
-                <span>Upgrade</span>
+                Upgrade
               </button>
             )}
 
@@ -5801,38 +5166,64 @@ function App() {
         )}
 
         {/* Main View Switcher: Dashboard vs Campaigns */}
-        {/* CHANGE: Added separate Campaign Analytics frontend view — 2026-11-02 */}
         {activeView === "dashboard" ? (
           <>
-            {/* Section A: Welcome Greeting + Compact Global Date-Range Selector */}
-            {/* CHANGE: Main Dashboard heading animated with SplitText & Compact Date Selector — 2026-11-19 */}
+            {/* Section A: Welcome Greeting + Tab Switcher + Compact Global Date-Range Selector */}
             <AnimatedContent distance={20} delay={0.05}>
               <div className="page-greeting">
                 <div className="page-greeting-text">
                   <h1 style={{ margin: "0 0 6px", fontSize: "20px", fontWeight: "600", color: "var(--text)" }}>
                     Welcome back, {user?.username || "Vijay"}!
                   </h1>
-                  <p>Here&apos;s an overview of your links and performance.</p>
+                  <p>
+                    {dashboardTab === "overview"
+                      ? "Here's an overview of your links and performance."
+                      : "Visitor trends, weekday distributions, and activity heatmaps."}
+                  </p>
                 </div>
 
-                {/* Section A: Compact Global Date-Range Selector */}
+                {/* Section A: Controls (Dashboard Tab Switcher + Date Range + Refresh) */}
                 <div className="header-range-controls">
+                  <div className="tab-sliding-pill-wrap" role="tablist" aria-label="Dashboard views">
+                    {[
+                      { value: "overview", label: "Overview" },
+                      { value: "activity", label: "Activity" },
+                    ].map((tab) => {
+                      const isActive = dashboardTab === tab.value;
+                      return (
+                        <button
+                          key={tab.value}
+                          type="button"
+                          role="tab"
+                          aria-selected={isActive}
+                          className={`tab-sliding-pill-btn ${isActive ? "active" : ""}`}
+                          onClick={() => setDashboardTab(tab.value)}
+                        >
+                          {isActive && (
+                            <motion.div
+                              layoutId="activeDashboardTabPill"
+                              className="tab-sliding-pill-bg"
+                              transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                            />
+                          )}
+                          <span className="tab-sliding-pill-text">{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <span className="header-range-label">Timeframe:</span>
-                  <SegmentedControl
-                    options={[
-                      { value: "7d", label: "7D" },
-                      { value: "30d", label: "30D" },
-                      { value: "all", label: "All Time" },
-                    ]}
+                  <TimeRangeToggle
                     value={timeRange}
                     onChange={handleGlobalRangeChange}
+                    ariaLabel="Dashboard timeframe"
                   />
                   <Button
-                    variant="glass"
+                    variant="ghost"
                     size="sm"
                     icon={RefreshCw}
                     onClick={() => {
-                      fetchDashboardAnalytics(timeRange);
+                      fetchDashboardAnalytics(apiRange);
                     }}
                     title="Refresh data"
                     aria-label="Refresh data"
@@ -5841,115 +5232,141 @@ function App() {
               </div>
             </AnimatedContent>
 
-            {/* Section B: Top 4 Statistic Cards (SpotlightCard + CountUp) */}
-            <AnimatedContent distance={25} delay={0.12}>
-              <MetricCards
-                totalLinks={links.length}
-                totalClicks={totalClicks}
-                activeLinks={activeLinks}
-                avgClicks={avgClicks}
-                intelligence={dashboardAnalytics?.intelligence}
-              />
-            </AnimatedContent>
+            <AnimatePresence mode="wait">
+              {dashboardTab === "overview" ? (
+                <motion.div
+                  key="overview"
+                  className={analyticsLoading ? "data-refreshing" : ""}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {/* Section B: Top 4 Statistic Cards (SpotlightCard + CountUp) */}
+                  <AnimatedContent distance={25} delay={0.12}>
+                    <MetricCards
+                      totalLinks={links.length}
+                      totalClicks={totalClicks}
+                      activeLinks={activeLinks}
+                      avgClicks={avgClicks}
+                      intelligence={dashboardAnalytics?.intelligence}
+                      timeRange={timeRange}
+                      dailyTrends={dashboardAnalytics?.dailyTrends || []}
+                      links={links}
+                      loading={analyticsLoading}
+                    />
+                  </AnimatedContent>
 
-            {/* Section 3: Clicks Overview – All Links (Large Full-Width Spline Chart) */}
-            {/* CHANGE: Dashboard Layout Rearrangement Phase 1 — 2026-11-19 */}
-            <AnimatedContent distance={25} delay={0.18}>
-              <div className="clicks-overview-fullwidth-section">
-                <ClicksOverviewChart
-                  dailyTrends={dashboardAnalytics?.dailyTrends || []}
-                  history={dashboardAnalytics?.history || []}
-                  selectedLink={selectedLink}
-                  links={links}
-                  onSelectLink={setSelectedLink}
-                  timeRange={timeRange}
-                  onTimeRangeChange={handleGlobalRangeChange}
-                />
-              </div>
-            </AnimatedContent>
+                  {/* Section 3: Clicks Overview – All Links (Large Full-Width Spline Chart) */}
+                  <AnimatedContent distance={25} delay={0.18}>
+                    <div className="clicks-overview-fullwidth-section">
+                      <ClicksOverviewChart
+                        dailyTrends={dashboardAnalytics?.dailyTrends || []}
+                        history={dashboardAnalytics?.history || []}
+                        selectedLink={selectedLink}
+                        links={links}
+                        onSelectLink={setSelectedLink}
+                        timeRange={timeRange}
+                        onTimeRangeChange={handleGlobalRangeChange}
+                        loading={analyticsLoading}
+                      />
+                    </div>
+                  </AnimatedContent>
 
-            {/* Section 4: Three sections in one row (Device Breakdown + Browser Breakdown + Traffic Sources) */}
-            {/* CHANGE: Dashboard Layout Rearrangement Phase 1 — 2026-11-19 */}
-            <AnimatedContent distance={25} delay={0.24}>
-              <div className="three-analytics-row">
-                <div className="three-col-item">
-                  <DonutChart
-                    title="Device Breakdown"
-                    icon={<Smartphone size={16} />}
-                    data={dashboardAnalytics?.devices || []}
-                    emptyMessage="No device data recorded yet. Share your short link to view visitor platforms."
+                  {/* Section 4: Three sections in one row (Device Breakdown + Browser Breakdown + Traffic Sources) */}
+                  <AnimatedContent distance={25} delay={0.24}>
+                    <div className="three-analytics-row">
+                      <div className="three-col-item">
+                        <RankedBars
+                          title="Device Breakdown"
+                          icon={<Smartphone size={16} />}
+                          data={dashboardAnalytics?.devices || []}
+                          loading={analyticsLoading}
+                          emptyMessage="No device data recorded yet. Share your short link to view visitor platforms."
+                        />
+                      </div>
+                      <div className="three-col-item">
+                        <RankedBars
+                          title="Browser Breakdown"
+                          icon={<Globe size={16} />}
+                          data={dashboardAnalytics?.browsers || []}
+                          loading={analyticsLoading}
+                          emptyMessage="No browser data recorded yet. Visitor browsers will appear after clicks."
+                        />
+                      </div>
+                      <div className="three-col-item source-col-item">
+                        <TrafficSourcesCard
+                          campaignAnalytics={campaignAnalytics}
+                          loading={campaignLoading}
+                          onCreateUtmLink={() => {
+                            setShowCreateModal(true);
+                            setCreateSuccessLink(null);
+                            setCreateError("");
+                            setNewUrlInput("");
+                            setUtmInputs(initialUtmState);
+                            setShowUtmSection(true);
+                            setExpiresAtInput("");
+                            setMaxClicksInput("");
+                            setShowAccessSection(false);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </AnimatedContent>
+
+                  {/* Section 6: Smart Traffic Intelligence (Four Insight Cards in One Row) */}
+                  <AnimatedContent distance={25} delay={0.3}>
+                    <div className="intelligence-fullwidth-section">
+                      <SmartTrafficSection intelligence={dashboardAnalytics?.intelligence} />
+                    </div>
+                  </AnimatedContent>
+
+                  {/* Section 7: Recent Links (Full-Width Section at the Bottom) */}
+                  <AnimatedContent distance={25} delay={0.36}>
+                    <div className="recent-links-fullwidth-section">
+                      <RecentLinksTable
+                        links={links}
+                        loading={loading || analyticsLoading}
+                        onCopy={handleCopy}
+                        copiedLinkId={copiedLinkId}
+                        onOpenAnalytics={handleOpenAnalytics}
+                        onOpenQRCode={handleOpenQrModal}
+                        onTogglePause={handleTogglePause}
+                        onOpenAccessModal={handleOpenAccessModal}
+                        onDeleteLink={handleDeleteLink}
+                        onBulkAction={handleBulkAction}
+                        onRowClick={(l) => setSelectedDrawerLink(l)}
+                        onCreateLink={() => {
+                          setShowCreateModal(true);
+                          setCreateSuccessLink(null);
+                          setCreateError("");
+                          setNewUrlInput("");
+                        }}
+                        togglingLinkId={togglingLinkId}
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                        sortOrder={sortOrder}
+                        setSortOrder={setSortOrder}
+                      />
+                    </div>
+                  </AnimatedContent>
+                </motion.div>
+              ) : (
+                /* Activity Tab Content */
+                <motion.div
+                  key="activity"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <DashboardActivityView
+                    token={token}
+                    apiBaseUrl={API_BASE_URL}
                   />
-                </div>
-                <div className="three-col-item">
-                  <DonutChart
-                    title="Browser Breakdown"
-                    icon={<Globe size={16} />}
-                    data={dashboardAnalytics?.browsers || []}
-                    emptyMessage="No browser data recorded yet. Visitor browsers will appear after clicks."
-                  />
-                </div>
-                <div className="three-col-item source-col-item">
-                  <TrafficSourcesCard
-                    campaignAnalytics={campaignAnalytics}
-                    loading={campaignLoading}
-                    onCreateUtmLink={() => {
-                      setShowCreateModal(true);
-                      setCreateSuccessLink(null);
-                      setCreateError("");
-                      setNewUrlInput("");
-                      setUtmInputs(initialUtmState);
-                      setShowUtmSection(true);
-                      setExpiresAtInput("");
-                      setMaxClicksInput("");
-                      setShowAccessSection(false);
-                    }}
-                  />
-                </div>
-              </div>
-            </AnimatedContent>
-
-            {/* Section 5: Full-width Click Activity Graph (GitHub-Style Yearly Contribution Graph) */}
-            {/* CHANGE: Dashboard Layout Rearrangement Phase 1 — 2026-11-19 */}
-            <AnimatedContent distance={25} delay={0.3}>
-              <div className="yearly-graph-fullwidth-section">
-                <YearlyActivityGraph
-                  history={dashboardAnalytics?.history || []}
-                  dailyTrends={dashboardAnalytics?.dailyTrends || []}
-                  totalClicks={totalClicks}
-                />
-              </div>
-            </AnimatedContent>
-
-            {/* Section 6: Smart Traffic Intelligence (Four Insight Cards in One Row) */}
-            {/* CHANGE: Dashboard Layout Rearrangement Phase 1 — 2026-11-19 */}
-            <AnimatedContent distance={25} delay={0.36}>
-              <div className="intelligence-fullwidth-section">
-                <SmartTrafficSection intelligence={dashboardAnalytics?.intelligence} />
-              </div>
-            </AnimatedContent>
-
-            {/* Section 7: Recent Links (Full-Width Section at the Bottom) */}
-            {/* CHANGE: Dashboard Layout Rearrangement Phase 1 — 2026-11-19 */}
-            <AnimatedContent distance={25} delay={0.42}>
-              <div className="recent-links-fullwidth-section">
-                <RecentLinksTable
-                  links={links}
-                  onCopy={handleCopy}
-                  copiedLinkId={copiedLinkId}
-                  onOpenAnalytics={handleOpenAnalytics}
-                  // CHANGE: QR Code Feature Stage 4 — 2026-11-05
-                  onOpenQRCode={handleOpenQrModal}
-                  // CHANGE: Stage 7 — Smart Link Expiration & Access Control — 2026-11-07
-                  onTogglePause={handleTogglePause}
-                  onOpenAccessModal={handleOpenAccessModal}
-                  togglingLinkId={togglingLinkId}
-                  searchTerm={searchTerm}
-                  setSearchTerm={setSearchTerm}
-                  sortOrder={sortOrder}
-                  setSortOrder={setSortOrder}
-                />
-              </div>
-            </AnimatedContent>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         ) : activeView === "campaigns" ? (
           <CampaignAnalyticsView
@@ -6293,14 +5710,14 @@ function App() {
                           Access Control & Expiry (Optional)
                         </span>
                         <span className="utm-toggle-badge">
-                          {expiresAtInput || maxClicksInput ? "Configured" : "Access rules"}
+                          {expiresAtInput || maxClicksInput || passwordInput || tagsInput ? "Configured" : "Access rules"}
                         </span>
                       </button>
 
                       {showAccessSection && (
                         <div className="utm-inputs-panel">
                           <p className="utm-section-desc">
-                            Set expiration schedules and maximum click limits to automatically restrict link access.
+                            Set expiration schedules, click limits, password protection, and organizational tags.
                           </p>
 
                           <div className="utm-grid">
@@ -6335,6 +5752,39 @@ function App() {
                               />
                               <p style={{ margin: "4px 0 0", fontSize: "11px", color: "var(--text-muted)" }}>
                                 Link automatically disables once this click limit is reached.
+                              </p>
+                            </div>
+
+                            <div className="utm-field">
+                              <label className="modal-input-label">
+                                Password Protection <span className="utm-tag-hint">(optional)</span>
+                              </label>
+                              <input
+                                type="password"
+                                className="modal-text-input utm-input"
+                                placeholder="Set link password..."
+                                value={passwordInput}
+                                onChange={(e) => setPasswordInput(e.target.value)}
+                                autoComplete="new-password"
+                              />
+                              <p style={{ margin: "4px 0 0", fontSize: "11px", color: "var(--text-muted)" }}>
+                                Visitors must enter this password to reach the destination URL.
+                              </p>
+                            </div>
+
+                            <div className="utm-field">
+                              <label className="modal-input-label">
+                                Tags <span className="utm-tag-hint">(optional, comma-separated)</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="modal-text-input utm-input"
+                                placeholder="e.g. promo, partner, social"
+                                value={tagsInput}
+                                onChange={(e) => setTagsInput(e.target.value)}
+                              />
+                              <p style={{ margin: "4px 0 0", fontSize: "11px", color: "var(--text-muted)" }}>
+                                Tags help you categorize and perform bulk operations on links.
                               </p>
                             </div>
                           </div>
@@ -6432,12 +5882,12 @@ function App() {
                   />
 
                   <div className="donuts-grid">
-                    <DonutChart
+                    <RankedBars
                       title="Device Breakdown"
                       icon={<Smartphone size={16} />}
                       data={detailAnalytics?.devices || []}
                     />
-                    <DonutChart
+                    <RankedBars
                       title="Browser Breakdown"
                       icon={<Globe size={16} />}
                       data={detailAnalytics?.browsers || []}
@@ -6577,6 +6027,25 @@ function App() {
           onSessionExpired={handleSessionExpired}
         />
       )}
+
+      {/* Link Detail Drawer */}
+      <LinkDetailDrawer
+        isOpen={Boolean(selectedDrawerLink)}
+        link={selectedDrawerLink}
+        onClose={() => setSelectedDrawerLink(null)}
+        onCopy={handleCopy}
+        isCopied={copiedLinkId === selectedDrawerLink?._id}
+        onOpenQRCode={(l) => {
+          handleOpenQrModal(l);
+        }}
+        onOpenAccessModal={(l) => {
+          handleOpenAccessModal(l);
+        }}
+        onTogglePause={handleTogglePause}
+        onDelete={handleDeleteLink}
+        onOpenAnalytics={handleOpenAnalytics}
+        isToggling={togglingLinkId === selectedDrawerLink?._id}
+      />
 
       {/* Command Palette (Ctrl+K) */}
       <CommandPalette

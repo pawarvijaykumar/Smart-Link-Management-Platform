@@ -659,8 +659,8 @@ export default function GeoPinMap2D({
             <g className="geo-hover-highlight-layer" pointerEvents="none">
               <path
                 d={hoveredCountry.pathD}
-                fill="rgba(56, 189, 248, 0.08)"
-                stroke="#A855F7"
+                fill="rgba(217, 119, 79, 0.08)"
+                stroke="var(--accent, #D9774F)"
                 strokeWidth={2.4 / currentZoom}
                 strokeOpacity={0.65}
               />

@@ -123,11 +123,11 @@ body::after,
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: var(--bg-surface-2, #1B212A) !important;
-  border: 1px solid var(--border, #232A34);
+  background: var(--primary) !important;
+  border: 1px solid var(--border);
   display: grid;
   place-items: center;
-  color: var(--accent, #6C7CFF);
+  color: var(--on-primary) !important;
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
 }
@@ -146,9 +146,9 @@ body::after,
   letter-spacing: 0.04em;
   padding: 1px 6px;
   border-radius: var(--radius-pill);
-  background: rgba(108, 124, 255, 0.12) !important;
-  color: var(--accent, #6C7CFF) !important;
-  border: 1px solid rgba(108, 124, 255, 0.24) !important;
+  background: var(--accent-soft) !important;
+  color: var(--primary) !important;
+  border: 1px solid var(--border) !important;
 }
 
 .sidebar-collapse-toggle {
@@ -210,19 +210,19 @@ body::after,
 }
 
 .nav-item:hover {
-  background: var(--bg-surface-2, #1B212A) !important;
-  color: var(--text, #E6EAF0) !important;
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
   border-color: transparent !important;
   transform: none !important;
 }
 
 .nav-item.active {
-  background: var(--bg-surface, #161B22) !important;
-  color: var(--text, #E6EAF0) !important;
-  border: 1px solid var(--border, #232A34) !important;
-  border-left: 2px solid var(--accent, #6C7CFF) !important;
-  box-shadow: var(--shadow-sm) !important;
-  font-weight: 500 !important;
+  background: var(--surface-2) !important;
+  color: var(--primary) !important;
+  border: 1px solid transparent !important;
+  border-left: 2px solid var(--primary) !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
 }
 
 .nav-item.active::before {
@@ -232,14 +232,19 @@ body::after,
 .nav-item-icon {
   display: grid;
   place-items: center;
-  color: var(--text-muted, #8B95A5);
+  color: var(--text-muted);
   flex-shrink: 0;
   transition: color 0.15s ease;
 }
 
-.nav-item:hover .nav-item-icon,
+.nav-item:hover .nav-item-icon {
+  color: var(--text) !important;
+  filter: none !important;
+  transform: none !important;
+}
+
 .nav-item.active .nav-item-icon {
-  color: var(--accent, #6C7CFF) !important;
+  color: var(--primary) !important;
   filter: none !important;
   transform: none !important;
 }
@@ -369,8 +374,8 @@ body::after,
 }
 
 .topbar-search-box:focus-within {
-  border-color: var(--accent, #6C7CFF) !important;
-  box-shadow: 0 0 0 1px var(--accent, #6C7CFF) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 1px var(--primary) !important;
   width: 280px;
 }
 
@@ -418,14 +423,14 @@ body::after,
   position: absolute;
   top: -4px;
   right: -4px;
-  background: var(--accent, #6C7CFF);
+  background: var(--accent);
   color: #FFFFFF;
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-mono);
   padding: 1px 5px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--bg-page, #0E1116);
+  border: 1px solid var(--bg-page, var(--bg));
   line-height: 1.2;
 }
 
@@ -694,7 +699,7 @@ body::after,
 }
 
 .chart-link-dropdown:focus {
-  border-color: var(--accent, #6C7CFF) !important;
+  border-color: var(--primary) !important;
 }
 
 .chart-hover-tooltip {
@@ -904,13 +909,14 @@ tbody tr:last-child td {
 }
 
 .table-short-url {
-  color: var(--accent, #6C7CFF) !important;
+  color: var(--primary) !important;
   font-weight: 500;
   text-decoration: none;
 }
 
 .table-short-url:hover {
   text-decoration: underline;
+  color: var(--primary-hover) !important;
 }
 
 .table-orig-url {
@@ -1031,9 +1037,9 @@ tbody tr:last-child td {
 .form-input-text:focus,
 .modal-input:focus,
 .ab-input:focus {
-  border-color: var(--accent, #6C7CFF) !important;
+  border-color: var(--primary) !important;
   outline: none !important;
-  box-shadow: 0 0 0 1px var(--accent, #6C7CFF) !important;
+  box-shadow: 0 0 0 1px var(--primary) !important;
 }
 
 /* -----------------------------------------------------------------------------
@@ -1117,10 +1123,10 @@ tbody tr:last-child td {
 }
 
 .range-pill-btn.active {
-  background-color: var(--accent, #6C7CFF) !important;
-  color: #FFFFFF !important;
+  background-color: var(--primary) !important;
+  color: var(--on-primary) !important;
   font-weight: 600 !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
 .campaign-refresh-btn {

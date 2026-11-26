@@ -4,119 +4,166 @@
    ============================================================================= */
 
 /* -----------------------------------------------------------------------------
-   1. Buttons (Glass & Solid Variants)
+   1. Unified SaaS Button System
+   Common spec: height 36px, padding 0 14px, border-radius 8px, font-weight 500,
+   14px font, transition background .15s only, :focus-visible outline (2px, offset 2px),
+   disabled state (opacity .5, not-allowed cursor). All colors from CSS variables.
    ----------------------------------------------------------------------------- */
-.ui-btn {
+.btn,
+.ui-btn,
+.btn-primary,
+.btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  font-family: var(--font-ui);
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-family: var(--font-ui, system-ui, sans-serif);
+  font-size: 14px;
   font-weight: 500;
+  line-height: 1;
   text-decoration: none;
   white-space: nowrap;
   user-select: none;
   cursor: pointer;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+  box-sizing: border-box;
   outline: none;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   position: relative;
 }
 
-/* Button Sizes */
-.ui-btn--sm {
-  height: 28px;
-  padding: 0 10px;
-  font-size: 12px;
-  border-radius: 8px;
+.btn:focus-visible,
+.ui-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
-.ui-btn--md {
-  height: 36px;
-  padding: 0 14px;
-  font-size: 13px;
-  border-radius: var(--radius-btn);
+.btn:disabled,
+.btn[disabled],
+.btn.disabled,
+.ui-btn:disabled,
+.ui-btn--disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
 }
 
-.ui-btn--lg {
-  height: 42px;
-  padding: 0 18px;
-  font-size: 14px;
-  border-radius: var(--radius-btn);
+/* Variant 1: .btn-primary (Strong) - Uses --primary / --on-primary */
+.btn-primary,
+.ui-btn--primary {
+  background: var(--primary);
+  color: var(--on-primary) !important;
+  border: 1px solid var(--primary);
+  box-shadow: none;
 }
 
-/* Secondary Glass Button */
+.btn-primary:hover:not(:disabled),
+.ui-btn--primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: var(--on-primary) !important;
+}
+
+.btn-primary:active:not(:disabled),
+.ui-btn--primary:active:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+/* Variant 2: .btn-secondary (Normal) - Transparent background, 1px border var(--border), theme text */
+.btn-secondary,
+.ui-btn--secondary,
 .ui-btn--glass {
-  background: var(--glass-secondary-bg);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  border: 1px solid var(--glass-secondary-border);
-  box-shadow: var(--glass-secondary-shadow);
-  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text) !important;
+  box-shadow: none;
 }
 
+.btn-secondary:hover:not(:disabled),
+.ui-btn--secondary:hover:not(:disabled),
 .ui-btn--glass:hover:not(:disabled) {
   background: var(--surface-hover);
   border-color: var(--border);
+  color: var(--text) !important;
 }
 
-/* Primary Glass Button */
-.ui-btn--primary {
-  background: var(--glass-primary-bg);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  border: 1px solid var(--glass-primary-border);
-  box-shadow: var(--glass-primary-shadow);
-  color: #FFFFFF;
+.btn-secondary:active:not(:disabled),
+.ui-btn--secondary:active:not(:disabled),
+.ui-btn--glass:active:not(:disabled) {
+  background: var(--surface-active);
 }
 
-.ui-btn--primary:hover:not(:disabled) {
-  background: rgba(108, 124, 255, 0.48);
-  border-color: rgba(108, 124, 255, 0.75);
-}
-
-/* Ghost Button */
+/* Variant 3: .btn-ghost (Quiet) - No border, for icon buttons like refresh, help, notifications */
+.btn-ghost,
 .ui-btn--ghost {
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-muted);
+  box-shadow: none;
 }
 
+.btn-ghost:hover:not(:disabled),
 .ui-btn--ghost:hover:not(:disabled) {
-  background: var(--bg-surface-2);
+  background: var(--surface-hover);
   color: var(--text);
-  border-color: var(--border);
+  border-color: transparent;
 }
 
-/* Danger Button */
+.btn-ghost:active:not(:disabled),
+.ui-btn--ghost:active:not(:disabled) {
+  background: var(--surface-active);
+}
+
+/* Danger variant (for delete/destructive modals) */
+.btn-danger,
 .ui-btn--danger {
-  background: var(--danger-bg);
-  border: 1px solid var(--danger-border);
-  color: var(--danger);
+  background: transparent;
+  border: 1px solid var(--danger-border, rgba(239, 68, 68, 0.4));
+  color: var(--danger, #ef4444);
+  box-shadow: none;
 }
 
+.btn-danger:hover:not(:disabled),
 .ui-btn--danger:hover:not(:disabled) {
-  background: rgba(255, 107, 107, 0.20);
-  border-color: var(--danger);
+  background: var(--danger-bg, rgba(239, 68, 68, 0.1));
+  border-color: var(--danger, #ef4444);
+  color: var(--danger, #ef4444);
 }
 
-/* States */
-.ui-btn:active:not(:disabled) {
-  transform: translateY(1px);
+/* Button size modifiers */
+.btn--sm,
+.ui-btn--sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-radius: 6px;
 }
 
-.ui-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.btn--lg,
+.ui-btn--lg {
+  height: 40px;
+  padding: 0 18px;
+  font-size: 15px;
+  border-radius: 8px;
 }
 
-.ui-btn:disabled,
-.ui-btn--disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  pointer-events: none;
-  background: var(--surface-2) !important;
-  border-color: var(--border) !important;
-  color: var(--text-dim) !important;
+.btn--icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.btn--icon.btn--sm {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
 }
 
 /* Loading Spinner */
@@ -124,7 +171,7 @@
   width: 14px;
   height: 14px;
   border: 2px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #FFFFFF;
+  border-top-color: currentColor;
   border-radius: 50%;
   animation: uiSpin 0.7s linear infinite;
 }
@@ -347,9 +394,9 @@
 }
 
 .ui-badge--accent {
-  background: var(--accent-tint);
+  background: var(--accent-soft);
   color: var(--accent);
-  border: 1px solid rgba(108, 124, 255, 0.3);
+  border: 1px solid var(--border);
 }
 
 .ui-badge--muted {
@@ -364,7 +411,7 @@
 .ui-segmented {
   display: inline-flex;
   align-items: center;
-  background: var(--bg-sidebar);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-btn);
   padding: 2px;
@@ -390,24 +437,25 @@
   font-weight: 500;
   color: var(--text-muted);
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 7px;
   cursor: pointer;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
   outline: none;
   white-space: nowrap;
 }
 
 .ui-segmented-item:hover:not(.ui-segmented-item--active) {
   color: var(--text);
-  background: var(--surface-2);
+  background: var(--surface-hover);
 }
 
 .ui-segmented-item--active {
-  background: var(--bg-surface-2);
-  color: #FFFFFF;
+  background: var(--surface);
+  color: var(--text);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  font-weight: 600;
 }
 
 .ui-segmented-item:focus-visible {
@@ -633,7 +681,7 @@
    9. Skeleton
    ----------------------------------------------------------------------------- */
 .ui-skeleton {
-  background: linear-gradient(90deg, #161B22 25%, #1B212A 50%, #161B22 75%);
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-hover) 50%, var(--surface-2) 75%);
   background-size: 200% 100%;
   animation: uiSkeletonShimmer 1.6s ease-in-out infinite;
 }

@@ -9,14 +9,16 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import axios from "axios";
 import SpecularButton from "./SpecularButton";
 import StatCard from "./ui/StatCard";
+import TimeRangeToggle from "./ui/TimeRangeToggle";
+import { useTimeRange } from "../context/TimeRangeContext";
 import { ArrowRightLeft, Trophy, AlertTriangle, Info, X, Smartphone, Monitor, Tablet, HardDrive, QrCode, Globe, TrendingUp } from "lucide-react";
 
 export const LINK_COLORS = [
-  "var(--accent)", // 0: Primary accent
-  "#64748B",       // 1: Slate
-  "#94A3B8",       // 2: Light slate
-  "#475569",       // 3: Dark slate
-  "#CBD5E1",       // 4: Pale slate
+  "var(--chart-1)", // 0: Primary brown
+  "var(--chart-2)", // 1: Warm sand
+  "var(--chart-3)", // 2: Olive/sage
+  "var(--chart-4)", // 3: Terracotta
+  "#A88B74",        // 4: Warm taupe
 ];
 
 export const getLinkColor = (index) => LINK_COLORS[index % LINK_COLORS.length];
@@ -388,11 +390,11 @@ function ComparisonKPICards({ links = [], summary = {}, range = "7d" }) {
               <div className="comparison-link-stat-row">
                 <span className="stat-label">QR vs Direct</span>
                 <span className="stat-value" style={{ fontSize: "12px" }}>
-                  <span style={{ color: "var(--accent-purple)", fontWeight: "600" }}>
+                  <span style={{ color: "var(--chart-1)", fontWeight: "600" }}>
                     {link.qrClicks} QR ({link.qrPercentage}%)
                   </span>
                   {" · "}
-                  <span style={{ color: "#06B6D4", fontWeight: "600" }}>
+                  <span style={{ color: "var(--chart-2)", fontWeight: "600" }}>
                     {link.directClicks} Dir ({link.directPercentage}%)
                   </span>
                 </span>
@@ -1100,7 +1102,7 @@ export default function LinkComparisonView({
   apiBaseUrl = "",
 }) {
   const [selectedIds, setSelectedIds] = useState([]);
-  const [range, setRange] = useState("7d");
+  const { timeRange, setTimeRange, apiRange } = useTimeRange();
   const [comparisonData, setComparisonData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1118,7 +1120,7 @@ export default function LinkComparisonView({
 
   // Fetch comparison analytics whenever selectedIds or range changes
   const fetchComparison = useCallback(
-    async (curRange = range, curIds = selectedIds) => {
+    async (curRange = apiRange, curIds = selectedIds) => {
       const activeToken = token || localStorage.getItem("token");
       if (!activeToken) return;
 
@@ -1153,7 +1155,7 @@ export default function LinkComparisonView({
           setError(res.data?.message || "Failed to fetch link comparison analytics");
         }
       } catch (err) {
-        if (axios.isCancel(err)) return;
+        if (axios.isCancel(err) || err.name === "CanceledError" || err.code === "ERR_CANCELED") return;
         console.error("Fetch link comparison error:", err);
         setError(
           err.response?.data?.message ||
@@ -1163,20 +1165,20 @@ export default function LinkComparisonView({
         setLoading(false);
       }
     },
-    [token, apiBaseUrl, range, selectedIds]
+    [token, apiBaseUrl, apiRange, selectedIds]
   );
 
-  // Trigger fetch when selectedIds or range changes
+  // Trigger fetch when selectedIds or apiRange changes
   useEffect(() => {
     if (selectedIds.length >= 2) {
-      fetchComparison(range, selectedIds);
+      fetchComparison(apiRange, selectedIds);
     }
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [selectedIds, range, fetchComparison]);
+  }, [selectedIds, apiRange, fetchComparison]);
 
   // Selection handlers
   const handleSelectLink = (id) => {
@@ -1228,39 +1230,19 @@ export default function LinkComparisonView({
 
         {/* Date Filter Pills & Refresh Button */}
         <div className="traffic-header-controls">
-          <div className="traffic-filter-pills" role="group" aria-label="Date Range Filters">
-            <button
-              type="button"
-              className={`traffic-pill-btn ${range === "7d" ? "active" : ""}`}
-              onClick={() => handleRangeChange("7d")}
-              disabled={loading}
-            >
-              7 Days
-            </button>
-            <button
-              type="button"
-              className={`traffic-pill-btn ${range === "30d" ? "active" : ""}`}
-              onClick={() => handleRangeChange("30d")}
-              disabled={loading}
-            >
-              30 Days
-            </button>
-            <button
-              type="button"
-              className={`traffic-pill-btn ${range === "all" ? "active" : ""}`}
-              onClick={() => handleRangeChange("all")}
-              disabled={loading}
-            >
-              All Time
-            </button>
-          </div>
+          <TimeRangeToggle
+            value={timeRange}
+            onChange={setTimeRange}
+            disabled={loading}
+            ariaLabel="Link Comparison timeframe"
+          />
 
           <SpecularButton
             type="button"
             variant="secondary"
             size="md"
             className="traffic-refresh-btn"
-            onClick={() => fetchComparison(range, selectedIds)}
+            onClick={() => fetchComparison(apiRange, selectedIds)}
             disabled={loading || selectedIds.length < 2}
             title="Refresh link comparison"
             aria-label="Refresh link comparison"
@@ -1292,8 +1274,8 @@ export default function LinkComparisonView({
         </div>
       )}
 
-      {/* Loading State */}
-      {loading && (
+      {/* Loading State for initial fetch */}
+      {loading && !comparisonData && (
         <div className="analytics-loading-spinner" style={{ padding: "40px 0" }}>
           <div className="spinner" />
           <p style={{ color: "var(--text-muted)", marginTop: "12px", fontSize: "13px" }}>
@@ -1303,8 +1285,8 @@ export default function LinkComparisonView({
       )}
 
       {/* Main Comparison Data Render */}
-      {!loading && comparisonData && selectedIds.length >= 2 && (
-        <>
+      {comparisonData && selectedIds.length >= 2 && (
+        <div className={loading ? "data-refreshing" : ""}>
           {/* 2. Best Performer Banner */}
           <BestPerformerBanner
             bestPerformer={comparisonData.summary?.bestPerformer}
@@ -1315,7 +1297,7 @@ export default function LinkComparisonView({
           <ComparisonKPICards
             links={comparisonData.links || []}
             summary={comparisonData.summary || {}}
-            range={range}
+            range={apiRange}
           />
 
           {/* 4. Full Width: Daily Traffic Trend Comparison */}
@@ -1335,7 +1317,7 @@ export default function LinkComparisonView({
             <DeviceDistributionComparison links={comparisonData.links || []} />
             <GeographicComparison links={comparisonData.links || []} />
           </div>
-        </>
+        </div>
       )}
 
       {/* Empty State when fewer than 2 links selected */}

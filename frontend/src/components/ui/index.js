@@ -10,3 +10,4 @@ export { default as EmptyState } from "./EmptyState";
 export { default as Skeleton } from "./Skeleton";
 export { default as Tooltip } from "./Tooltip";
 export { default as Modal } from "./Modal";
+export { default as TimeRangeToggle } from "./TimeRangeToggle";

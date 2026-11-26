@@ -33,7 +33,7 @@ export default function MarketingLayout({
         currentPath={currentPath}
         onNavigate={onNavigate}
       />
-      <div className="mkt-frame-outer">
+      <div className={`mkt-frame-outer ${currentPath !== "/" ? "mkt-has-nav-offset" : ""}`}>
         <div className="mkt-frame-lines">
           <main id="main-content" tabIndex="-1" style={{ outline: "none", flex: 1, minHeight: "100%" }}>
             {children}

@@ -11,15 +11,42 @@
     <script>
       (function() {
         try {
-          var raw = localStorage.getItem('smartlink-appearance');
+          var raw = localStorage.getItem('smartlink.appearance') || localStorage.getItem('smartlink-appearance');
           var p = raw ? JSON.parse(raw) : {};
-          var t = p.theme || 'dark';
-          var eff = t === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t;
+          var t = p.theme || 'light';
+          var effTheme = t === 'system'
+            ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : (t === 'dark' ? 'dark' : 'light');
+
+          var preset = p.preset || p.bg || (effTheme === 'dark' ? 'espresso' : 'cream');
+          // Invalidate incompatible presets per theme mode
+          if (effTheme === 'dark' && (preset === 'cream' || preset === 'paper' || preset === 'sand' || preset === 'stone' || preset === 'warm' || preset === 'slate' || preset === 'midnight' || preset === 'graphite' || preset === 'ink')) {
+            preset = 'espresso';
+          } else if (effTheme === 'light' && (preset === 'espresso' || preset === 'charcoal' || preset === 'slate' || preset === 'midnight' || preset === 'graphite' || preset === 'ink')) {
+            preset = 'cream';
+          }
+
+          var accent = p.accent || 'brown';
+          if (accent === 'sand') accent = 'slate-blue';
+          if (accent === 'indigo' || accent === 'purple') accent = 'brown';
+
+          var density = p.density === 'compact' ? 'compact' : 'comfortable';
+          var sidebar = p.sidebar === 'collapsed' ? 'collapsed' : 'expanded';
+
           var d = document.documentElement;
-          d.setAttribute('data-theme', eff);
-          d.setAttribute('data-bg', p.bg || 'slate');
-          d.setAttribute('data-accent', p.accent || 'indigo');
-          d.setAttribute('data-density', p.density || 'comfortable');
+          d.setAttribute('data-theme', effTheme);
+          d.setAttribute('data-preset', preset);
+          d.setAttribute('data-bg', preset);
+          d.setAttribute('data-accent', accent);
+          d.setAttribute('data-density', density);
+
+          if (sidebar === 'collapsed') {
+            d.classList.add('sidebar-default-collapsed');
+            try { localStorage.setItem('smartlink_sidebar_collapsed', 'true'); } catch(_) {}
+          } else {
+            d.classList.remove('sidebar-default-collapsed');
+            try { localStorage.setItem('smartlink_sidebar_collapsed', 'false'); } catch(_) {}
+          }
         } catch (e) {}
       })();
     </script>

@@ -5,8 +5,8 @@ import "./SpotlightCard.css";
 const SpotlightCard = ({
   children,
   className = "",
-  spotlightColor = "rgba(168, 85, 247, 0.38)",
-  borderColor = "rgba(192, 132, 252, 0.8)",
+  spotlightColor = "rgba(122, 74, 43, 0.04)",
+  borderColor = "var(--border)",
   radius = 280,
   onClick,
   style = {},

@@ -110,9 +110,9 @@ export default function GeoMap2D({
         return "var(--map-land)";
       }
       const ratio = data.totalClicks / maxCountryClicks;
-      if (ratio > 0.5) return "#10B981"; // Mint-green / emerald for high traffic
-      if (ratio > 0.2) return "#8B5CF6"; // Purple for moderate traffic
-      return "#6366F1"; // Indigo for lower traffic
+      if (ratio > 0.5) return "var(--chart-1)"; // Primary brown for high traffic
+      if (ratio > 0.2) return "var(--chart-2)"; // Warm sand for moderate traffic
+      return "var(--chart-3)"; // Olive for lower traffic
     },
     [maxCountryClicks]
   );
@@ -685,13 +685,13 @@ export default function GeoMap2D({
           >
             <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
               <span className="legend-tag" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                <span className="dot-sample green-dot" style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#10B981", boxShadow: "0 0 6px #10B981", display: "inline-block" }} /> High
+                <span className="dot-sample green-dot" style={{ width: "9px", height: "9px", borderRadius: "50%", background: "var(--chart-1)", display: "inline-block" }} /> High
               </span>
               <span className="legend-tag" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                <span className="dot-sample purple-dot" style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#8B5CF6", boxShadow: "0 0 6px #8B5CF6", display: "inline-block" }} /> Moderate
+                <span className="dot-sample purple-dot" style={{ width: "9px", height: "9px", borderRadius: "50%", background: "var(--chart-2)", display: "inline-block" }} /> Moderate
               </span>
               <span className="legend-tag" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                <span className="dot-sample" style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#6366F1", display: "inline-block" }} /> Low
+                <span className="dot-sample" style={{ width: "9px", height: "9px", borderRadius: "50%", background: "var(--chart-3)", display: "inline-block" }} /> Low
               </span>
               <span className="legend-tag" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                 <span className="dot-sample slate-dot" style={{ width: "9px", height: "9px", borderRadius: "50%", background: "var(--map-land)", border: "1px solid var(--border)", display: "inline-block" }} /> Unvisited

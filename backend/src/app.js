@@ -14,6 +14,7 @@ import { redirectLink } from "./controllers/link.controller.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import experimentRoutes from "./routes/experiment.routes.js";
 import reportRoutes from "./routes/report.routes.js";
+import analyticsRoutes from "./routes/analytics.routes.js";
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use("/api/links", linkRouter);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/experiments", experimentRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Public short-code redirect at domain root (e.g. https://domain.com/:shortCode)
 app.get("/:shortCode", redirectLink);

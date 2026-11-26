@@ -11,6 +11,8 @@ import {
   getQRAnalytics,
   updateLinkAccess,
   togglePauseLink,
+  deleteLink,
+  bulkUpdateLinks,
   getGeoAnalytics,
   getDeviceAnalytics,
   getTrafficAnalytics,
@@ -49,6 +51,12 @@ router.patch("/:id/access", verifyJWT, updateLinkAccess);
 router.patch("/:id/pause", verifyJWT, togglePauseLink);
 router.patch("/:id/toggle-pause", verifyJWT, togglePauseLink);
 router.patch("/:id", verifyJWT, updateLinkAccess);
+
+// Delete an owned link
+router.delete("/:id", verifyJWT, deleteLink);
+
+// Bulk operations (pause, resume, delete, addTag)
+router.post("/bulk", verifyJWT, bulkUpdateLinks);
 
 // Get click analytics for a specific short link
 router.get("/:shortCode/analytics", verifyJWT, getLinkAnalytics);

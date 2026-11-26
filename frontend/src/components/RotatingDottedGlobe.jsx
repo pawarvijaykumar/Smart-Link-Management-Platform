@@ -120,9 +120,9 @@ export default function RotatingDottedGlobe({
         return "#1e293b"; // Unvisited land default
       }
       const ratio = data.totalClicks / maxCountryClicks;
-      if (ratio > 0.5) return "#10B981"; // Emerald for high traffic
-      if (ratio > 0.2) return "#8B5CF6"; // Purple for medium traffic
-      return "#6366F1"; // Indigo for lower traffic
+      if (ratio > 0.5) return "var(--chart-1)"; // Primary brown
+      if (ratio > 0.2) return "var(--chart-2)"; // Warm sand
+      return "var(--chart-3)"; // Olive/sage
     },
     [maxCountryClicks]
   );
@@ -354,8 +354,8 @@ export default function RotatingDottedGlobe({
         const data = getFeatureCountryData(d);
         if (data && data.totalClicks > 0) {
           const ratio = data.totalClicks / maxCountryClicks;
-          if (ratio > 0.5) return "rgba(16, 185, 129, 0.35)";
-          return "rgba(139, 92, 246, 0.3)";
+          if (ratio > 0.5) return "rgba(79, 122, 74, 0.4)";
+          return "rgba(201, 154, 107, 0.35)";
         }
         return "transparent";
       })
@@ -442,7 +442,7 @@ export default function RotatingDottedGlobe({
         if (iso && countryDataMap.has(iso)) {
           const data = countryDataMap.get(iso);
           if (data && data.totalClicks > 0) {
-            return data.qrClicks > 0 ? "#10B981" : "#8B5CF6";
+            return data.qrClicks > 0 ? "var(--chart-1)" : "var(--chart-2)";
           }
         }
         return "rgba(100, 116, 139, 0.55)";
@@ -910,7 +910,7 @@ export default function RotatingDottedGlobe({
                   </div>
                   <div className="tooltip-row">
                     <span>Direct Clicks:</span>
-                    <strong style={{ color: "#A78BFA" }}>{hoveredCountry.directClicks}</strong>
+                    <strong style={{ color: "var(--primary)" }}>{hoveredCountry.directClicks}</strong>
                   </div>
                   <div className="tooltip-hint">Click country to drill down →</div>
                 </div>
@@ -923,10 +923,10 @@ export default function RotatingDottedGlobe({
                 <span className="dot-sample green-dot" /> High Traffic
               </span>
               <span className="legend-tag">
-                <span className="dot-sample purple-dot" /> Moderate Traffic
+                <span className="dot-sample" style={{ background: "var(--chart-2)" }} /> Moderate Traffic
               </span>
               <span className="legend-tag">
-                <span className="dot-sample" style={{ background: "#6366F1" }} /> Low Traffic
+                <span className="dot-sample" style={{ background: "var(--chart-3)" }} /> Low Traffic
               </span>
               <span className="legend-tag">
                 <span className="dot-sample slate-dot" /> Unvisited Land
@@ -969,7 +969,7 @@ export default function RotatingDottedGlobe({
                   </div>
                   <div className="tooltip-row">
                     <span>Direct Clicks:</span>
-                    <strong style={{ color: "#A78BFA" }}>{hoveredCountry.directClicks}</strong>
+                    <strong style={{ color: "var(--primary)" }}>{hoveredCountry.directClicks}</strong>
                   </div>
                   <div className="tooltip-hint">Click country to drill down →</div>
                 </div>
@@ -982,7 +982,7 @@ export default function RotatingDottedGlobe({
                 <span className="dot-sample green-dot" /> High Traffic (QR Active)
               </span>
               <span className="legend-tag">
-                <span className="dot-sample purple-dot" /> Direct Web Traffic
+                <span className="dot-sample" style={{ background: "var(--chart-2)" }} /> Direct Web Traffic
               </span>
               <span className="legend-tag">
                 <span className="dot-sample slate-dot" /> Unvisited Land

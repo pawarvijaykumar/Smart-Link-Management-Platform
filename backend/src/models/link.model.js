@@ -57,6 +57,16 @@ const linkSchema = new mongoose.Schema(
       default: [],
     },
 
+    tags: {
+      type: [String],
+      default: [],
+    },
+
+    password: {
+      type: String,
+      default: null,
+    },
+
     expiresAt: {
       type: Date,
       default: null,

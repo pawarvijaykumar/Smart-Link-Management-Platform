@@ -9,6 +9,8 @@ import React, { useState, useMemo } from "react";
 import axios from "axios";
 import SpecularButton from "./SpecularButton";
 import { SegmentedControl } from "./ui/SegmentedControl";
+import TimeRangeToggle from "./ui/TimeRangeToggle";
+import { useTimeRange } from "../context/TimeRangeContext";
 import {
   LayoutDashboard,
   Link2,
@@ -166,7 +168,7 @@ export const REPORT_CATEGORIES = [
 // -----------------------------------------------------------------------------
 export default function ReportsView({ links = [], token, apiBaseUrl }) {
   const [selectedCategory, setSelectedCategory] = useState("overall");
-  const [selectedRange, setSelectedRange] = useState("all"); // "7d" | "30d" | "all"
+  const { timeRange, setTimeRange, apiRange } = useTimeRange();
   const [selectedLinkId, setSelectedLinkId] = useState(""); // "" for all links
   const [downloading, setDownloading] = useState(null); // "pdf" | "csv" | null
   const [errorMsg, setErrorMsg] = useState("");
@@ -186,7 +188,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
     setErrorMsg("");
 
     try {
-      let url = `${apiBaseUrl}/api/reports/${format}?type=${selectedCategory}&range=${selectedRange}`;
+      let url = `${apiBaseUrl}/api/reports/${format}?type=${selectedCategory}&range=${apiRange}`;
       if (selectedCategory === "links" && selectedLinkId) {
         url += `&linkId=${encodeURIComponent(selectedLinkId)}`;
       }
@@ -200,7 +202,7 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
       });
 
       // Extract filename from Content-Disposition header if available
-      let filename = `smartlink_${selectedCategory}_${selectedRange}_${new Date()
+      let filename = `smartlink_${selectedCategory}_${apiRange}_${new Date()
         .toISOString()
         .slice(0, 10)}.${format}`;
 
@@ -371,15 +373,9 @@ export default function ReportsView({ links = [], token, apiBaseUrl }) {
               <label className="reports-config-label">
                 Select evaluation range (IST)
               </label>
-              <SegmentedControl
-                options={[
-                  { value: "7d", label: "7 Days" },
-                  { value: "30d", label: "30 Days" },
-                  { value: "all", label: "All Time" },
-                ]}
-                value={selectedRange}
-                onChange={(val) => setSelectedRange(val)}
-                size="md"
+              <TimeRangeToggle
+                value={timeRange}
+                onChange={setTimeRange}
                 ariaLabel="Select Evaluation Range (IST)"
               />
               <span className="reports-input-hint">

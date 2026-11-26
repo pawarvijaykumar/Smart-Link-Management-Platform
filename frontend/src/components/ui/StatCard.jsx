@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import "./ui.css";
 
-function MiniSparkline({ data = [], color = "#6C7CFF", height = 24, width = 72 }) {
+function MiniSparkline({ data = [], color = "var(--chart-1)", height = 24, width = 72 }) {
   if (!data || data.length < 2) return null;
 
   const min = Math.min(...data);

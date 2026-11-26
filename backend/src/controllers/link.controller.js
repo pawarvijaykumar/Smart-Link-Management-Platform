@@ -133,6 +133,23 @@ const createLink = async (req, res) => {
 
     const validatedIsPaused = Boolean(req.body.isPaused);
 
+    let validatedPassword = null;
+    if (typeof req.body.password === "string" && req.body.password.trim().length > 0) {
+      validatedPassword = req.body.password.trim();
+    }
+
+    let validatedTags = [];
+    if (Array.isArray(req.body.tags)) {
+      validatedTags = req.body.tags
+        .filter((t) => typeof t === "string" && t.trim().length > 0)
+        .map((t) => t.trim().slice(0, 30));
+    } else if (typeof req.body.tags === "string" && req.body.tags.trim().length > 0) {
+      validatedTags = req.body.tags
+        .split(",")
+        .map((t) => t.trim().slice(0, 30))
+        .filter((t) => t.length > 0);
+    }
+
     // Generate a unique short code
     const shortCode = crypto.randomBytes(4).toString("hex");
 
@@ -149,6 +166,8 @@ const createLink = async (req, res) => {
       expiresAt: validatedExpiresAt,
       maxClicks: validatedMaxClicks,
       isPaused: validatedIsPaused,
+      password: validatedPassword,
+      tags: validatedTags,
     });
 
     // CHANGE: Notifications Step 3A/4E — 2026-11-05
@@ -193,12 +212,156 @@ const redirectLink = async (req, res) => {
 
     const now = new Date();
 
+    // Check link existence, pause status, expiry, click limit, and password before incrementing
+    const inspectLink = await Link.findOne({ shortCode })
+      .select("shortCode originalUrl isPaused expiresAt maxClicks clicks password isExperiment experiment")
+      .lean();
+
+    if (!inspectLink) {
+      return res.status(404).json({
+        success: false,
+        code: "LINK_NOT_FOUND",
+        message: "Short link not found",
+      });
+    }
+
+    // Check whether owner has paused the link
+    if (inspectLink.isPaused) {
+      return res.status(403).json({
+        success: false,
+        code: "LINK_PAUSED",
+        message: "This link has been paused by the owner",
+      });
+    }
+
+    // Check whether current time is past expiresAt
+    if (inspectLink.expiresAt && now > new Date(inspectLink.expiresAt)) {
+      return res.status(410).json({
+        success: false,
+        code: "LINK_EXPIRED",
+        message: "This link has expired",
+        expiredAt: inspectLink.expiresAt,
+      });
+    }
+
+    // Check whether click limit has been reached
+    if (inspectLink.maxClicks && inspectLink.clicks >= inspectLink.maxClicks) {
+      return res.status(410).json({
+        success: false,
+        code: "CLICK_LIMIT_REACHED",
+        message: "This link has reached its maximum click limit",
+        maxClicks: inspectLink.maxClicks,
+        clicks: inspectLink.clicks,
+      });
+    }
+
+    // Check password protection
+    if (inspectLink.password && inspectLink.password.trim()) {
+      const providedPwd = (req.query.pwd || req.body?.pwd || "").trim();
+      if (providedPwd !== inspectLink.password) {
+        const hasFailedAttempt = Boolean(req.query.pwd !== undefined);
+        return res.status(200).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Protected Link - SmartLink</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #FAF7F2;
+      color: #231A12;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .card {
+      background: #FFFFFF;
+      border: 1px solid #E8DFD3;
+      border-radius: 12px;
+      padding: 36px 32px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      text-align: center;
+    }
+    .lock-icon {
+      width: 48px;
+      height: 48px;
+      background: #F3EDE4;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      color: #7A4A2B;
+    }
+    h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #231A12; }
+    p { font-size: 14px; color: #6B5B4B; margin-bottom: 24px; line-height: 1.5; }
+    form { display: flex; flex-direction: column; gap: 14px; text-align: left; }
+    label { font-size: 13px; font-weight: 600; color: #231A12; }
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 1px solid #E8DFD3;
+      border-radius: 8px;
+      background: #FAF7F2;
+      color: #231A12;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus { border-color: #7A4A2B; background: #FFF; }
+    button {
+      background: #7A4A2B;
+      color: #FFF;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 11px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: #633A20; }
+    .error-msg {
+      background: #FDE8E8;
+      color: #9B1C1C;
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="lock-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    </div>
+    <h2>Password Protected Link</h2>
+    <p>This short link requires a password to access the destination URL.</p>
+    ${hasFailedAttempt ? '<div class="error-msg">Incorrect password. Please try again.</div>' : ''}
+    <form method="GET" action="">
+      ${isQR ? '<input type="hidden" name="qr" value="1">' : ''}
+      <label for="pwd">Password</label>
+      <input type="password" id="pwd" name="pwd" placeholder="Enter password..." required autofocus autocomplete="current-password" />
+      <button type="submit">Unlock &amp; Continue &rarr;</button>
+    </form>
+  </div>
+</body>
+</html>`);
+      }
+    }
+
     // 1. Concurrency-safe atomic check and click increment
-    // Only matches if:
-    // - Link exists with matching shortCode
-    // - isPaused is NOT true
-    // - expiresAt is null, undefined, or in the future (> now)
-    // - maxClicks is null, undefined, or clicks < maxClicks
     const link = await Link.findOneAndUpdate(
       {
         shortCode,
@@ -223,53 +386,10 @@ const redirectLink = async (req, res) => {
       { $inc: { clicks: 1 } },
       { returnDocument: "after" }
     )
-      .select("originalUrl _id shortCode user clicks utmSource utmMedium utmCampaign utmTerm utmContent notifiedMilestones expiresAt maxClicks isPaused isExperiment experiment")
+      .select("originalUrl _id shortCode user clicks utmSource utmMedium utmCampaign utmTerm utmContent notifiedMilestones expiresAt maxClicks isPaused isExperiment experiment password")
       .lean();
 
-    // 2. If atomic update did not succeed, inspect reason without recording clicks or notifications
     if (!link) {
-      const inspectLink = await Link.findOne({ shortCode })
-        .select("shortCode originalUrl isPaused expiresAt maxClicks clicks")
-        .lean();
-
-      if (!inspectLink) {
-        return res.status(404).json({
-          success: false,
-          code: "LINK_NOT_FOUND",
-          message: "Short link not found",
-        });
-      }
-
-      // Check whether owner has paused the link
-      if (inspectLink.isPaused) {
-        return res.status(403).json({
-          success: false,
-          code: "LINK_PAUSED",
-          message: "This link has been paused by the owner",
-        });
-      }
-
-      // Check whether current time is past expiresAt
-      if (inspectLink.expiresAt && now > new Date(inspectLink.expiresAt)) {
-        return res.status(410).json({
-          success: false,
-          code: "LINK_EXPIRED",
-          message: "This link has expired",
-          expiredAt: inspectLink.expiresAt,
-        });
-      }
-
-      // Check whether click limit has been reached
-      if (inspectLink.maxClicks && inspectLink.clicks >= inspectLink.maxClicks) {
-        return res.status(410).json({
-          success: false,
-          code: "CLICK_LIMIT_REACHED",
-          message: "This link has reached its maximum click limit",
-          maxClicks: inspectLink.maxClicks,
-          clicks: inspectLink.clicks,
-        });
-      }
-
       return res.status(400).json({
         success: false,
         message: "Link is unavailable",
@@ -1727,6 +1847,29 @@ const updateLinkAccess = async (req, res) => {
       updates.isPaused = Boolean(req.body.isPaused);
     }
 
+    // 4. Password Protection
+    if (req.body.password !== undefined) {
+      if (req.body.password === null || req.body.password === "") {
+        updates.password = null;
+      } else {
+        updates.password = String(req.body.password).trim();
+      }
+    }
+
+    // 5. Tags
+    if (req.body.tags !== undefined) {
+      if (Array.isArray(req.body.tags)) {
+        updates.tags = req.body.tags
+          .filter((t) => typeof t === "string" && t.trim().length > 0)
+          .map((t) => t.trim().slice(0, 30));
+      } else if (typeof req.body.tags === "string") {
+        updates.tags = req.body.tags
+          .split(",")
+          .map((t) => t.trim().slice(0, 30))
+          .filter((t) => t.length > 0);
+      }
+    }
+
     Object.assign(link, updates);
     await link.save();
 
@@ -1787,6 +1930,128 @@ const togglePauseLink = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to update link pause status",
+    });
+  }
+};
+
+/**
+ * Delete an owned link and its associated click records.
+ */
+const deleteLink = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { _id: id, user: userId }
+      : { shortCode: id, user: userId };
+
+    const link = await Link.findOneAndDelete(query);
+    if (!link) {
+      return res.status(404).json({
+        success: false,
+        message: "Link not found or unauthorized",
+      });
+    }
+
+    // Clean up associated click records
+    try {
+      await Click.deleteMany({ link: link._id });
+    } catch (e) {
+      console.warn("Failed to delete click records for link:", link._id);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Link deleted successfully",
+      deletedId: link._id,
+    });
+  } catch (error) {
+    console.error("Delete link error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete link",
+    });
+  }
+};
+
+/**
+ * Bulk actions on links: pause, resume, delete, addTag.
+ */
+const bulkUpdateLinks = async (req, res) => {
+  try {
+    const { linkIds, action, tag } = req.body;
+    const userId = req.user.userId;
+
+    if (!Array.isArray(linkIds) || linkIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "linkIds array is required",
+      });
+    }
+
+    const validIds = linkIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    if (validIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid link IDs provided",
+      });
+    }
+
+    const filter = { _id: { $in: validIds }, user: userId };
+
+    if (action === "pause") {
+      const result = await Link.updateMany(filter, { $set: { isPaused: true } });
+      return res.status(200).json({
+        success: true,
+        message: `Paused ${result.modifiedCount} link${result.modifiedCount === 1 ? "" : "s"}`,
+        modifiedCount: result.modifiedCount,
+      });
+    } else if (action === "resume") {
+      const result = await Link.updateMany(filter, { $set: { isPaused: false } });
+      return res.status(200).json({
+        success: true,
+        message: `Resumed ${result.modifiedCount} link${result.modifiedCount === 1 ? "" : "s"}`,
+        modifiedCount: result.modifiedCount,
+      });
+    } else if (action === "delete") {
+      const linksToDelete = await Link.find(filter).select("_id").lean();
+      const idsToDelete = linksToDelete.map((l) => l._id);
+      const result = await Link.deleteMany({ _id: { $in: idsToDelete } });
+      try {
+        await Click.deleteMany({ link: { $in: idsToDelete } });
+      } catch (e) {}
+      return res.status(200).json({
+        success: true,
+        message: `Deleted ${result.deletedCount} link${result.deletedCount === 1 ? "" : "s"}`,
+        deletedCount: result.deletedCount,
+        deletedIds: idsToDelete,
+      });
+    } else if (action === "addTag") {
+      if (!tag || typeof tag !== "string" || !tag.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "tag string is required for addTag action",
+        });
+      }
+      const cleanTag = tag.trim().slice(0, 30);
+      const result = await Link.updateMany(filter, { $addToSet: { tags: cleanTag } });
+      return res.status(200).json({
+        success: true,
+        message: `Added tag "${cleanTag}" to ${result.modifiedCount} link${result.modifiedCount === 1 ? "" : "s"}`,
+        modifiedCount: result.modifiedCount,
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid action. Supported actions: pause, resume, delete, addTag",
+      });
+    }
+  } catch (error) {
+    console.error("Bulk update links error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to perform bulk action",
     });
   }
 };
@@ -4172,6 +4437,8 @@ export {
   getQRAnalytics,
   updateLinkAccess,
   togglePauseLink,
+  deleteLink,
+  bulkUpdateLinks,
   getGeoAnalytics,
   getDeviceAnalytics,
   getTrafficAnalytics,

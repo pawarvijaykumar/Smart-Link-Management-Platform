@@ -352,16 +352,21 @@
 }
 
 /* -----------------------------------------------------------------------------
-   4. Popovers (What's New, About, Profile Menu)
+   4. Popovers (What's New, About, Profile Menu) - Portaled to document.body
    ----------------------------------------------------------------------------- */
 .sidebar-popover {
   background: var(--surface) !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--radius-card, 10px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  z-index: 1000;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  z-index: 99999 !important;
   animation: popoverFadeIn 0.15s ease-out;
   overflow: hidden;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .sidebar-popover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
 @keyframes popoverFadeIn {
@@ -375,20 +380,24 @@
   }
 }
 
-.popover-upward {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  width: 100%;
-  min-width: 216px;
+.portal-popover {
+  position: fixed !important;
+  min-width: 260px;
 }
 
-.popover-flyout {
-  position: fixed;
-  left: 78px;
-  bottom: 12px;
-  width: 270px;
-  z-index: 1200;
+.about-popover {
+  width: 280px;
+  min-width: 260px;
+}
+
+.whats-new-popover {
+  width: 300px;
+  min-width: 270px;
+}
+
+.profile-menu-popover {
+  width: 250px;
+  min-width: 240px;
 }
 
 .popover-header {

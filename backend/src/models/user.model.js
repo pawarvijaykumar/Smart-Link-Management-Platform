@@ -18,6 +18,17 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
+    appearance: {
+      type: Object,
+      default: {
+        theme: "light",
+        preset: "cream",
+        accent: "brown",
+        density: "comfortable",
+        sidebar: "expanded",
+      },
+    },
+
     resetPasswordToken: {
       type: String,
       default: null,

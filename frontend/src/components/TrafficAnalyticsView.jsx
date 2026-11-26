@@ -13,7 +13,9 @@
 import { useState, useMemo } from "react";
 import SpecularButton from "./SpecularButton";
 import { SegmentedControl } from "./ui/SegmentedControl";
+import TimeRangeToggle from "./ui/TimeRangeToggle";
 import StatCard from "./ui/StatCard";
+import RankedBars from "./RankedBars";
 import { Activity, AlertTriangle, Smartphone, Monitor, Tablet, HardDrive, TrendingUp, QrCode, Clock, Calendar } from "lucide-react";
 
 // -----------------------------------------------------------------------------
@@ -703,273 +705,6 @@ function QRvsDirectComparisonChart({ data = [] }) {
   );
 }
 
-// -----------------------------------------------------------------------------
-// 5. Device Traffic Distribution Chart (Interactive Donut & Split Breakdown)
-// CHANGE: Interactive device category selection — 2026-11-16
-// -----------------------------------------------------------------------------
-function DeviceTrafficChart({ deviceDistribution = [], totalClicks = 0 }) {
-  // CHANGE: Interactive device category selection — 2026-11-16
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [hoveredCategory, setHoveredCategory] = useState(null);
-
-  const colors = {
-    mobile: "var(--accent)",
-    desktop: "#64748B",
-    tablet: "#94A3B8",
-    unknown: "#CBD5E1",
-  };
-
-  const icons = {
-    mobile: <Smartphone size={14} />,
-    desktop: <Monitor size={14} />,
-    tablet: <Tablet size={14} />,
-    unknown: <HardDrive size={14} />,
-  };
-
-  const items = useMemo(() => {
-    return (deviceDistribution || []).map((d) => ({
-      ...d,
-      color: colors[d.deviceType] || "#94A3B8",
-      icon: icons[d.deviceType] || <Smartphone size={14} />,
-      percentage: d.percentage !== undefined ? d.percentage : (totalClicks > 0 ? Math.round((d.count / totalClicks) * 100) : 0),
-    }));
-  }, [deviceDistribution, totalClicks]);
-
-  const activeSlices = useMemo(() => items.filter((d) => d.count > 0), [items]);
-
-  const size = 146;
-  const strokeWidth = 15;
-  const radius = (size - strokeWidth) / 2 - 4;
-  const circumference = 2 * Math.PI * radius;
-
-  const slices = useMemo(() => {
-    return activeSlices.map((item, idx) => {
-      const pct = totalClicks > 0 ? (item.count / totalClicks) * 100 : 0;
-      const priorPctSum = activeSlices
-        .slice(0, idx)
-        .reduce((sum, prev) => sum + (totalClicks > 0 ? (prev.count / totalClicks) * 100 : 0), 0);
-      const strokeDasharray = `${(pct / 100) * circumference} ${circumference}`;
-      const strokeDashoffset = -((priorPctSum / 100) * circumference);
-      return {
-        ...item,
-        pct: Number(pct.toFixed(1)),
-        strokeDasharray,
-        strokeDashoffset,
-      };
-    });
-  }, [activeSlices, totalClicks, circumference]);
-
-  // Handle clicking to toggle category selection or switch immediately
-  const handleCategoryToggle = (deviceType) => {
-    setSelectedCategory((prev) => (prev === deviceType ? null : deviceType));
-  };
-
-  const handleKeyDown = (e, deviceType) => {
-    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
-      e.preventDefault();
-      handleCategoryToggle(deviceType);
-    }
-  };
-
-  // Determine active view target: hover has temporary preview precedence, otherwise selectedCategory
-  const currentTargetType = hoveredCategory || selectedCategory;
-  const targetItem = currentTargetType
-    ? items.find((d) => d.deviceType === currentTargetType)
-    : null;
-
-  // Center display values (safe zero-handling)
-  const centerPct = targetItem
-    ? `${targetItem.percentage}%`
-    : totalClicks > 0
-    ? "100%"
-    : "0%";
-
-  const centerLabel = targetItem
-    ? targetItem.label
-    : "All Devices";
-
-  const centerSubtext = targetItem
-    ? `${targetItem.count.toLocaleString()} clicks`
-    : `${totalClicks.toLocaleString()} total`;
-
-  return (
-    <div className="traffic-chart-card">
-      <div className="traffic-chart-header">
-        <div>
-          <h3 className="traffic-chart-title">
-            Device traffic distribution
-          </h3>
-          <p className="traffic-chart-subtitle">
-            Visitor breakdown by hardware category.
-          </p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {selectedCategory && (
-            <SpecularButton
-              variant="ghost"
-              size="xs"
-              className="traffic-reset-btn"
-              onClick={() => setSelectedCategory(null)}
-              aria-label="Reset device category filter"
-            >
-              Reset
-            </SpecularButton>
-          )}
-          <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-            {totalClicks > 0 ? `${totalClicks.toLocaleString()} total` : "0 recorded"}
-          </span>
-        </div>
-      </div>
-
-      {totalClicks > 0 ? (
-        <div style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
-          <div style={{ position: "relative", width: `${size}px`, height: `${size}px`, flexShrink: 0 }}>
-            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-              <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                fill="transparent"
-                stroke="var(--border)"
-                strokeWidth={strokeWidth}
-              />
-              {slices.map((slice) => {
-                const isSelected = selectedCategory === slice.deviceType;
-                const isHovered = hoveredCategory === slice.deviceType;
-                const isEmphasized = isSelected || isHovered;
-                const hasFocus = currentTargetType !== null;
-                const isDimmed = hasFocus && !isEmphasized;
-
-                return (
-                  <circle
-                    key={slice.deviceType}
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    fill="transparent"
-                    stroke={slice.color}
-                    strokeWidth={isEmphasized ? strokeWidth + 3 : strokeWidth}
-                    strokeDasharray={slice.strokeDasharray}
-                    strokeDashoffset={slice.strokeDashoffset}
-                    strokeLinecap="round"
-                    style={{
-                      transformOrigin: "center",
-                      transform: "rotate(-90deg)",
-                      transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                      cursor: "pointer",
-                      opacity: isDimmed ? 0.22 : 1,
-                    }}
-                    onClick={() => handleCategoryToggle(slice.deviceType)}
-                    onMouseEnter={() => setHoveredCategory(slice.deviceType)}
-                    onMouseLeave={() => setHoveredCategory(null)}
-                  />
-                );
-              })}
-            </svg>
-            <div className="donut-center-label" aria-live="polite">
-              <span className="donut-center-pct" style={{ color: targetItem ? targetItem.color : "var(--text)" }}>
-                {centerPct}
-              </span>
-              <span className="donut-center-text">
-                {centerLabel}
-              </span>
-              <span className="donut-center-subtext">
-                {centerSubtext}
-              </span>
-            </div>
-          </div>
-
-          <div style={{ flex: 1, minWidth: "200px", display: "flex", flexDirection: "column", gap: "8px" }}>
-            {items.map((item) => {
-              const isSelected = selectedCategory === item.deviceType;
-              const isHovered = hoveredCategory === item.deviceType;
-              const hasSelection = selectedCategory !== null;
-              const isOtherCategory = hasSelection && !isSelected;
-
-              return (
-                <div
-                  key={item.deviceType}
-                  role="button"
-                  tabIndex={0}
-                  aria-pressed={isSelected}
-                  aria-label={`${item.label} traffic: ${item.count} clicks, ${item.percentage} percent`}
-                  className={`device-category-row ${isSelected ? "selected" : ""} ${isOtherCategory ? "dimmed" : ""}`}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "8px 12px",
-                    borderRadius: "8px",
-                    background: isSelected
-                      ? "var(--accent-soft)"
-                      : isHovered
-                      ? "var(--surface-hover)"
-                      : "var(--surface-2)",
-                    border: isSelected
-                      ? "1px solid var(--accent)"
-                      : "1px solid var(--border)",
-                    cursor: "pointer",
-                    transition: "all 0.18s ease",
-                    outline: "none",
-                    opacity: isOtherCategory && !isHovered ? 0.65 : 1,
-                  }}
-                  onClick={() => handleCategoryToggle(item.deviceType)}
-                  onKeyDown={(e) => handleKeyDown(e, item.deviceType)}
-                  onMouseEnter={() => setHoveredCategory(item.deviceType)}
-                  onMouseLeave={() => setHoveredCategory(null)}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-                    <span style={{ fontSize: "15px" }}>{item.icon}</span>
-                    <strong style={{ fontSize: "13px", color: isSelected ? item.color : "var(--text-primary)" }}>
-                      {item.label}
-                    </strong>
-                    {isSelected && (
-                      <span
-                        style={{
-                          fontSize: "10px",
-                          fontWeight: "700",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.4px",
-                          color: item.color,
-                          background: `${item.color}25`,
-                          border: `1px solid ${item.color}55`,
-                          padding: "1px 6px",
-                          borderRadius: "4px",
-                        }}
-                      >
-                        Active
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ fontSize: "12.5px", color: "var(--text)", fontWeight: "600" }}>
-                      {item.count.toLocaleString()}
-                    </span>
-                    <span
-                      className="geo-percentage-text"
-                      style={{
-                        minWidth: "38px",
-                        textAlign: "right",
-                        color: isSelected ? item.color : undefined,
-                        fontWeight: isSelected ? "700" : undefined,
-                      }}
-                    >
-                      {item.percentage}%
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : (
-        <p style={{ color: "var(--text-muted)", fontSize: "13px", textAlign: "center", padding: "30px 0", margin: 0 }}>
-          No device traffic recorded in this date range.
-        </p>
-      )}
-    </div>
-  );
-}
 
 // -----------------------------------------------------------------------------
 // 6. Campaign Traffic Trends (Comparison Chart & Top Campaigns)
@@ -1271,12 +1006,11 @@ export default function TrafficAnalyticsView({
           </div>
 
           <div className="traffic-header-controls">
-            {/* Filter Pills */}
-            <SegmentedControl
-              options={rangeButtons.map((btn) => ({ value: btn.id, label: btn.label }))}
+            {/* Unified 7D, 30D, All Timeframe Switch */}
+            <TimeRangeToggle
               value={trafficRange}
               onChange={(val) => onRangeChange?.(val)}
-              size="md"
+              disabled={trafficLoading}
               ariaLabel="Traffic Analytics date filter"
             />
 
@@ -1384,9 +1118,11 @@ export default function TrafficAnalyticsView({
 
           {/* 4. Responsive 2-Column Grid: Device Distribution & Campaign Trends */}
           <div className="traffic-charts-grid-2col">
-            <DeviceTrafficChart
-              deviceDistribution={deviceDistribution}
-              totalClicks={totalClicks}
+            <RankedBars
+              title="Device traffic distribution"
+              icon={<Monitor size={15} />}
+              data={deviceDistribution}
+              emptyMessage="No device traffic recorded in this date range."
             />
             <CampaignTrafficChart
               campaignTrends={campaignTrends}

@@ -9,6 +9,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import axios from "axios";
 import SpecularButton from "./SpecularButton";
 import StatCard from "./ui/StatCard";
+import TimeRangeToggle from "./ui/TimeRangeToggle";
+import { useTimeRange } from "../context/TimeRangeContext";
 import { ShieldAlert, AlertTriangle, RefreshCw, CheckCircle2, TrendingUp, TrendingDown, Info, X } from "lucide-react";
 
 // -----------------------------------------------------------------------------
@@ -146,7 +148,7 @@ function AnomalyDetailModal({
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  color: "var(--accent-purple)",
+                  color: "var(--primary)",
                   fontSize: "12px",
                   textDecoration: "underline",
                   overflow: "hidden",
@@ -658,7 +660,7 @@ function AnomalyTimelineChart({ timeline = [] }) {
               )}
             </div>
             <div className="chart-tooltip-row">
-              <span className="tooltip-swatch" style={{ backgroundColor: "#8B5CF6" }} />
+              <span className="tooltip-swatch" style={{ backgroundColor: "var(--chart-1)" }} />
               <span>Observed:</span>
               <strong style={{ color: "var(--text)" }}>
                 {hoveredPoint.clicks.toLocaleString()} clicks
@@ -1142,7 +1144,7 @@ function LinkSurveillanceTable({ linkHealth = [], onOpenModal }) {
                       <svg width={sparkW} height={sparkH}>
                         <polyline
                           fill="none"
-                          stroke={isSpike ? "#EF4444" : isDrop ? "#F59E0B" : "#8B5CF6"}
+                          stroke={isSpike ? "#EF4444" : isDrop ? "#F59E0B" : "var(--chart-1)"}
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -1174,7 +1176,7 @@ export default function TrafficAnomalyView({
   token = "",
   apiBaseUrl = "",
 }) {
-  const [range, setRange] = useState("14d");
+  const { timeRange, setTimeRange, apiRange } = useTimeRange();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1184,7 +1186,7 @@ export default function TrafficAnomalyView({
   const abortControllerRef = useRef(null);
 
   const fetchAnomalies = useCallback(
-    async (selectedRange = range) => {
+    async (selectedRange = apiRange) => {
       const activeToken = token || localStorage.getItem("token");
       if (!activeToken) return;
 
@@ -1210,7 +1212,7 @@ export default function TrafficAnomalyView({
           setError(res.data?.message || "Failed to load anomaly detection data");
         }
       } catch (err) {
-        if (axios.isCancel(err)) return;
+        if (axios.isCancel(err) || err.name === "CanceledError" || err.code === "ERR_CANCELED") return;
         console.error("Fetch anomaly analytics error:", err);
         setError(
           err.response?.data?.message ||
@@ -1220,17 +1222,17 @@ export default function TrafficAnomalyView({
         setLoading(false);
       }
     },
-    [apiBaseUrl, range, token]
+    [apiBaseUrl, apiRange, token]
   );
 
   useEffect(() => {
-    fetchAnomalies(range);
+    fetchAnomalies(apiRange);
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [fetchAnomalies, range]);
+  }, [fetchAnomalies, apiRange]);
 
   // Acknowledge anomaly lifecycle handler
   const handleAcknowledge = async (anomalyId) => {
@@ -1344,26 +1346,19 @@ export default function TrafficAnomalyView({
         </div>
 
         <div className="traffic-header-controls">
-          <div className="traffic-date-pills">
-            {["7d", "14d", "30d", "all"].map((r) => (
-              <button
-                key={r}
-                type="button"
-                className={`traffic-pill-btn ${range === r ? "active" : ""}`}
-                onClick={() => setRange(r)}
-                disabled={loading}
-              >
-                {r === "7d" ? "7 Days" : r === "14d" ? "14 Days" : r === "30d" ? "30 Days" : "All Time"}
-              </button>
-            ))}
-          </div>
+          <TimeRangeToggle
+            value={timeRange}
+            onChange={setTimeRange}
+            disabled={loading}
+            ariaLabel="Traffic Intelligence timeframe"
+          />
 
           <SpecularButton
             type="button"
             variant="secondary"
             size="md"
             className="traffic-refresh-btn"
-            onClick={() => fetchAnomalies(range)}
+            onClick={() => fetchAnomalies(apiRange)}
             disabled={loading}
             title="Recalculate statistical anomalies"
           >
@@ -1376,7 +1371,7 @@ export default function TrafficAnomalyView({
       {error && (
         <div className="traffic-error-banner">
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><AlertTriangle size={15} /> {error}</span>
-          <button type="button" onClick={() => fetchAnomalies(range)}>
+          <button type="button" onClick={() => fetchAnomalies(apiRange)}>
             Retry
           </button>
         </div>
@@ -1393,8 +1388,8 @@ export default function TrafficAnomalyView({
       )}
 
       {/* Main Content */}
-      {!loading && data && (
-        <>
+      {data && (
+        <div className={loading ? "data-refreshing" : ""}>
           {/* 1. Health Score & Top Anomaly KPI Cards */}
           <div className="metrics-grid" style={{ marginBottom: "16px" }}>
             <StatCard
@@ -1436,7 +1431,7 @@ export default function TrafficAnomalyView({
             linkHealth={data.linkHealth || []}
             onOpenModal={(link) => setSelectedModalItem(link)}
           />
-        </>
+        </div>
       )}
 
       {/* Diagnostic Details Modal Popup */}

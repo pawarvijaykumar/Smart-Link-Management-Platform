@@ -17,49 +17,18 @@ import {
   Smartphone,
   X,
 } from "lucide-react";
-import { useTheme } from "../context/ThemeContext";
+import {
+  useTheme,
+  LIGHT_PRESETS,
+  DARK_PRESETS,
+  ACCENT_PRESETS,
+} from "../context/ThemeContext";
 import { Button, Card, Input, Modal, Badge } from "./ui";
 import "./SettingsView.css";
 
 // -----------------------------------------------------------------------------
 // Constants & Configuration
 // -----------------------------------------------------------------------------
-
-const BG_PRESETS = [
-  {
-    id: "slate",
-    name: "Slate",
-    dark: { bg: "#0E1116", surface: "#161B22", border: "#232A34" },
-    light: { bg: "#F8FAFC", surface: "#FFFFFF", border: "#E2E8F0" },
-  },
-  {
-    id: "midnight",
-    name: "Midnight",
-    dark: { bg: "#090D16", surface: "#131A2B", border: "#222D46" },
-    light: { bg: "#F4F6FB", surface: "#FFFFFF", border: "#D8E2F2" },
-  },
-  {
-    id: "graphite",
-    name: "Graphite",
-    dark: { bg: "#121316", surface: "#1C1E24", border: "#2E323B" },
-    light: { bg: "#F5F5F6", surface: "#FFFFFF", border: "#DADBDE" },
-  },
-  {
-    id: "ink",
-    name: "Ink",
-    dark: { bg: "#050507", surface: "#111116", border: "#1E1E28" },
-    light: { bg: "#FAFAFA", surface: "#FFFFFF", border: "#E4E4E7" },
-  },
-];
-
-const ACCENT_PRESETS = [
-  { id: "indigo", name: "Indigo", color: "#6C7CFF" },
-  { id: "violet", name: "Violet", color: "#8B5CF6" },
-  { id: "teal", name: "Teal", color: "#14B8A6" },
-  { id: "emerald", name: "Emerald", color: "#10B981" },
-  { id: "amber", name: "Amber", color: "#F59E0B" },
-  { id: "rose", name: "Rose", color: "#F43F5E" },
-];
 
 const NOTIFICATIONS_STORAGE_KEY = "smartlink-notification-settings";
 
@@ -104,17 +73,20 @@ export default function SettingsView({
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState("success"); // "success" | "error"
 
-  // Theme Context
+  // Theme & Appearance Context
   const {
     theme,
+    preset,
     bg,
     accent,
     density,
     sidebar,
     pattern,
     effectiveTheme,
+    effectivePreset,
     effectivePattern,
     setTheme,
+    setPreset,
     setBg,
     setAccent,
     setDensity,
@@ -181,8 +153,9 @@ export default function SettingsView({
     showToast("Appearance saved");
   };
 
-  const handleBgChange = (newBg) => {
-    setBg(newBg);
+  const handlePresetChange = (newPreset) => {
+    if (setPreset) setPreset(newPreset);
+    else setBg(newPreset);
     showToast("Appearance saved");
   };
 
@@ -440,49 +413,72 @@ export default function SettingsView({
                 </span>
               </div>
 
-              {/* Background Presets: Midnight / Graphite / Slate / Ink */}
+              {/* Background Presets (Light: Cream, Paper, Sand, Stone / Dark: Espresso, Charcoal) */}
               <div className="settings-form-group">
                 <label className="settings-label">Background preset</label>
                 <div className="bg-presets-grid">
-                  {BG_PRESETS.map((preset) => {
-                    const colors = effectiveTheme === "light" ? preset.light : preset.dark;
-                    const isSelected = bg === preset.id;
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        className={`bg-preset-tile ${isSelected ? "active" : ""}`}
-                        onClick={() => handleBgChange(preset.id)}
-                        aria-pressed={isSelected}
-                      >
-                        <div
-                          className="bg-preview-swatch"
-                          style={{ backgroundColor: colors.bg }}
+                  {(() => {
+                    const currentPresets = effectiveTheme === "dark" ? DARK_PRESETS : LIGHT_PRESETS;
+                    return currentPresets.map((p) => {
+                      const isSelected = (preset || effectivePreset) === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className={`bg-preset-tile ${isSelected ? "active" : ""}`}
+                          onClick={() => handlePresetChange(p.id)}
+                          aria-pressed={isSelected}
                         >
                           <div
-                            className="bg-preview-inner-card"
+                            className="bg-preview-swatch"
                             style={{
-                              backgroundColor: colors.surface,
-                              border: `1px solid ${colors.border}`,
+                              backgroundColor: p.colors.bg,
+                              border: `1px solid ${p.colors.border}`,
                             }}
-                          />
-                        </div>
-                        <span className="bg-preset-name">{preset.name}</span>
-                      </button>
-                    );
-                  })}
+                          >
+                            <div
+                              className="bg-preview-mini-sidebar"
+                              style={{
+                                backgroundColor: p.colors.surface2,
+                                borderRight: `1px solid ${p.colors.border}`,
+                              }}
+                            />
+                            <div className="bg-preview-mini-content">
+                              <div
+                                className="bg-preview-mini-card"
+                                style={{
+                                  backgroundColor: p.colors.surface,
+                                  border: `1px solid ${p.colors.border}`,
+                                }}
+                              >
+                                <div
+                                  className="bg-preview-mini-bar"
+                                  style={{
+                                    backgroundColor: isSelected ? "var(--primary)" : p.colors.border,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <span className="bg-preset-name">{p.name}</span>
+                        </button>
+                      );
+                    });
+                  })()}
                 </div>
                 <span className="settings-hint">
-                  Pure solid surface colors without full-page gradients.
+                  Theme-aware surface presets for {effectiveTheme === "dark" ? "Dark" : "Light"} mode.
                 </span>
               </div>
 
-              {/* Accent Colors: Indigo / Violet / Teal / Emerald / Amber / Rose */}
+              {/* Accent Colors: Brown / Terracotta / Olive / Forest / Amber / Slate blue */}
               <div className="settings-form-group">
                 <label className="settings-label">Accent colour</label>
                 <div className="accent-swatches-grid">
                   {ACCENT_PRESETS.map((item) => {
                     const isSelected = accent === item.id;
+                    const accentColor = effectiveTheme === "dark" ? item.dark.color : item.light.color;
+                    const checkColor = effectiveTheme === "dark" ? item.dark.onPrimary : item.light.onPrimary;
                     return (
                       <button
                         key={item.id}
@@ -494,15 +490,18 @@ export default function SettingsView({
                       >
                         <div
                           className="accent-circle"
-                          style={{ backgroundColor: item.color }}
+                          style={{ backgroundColor: accentColor }}
                         >
-                          {isSelected && <Check size={13} strokeWidth={2.5} />}
+                          {isSelected && <Check size={13} strokeWidth={2.5} style={{ color: checkColor }} />}
                         </div>
                         <span className="accent-name">{item.name}</span>
                       </button>
                     );
                   })}
                 </div>
+                <span className="settings-hint">
+                  Drives primary buttons, active navigation, links, range toggles, and charts.
+                </span>
               </div>
 
               {/* Density: Comfortable vs Compact */}

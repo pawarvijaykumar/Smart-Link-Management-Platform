@@ -8,6 +8,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
 import SpecularButton from "./SpecularButton";
+import TimeRangeToggle from "./ui/TimeRangeToggle";
+import { useTimeRange } from "../context/TimeRangeContext";
 import {
   TrendingUp,
   Trophy,
@@ -139,7 +141,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
   const [analyticsData, setAnalyticsData] = useState(null);
 
   // Filter & range states
-  const [range, setRange] = useState("7d"); // "7d" | "30d" | "all"
+  const { timeRange, setTimeRange, apiRange } = useTimeRange();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -324,7 +326,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
   // ---------------------------------------------------------------------------
   // Fetch Analytics for Selected Experiment
   // ---------------------------------------------------------------------------
-  const fetchAnalytics = useCallback(async (expId, selectedRange = range) => {
+  const fetchAnalytics = useCallback(async (expId, selectedRange = apiRange) => {
     if (!token || !expId) return;
     setLoadingAnalytics(true);
     setErrorMsg("");
@@ -343,17 +345,17 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
     } finally {
       setLoadingAnalytics(false);
     }
-  }, [token, apiBaseUrl, range, getAuthHeaders]);
+  }, [token, apiBaseUrl, apiRange, getAuthHeaders]);
 
   // Trigger analytics fetch when selected experiment or range changes
   useEffect(() => {
     if (selectedExperimentId) {
-      fetchAnalytics(selectedExperimentId, range);
+      fetchAnalytics(selectedExperimentId, apiRange);
     } else {
       setAnalyticsData(null);
       setSelectedExperiment(null);
     }
-  }, [selectedExperimentId, range, fetchAnalytics]);
+  }, [selectedExperimentId, apiRange, fetchAnalytics]);
 
   // ---------------------------------------------------------------------------
   // Update Experiment Lifecycle Status
@@ -794,34 +796,17 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
           </div>
 
           <div className="ab-range-controls">
-            <div className="traffic-filter-pills">
-              <button
-                type="button"
-                className={`traffic-pill-btn ${range === "7d" ? "active" : ""}`}
-                onClick={() => setRange("7d")}
-              >
-                7 Days
-              </button>
-              <button
-                type="button"
-                className={`traffic-pill-btn ${range === "30d" ? "active" : ""}`}
-                onClick={() => setRange("30d")}
-              >
-                30 Days
-              </button>
-              <button
-                type="button"
-                className={`traffic-pill-btn ${range === "all" ? "active" : ""}`}
-                onClick={() => setRange("all")}
-              >
-                All Time
-              </button>
-            </div>
+            <TimeRangeToggle
+              value={timeRange}
+              onChange={setTimeRange}
+              disabled={loadingAnalytics}
+              ariaLabel="A/B Test evaluation timeframe"
+            />
             <SpecularButton
               variant="secondary"
               size="sm"
               className="ab-btn-refresh"
-              onClick={() => fetchAnalytics(exp._id, range)}
+              onClick={() => fetchAnalytics(exp._id, apiRange)}
               disabled={loadingAnalytics}
               title="Refresh Analytics"
             >
@@ -1393,7 +1378,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
                     <span className="dest-url" title={exp.variantA}>
                       {truncateUrl(exp.variantA, 38)}
                     </span>
-                    <span className="dest-clicks text-purple">
+                    <span className="dest-clicks" style={{ color: "var(--primary)" }}>
                       {exp.variantAClicks || 0} clicks
                     </span>
                   </div>

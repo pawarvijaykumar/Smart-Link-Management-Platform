@@ -4,45 +4,45 @@
    ============================================================================= */
 
 :root {
-  --accent: #4F46E5;
-  --accent-hover: #4338CA;
-  --accent-active: #3730A3;
-  --accent-soft: rgba(79, 70, 229, 0.10);
-  --accent-border: rgba(79, 70, 229, 0.2);
-  --border-focus: var(--accent);
+  --accent: var(--primary);
+  --accent-hover: var(--primary-hover);
+  --accent-active: var(--primary-hover);
+  --accent-soft: var(--accent-soft);
+  --accent-border: var(--border);
+  --border-focus: var(--primary);
 
-  --mkt-bg: #F7F8FA;
-  --mkt-surface: #FFFFFF;
-  --mkt-surface-2: #F1F5F9;
-  --mkt-border: #E4E7EC;
-  --mkt-border-subtle: #EEF2F6;
-  --mkt-text: #0F172A;
-  --mkt-muted: #64748B;
-  --mkt-dim: #94A3B8;
-  --mkt-accent: var(--accent);
-  --mkt-accent-hover: var(--accent-hover);
+  --mkt-bg: var(--bg);
+  --mkt-surface: var(--surface);
+  --mkt-surface-2: var(--surface-2);
+  --mkt-border: var(--border);
+  --mkt-border-subtle: var(--border);
+  --mkt-text: var(--text);
+  --mkt-muted: var(--text-muted);
+  --mkt-dim: var(--text-muted);
+  --mkt-accent: var(--primary);
+  --mkt-accent-hover: var(--primary-hover);
   --mkt-accent-soft: var(--accent-soft);
-  --mkt-accent-border: var(--accent-border);
+  --mkt-accent-border: var(--border);
   --mkt-radius-card: 12px;
   --mkt-radius-btn: 10px;
   --mkt-radius-pill: 999px;
-  --mkt-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
-  --mkt-shadow-hover: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --mkt-shadow: var(--shadow-sm);
+  --mkt-shadow-hover: var(--shadow-md);
 }
 
 html[data-theme="dark"] {
-  --accent: #6366F1;
-  --accent-hover: #4F46E5;
-  --accent-active: #4338CA;
-  --accent-soft: rgba(99, 102, 241, 0.15);
-  --accent-border: rgba(99, 102, 241, 0.25);
-  --border-focus: var(--accent);
+  --accent: var(--primary);
+  --accent-hover: var(--primary-hover);
+  --accent-active: var(--primary-hover);
+  --accent-soft: var(--accent-soft);
+  --accent-border: var(--border);
+  --border-focus: var(--primary);
 
-  --mkt-bg: #0E1116;
-  --mkt-surface: #161B22;
-  --mkt-surface-2: #1B212A;
-  --mkt-border: #232A34;
-  --mkt-border-subtle: #1C232E;
+  --mkt-bg: var(--bg);
+  --mkt-surface: var(--surface);
+  --mkt-surface-2: var(--surface-2);
+  --mkt-border: var(--border);
+  --mkt-border-subtle: var(--border);
   --mkt-text: #E6EAF0;
   --mkt-muted: #8B95A5;
   --mkt-dim: #606B7D;
@@ -67,6 +67,25 @@ html[data-theme="dark"] {
 }
 
 /* Base Wrapper */
+.mkt-wrapper.page {
+  overflow-x: hidden;
+  overflow-y: visible;
+  isolation: auto;
+}
+
+.mkt-wrapper > .mkt-navbar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  width: 100% !important;
+}
+
+.mkt-frame-outer.mkt-has-nav-offset {
+  padding-top: 64px;
+}
+
 .mkt-wrapper {
   position: relative;
   min-height: 100vh;
@@ -89,7 +108,6 @@ html[data-theme="dark"] {
 
 .mkt-frame-lines {
   position: relative;
-  max-width: 1120px;
   width: 100%;
   margin: 0 auto;
   flex: 1;
@@ -99,29 +117,7 @@ html[data-theme="dark"] {
 
 .mkt-frame-lines::before,
 .mkt-frame-lines::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: color-mix(in srgb, var(--border, var(--mkt-border)) 60%, transparent);
-  pointer-events: none;
-  z-index: 10;
-}
-
-.mkt-frame-lines::before {
-  left: 0;
-}
-
-.mkt-frame-lines::after {
-  right: 0;
-}
-
-@media (max-width: 767px) {
-  .mkt-frame-lines::before,
-  .mkt-frame-lines::after {
-    display: none !important;
-  }
+  display: none !important;
 }
 
 .mkt-container {
@@ -147,8 +143,8 @@ html[data-theme="dark"] {
 }
 
 html[data-theme="light"] .mkt-hero-soft-frame {
-  background: color-mix(in srgb, var(--accent, #4F46E5) 8%, #FFFFFF);
-  border-color: color-mix(in srgb, var(--accent, #4F46E5) 20%, var(--border, var(--mkt-border)));
+  background: var(--surface-2);
+  border-color: var(--border);
 }
 
 @media (max-width: 640px) {
@@ -165,22 +161,161 @@ html[data-theme="light"] .mkt-hero-soft-frame {
 }
 
 /* =============================================================================
-   Navbar
+   Navbar (Adaptive: Transparent over Hero, Cream when Scrolled)
    ============================================================================= */
 .mkt-navbar {
   position: sticky;
   top: 0;
   z-index: 100;
   width: 100%;
-  background: rgba(247, 248, 250, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--mkt-border);
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
 }
 
-html[data-theme="dark"] .mkt-navbar {
-  background: rgba(14, 17, 22, 0.85);
+/* 1. Transparent Navbar over Dark Hero (White Text) */
+.mkt-navbar--hero {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.mkt-navbar--hero .mkt-logo-link {
+  color: #FFFFFF !important;
+}
+
+.mkt-navbar--hero .mkt-logo-icon {
+  background: #7A4A2B !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.mkt-navbar--hero .mkt-logo-badge {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.mkt-navbar--hero .mkt-nav-link {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.mkt-navbar--hero .mkt-nav-link:hover,
+.mkt-navbar--hero .mkt-nav-link.active {
+  color: #FFFFFF !important;
+}
+
+.mkt-navbar--hero .mkt-theme-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #FFFFFF !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.mkt-navbar--hero .mkt-theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.mkt-navbar--hero .mkt-btn-ghost {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: transparent !important;
+}
+
+.mkt-navbar--hero .mkt-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #FFFFFF !important;
+}
+
+.mkt-navbar--hero .mkt-btn-primary {
+  background: #7A4A2B !important;
+  border-color: #7A4A2B !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25) !important;
+}
+
+.mkt-navbar--hero .mkt-btn-primary:hover {
+  background: #633A20 !important;
+  border-color: #633A20 !important;
+}
+
+.mkt-navbar--hero .mkt-mobile-toggle {
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 2. Scrolled Navbar / Non-Hero Pages (Cream Background, Dark Text) */
+.mkt-navbar--scrolled {
+  background: rgba(250, 247, 242, 0.94) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border-bottom: 1px solid rgba(226, 214, 198, 0.9) !important;
+  box-shadow: 0 4px 20px rgba(43, 33, 24, 0.04) !important;
+}
+
+.mkt-navbar--scrolled .mkt-logo-link {
+  color: #3b2415 !important;
+}
+
+.mkt-navbar--scrolled .mkt-logo-icon {
+  background: #7A4A2B !important;
+  color: #FFFFFF !important;
+}
+
+.mkt-navbar--scrolled .mkt-logo-badge {
+  background: #EFE7DC !important;
+  border: 1px solid #E2D6C6 !important;
+  color: #6F5F4F !important;
+}
+
+.mkt-navbar--scrolled .mkt-nav-link {
+  color: #6F5F4F !important;
+}
+
+.mkt-navbar--scrolled .mkt-nav-link:hover,
+.mkt-navbar--scrolled .mkt-nav-link.active {
+  color: #3b2415 !important;
+}
+
+.mkt-navbar--scrolled .mkt-theme-toggle {
+  border: 1px solid #E2D6C6 !important;
+  color: #6F5F4F !important;
+  background: transparent !important;
+}
+
+.mkt-navbar--scrolled .mkt-theme-toggle:hover {
+  color: #3b2415 !important;
+  border-color: #7A4A2B !important;
+}
+
+.mkt-navbar--scrolled .mkt-btn-ghost {
+  color: #6F5F4F !important;
+  background: transparent !important;
+}
+
+.mkt-navbar--scrolled .mkt-btn-ghost:hover {
+  color: #3b2415 !important;
+  background: #EFE7DC !important;
+}
+
+.mkt-navbar--scrolled .mkt-btn-primary {
+  background: #7A4A2B !important;
+  border-color: #7A4A2B !important;
+  color: #FFFFFF !important;
+}
+
+.mkt-navbar--scrolled .mkt-btn-primary:hover {
+  background: #633A20 !important;
+  border-color: #633A20 !important;
+}
+
+.mkt-navbar--scrolled .mkt-mobile-toggle {
+  color: #3b2415 !important;
+  border: 1px solid #E2D6C6 !important;
+  background: transparent !important;
 }
 
 .mkt-navbar-inner {
@@ -210,7 +345,7 @@ html[data-theme="dark"] .mkt-navbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .mkt-logo-badge {
@@ -358,6 +493,12 @@ html[data-theme="dark"] .mkt-navbar {
   }
 }
 
+@media (max-width: 640px) {
+  .mkt-nav-actions .mkt-btn-primary {
+    display: none !important;
+  }
+}
+
 /* Mobile Drawer */
 .mkt-mobile-drawer {
   position: fixed;
@@ -384,125 +525,201 @@ html[data-theme="dark"] .mkt-navbar {
 }
 
 /* =============================================================================
-   Hero Section
+   Hero Section (Dark Neon Background, Overlay & Smooth 160px Bottom Fade)
    ============================================================================= */
 .mkt-hero {
   position: relative;
-  padding: 72px 0 64px;
+  width: 100%;
+  min-height: 85vh;
+  margin-top: 0;
+  padding: 130px 0 170px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   text-align: center;
-  background: transparent !important;
-  border-bottom: 1px solid var(--mkt-border);
-}
-
-.mkt-hero-badge {
-  display: inline-flex;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 4px 12px;
-  border-radius: var(--mkt-radius-pill);
-  background: var(--mkt-surface);
-  border: 1px solid var(--mkt-border);
-  color: var(--mkt-muted);
-  margin-bottom: 24px;
-  box-shadow: var(--mkt-shadow);
+  justify-content: center;
 }
 
-.mkt-hero-badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #10B981;
+/* Dark gradient overlay on top of the image */
+.mkt-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 6, 15, 0.58) 0%,
+    rgba(5, 6, 15, 0.74) 45%,
+    rgba(5, 6, 15, 0.90) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mkt-hero > .mkt-container {
+  position: relative;
+  z-index: 2;
+  width: 100%;
 }
 
 .mkt-hero-title {
-  font-size: 52px;
+  font-size: 56px;
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.12;
   letter-spacing: -0.03em;
-  color: var(--mkt-text);
-  max-width: 820px;
-  margin: 0 auto 18px;
+  color: #FFFFFF !important;
+  max-width: 860px;
+  margin: 0 auto 20px;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
 }
 
 @media (max-width: 768px) {
   .mkt-hero-title {
-    font-size: 36px;
+    font-size: 34px !important;
     letter-spacing: -0.02em;
+    line-height: 1.2 !important;
   }
 }
 
 .mkt-hero-subtitle {
-  font-size: 18px;
-  line-height: 1.5;
-  color: var(--mkt-muted);
-  max-width: 640px;
-  margin: 0 auto 32px;
+  font-size: 19px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.82) !important;
+  max-width: 660px;
+  margin: 0 auto 36px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 768px) {
+  .mkt-hero-subtitle {
+    font-size: 15.5px !important;
+    margin-bottom: 28px !important;
+  }
 }
 
 .mkt-hero-ctas {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 40px;
+  gap: 16px;
+  margin-bottom: 44px;
   flex-wrap: wrap;
 }
 
+/* Primary brown button in hero ("Get Started", links to login page) */
+.mkt-hero-btn-primary {
+  background: #7A4A2B !important;
+  color: #FFFFFF !important;
+  border: 1px solid #7A4A2B !important;
+  border-radius: 9999px !important;
+  padding: 14px 32px !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  box-shadow: 0 4px 18px rgba(122, 74, 43, 0.4) !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+}
+
+.mkt-hero-btn-primary:hover {
+  background: #633A20 !important;
+  border-color: #633A20 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 26px rgba(122, 74, 43, 0.5) !important;
+}
+
+/* Secondary outline button with white border */
+.mkt-btn-outline-white {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  border-radius: 9999px !important;
+  padding: 14px 30px !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+
+.mkt-btn-outline-white:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: #FFFFFF !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28) !important;
+}
+
 /* Mini URL Shortener Widget in Hero */
-.mkt-mini-shortener {
+.mkt-hero .mkt-mini-shortener {
   max-width: 580px;
   margin: 0 auto 52px;
-  background: var(--mkt-surface);
-  border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 14px;
   padding: 6px 8px 6px 14px;
   display: flex;
   align-items: center;
   gap: 10px;
-  box-shadow: var(--mkt-shadow);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.38);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.mkt-mini-shortener:focus-within {
-  border-color: var(--mkt-accent);
-  box-shadow: 0 0 0 3px var(--mkt-accent-soft);
+.mkt-hero .mkt-mini-shortener:focus-within {
+  border-color: #7A4A2B;
+  box-shadow: 0 0 0 3px rgba(122, 74, 43, 0.25), 0 12px 36px rgba(0, 0, 0, 0.4);
 }
 
-.mkt-mini-shortener input {
+.mkt-hero .mkt-mini-shortener input {
   flex: 1;
   border: none;
   background: transparent;
   outline: none;
-  color: var(--mkt-text);
+  color: #231A12;
   font-size: 14px;
   padding: 8px 0;
 }
 
-.mkt-mini-shortener input::placeholder {
-  color: var(--mkt-dim);
+.mkt-hero .mkt-mini-shortener input::placeholder {
+  color: #8C7B6B;
 }
 
-/* Browser Mockup */
-.mkt-browser-mockup {
+.mkt-hero .mkt-mini-shortener .mkt-btn-primary {
+  background: #7A4A2B !important;
+  border-color: #7A4A2B !important;
+  color: #FFFFFF !important;
+  border-radius: 9999px !important;
+}
+
+.mkt-hero .mkt-mini-shortener .mkt-btn-primary:hover {
+  background: #633A20 !important;
+  border-color: #633A20 !important;
+}
+
+/* Real Browser Mockup with Dashboard Screenshot in Hero */
+.mkt-hero .mkt-browser-mockup {
   max-width: 1060px;
   margin: 0 auto;
-  background: var(--mkt-surface);
-  border: 1px solid var(--mkt-border);
-  border-radius: 14px;
+  background: var(--surface, #FFFFFF);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
-}
-
-html[data-theme="dark"] .mkt-browser-mockup {
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.65), 0 0 40px rgba(122, 74, 43, 0.25);
 }
 
 .mkt-browser-header {
   height: 42px;
-  background: var(--mkt-surface-2);
-  border-bottom: 1px solid var(--mkt-border);
+  background: var(--surface-2, #F3EDE4);
+  border-bottom: 1px solid var(--border, #E2D6C6);
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -528,15 +745,15 @@ html[data-theme="dark"] .mkt-browser-mockup {
   max-width: 440px;
   margin: 0 auto;
   height: 26px;
-  background: var(--mkt-surface);
-  border: 1px solid var(--mkt-border);
+  background: #FFFFFF;
+  border: 1px solid var(--border, #E2D6C6);
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--mkt-muted);
+  color: var(--text-muted, #6F5F4F);
 }
 
 .mkt-browser-img {
@@ -546,49 +763,138 @@ html[data-theme="dark"] .mkt-browser-mockup {
 }
 
 /* =============================================================================
-   Stats Strip
+   2. FADE: 160px Smooth Bottom Fade (transparent dark -> cream #faf7f2)
    ============================================================================= */
+.mkt-hero-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  background: linear-gradient(
+    to bottom,
+    rgba(5, 6, 15, 0) 0%,
+    rgba(250, 247, 242, 0.25) 35%,
+    rgba(250, 247, 242, 0.75) 70%,
+    #FAF7F2 100%
+  );
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* =============================================================================
+   3. REST OF THE PAGE: Cream #faf7f2 with Faint Dotted Grid
+   ============================================================================= */
+.mkt-cream-body {
+  position: relative;
+  width: 100%;
+  background-color: #FAF7F2 !important;
+  background-image: radial-gradient(#d9c7b4 1px, transparent 1px) !important;
+  background-size: 22px 22px !important;
+  color: #6F5F4F;
+}
+
+/* 4. Text on cream sections: dark brown headings (#3b2415), muted brown body */
+.mkt-cream-body h1,
+.mkt-cream-body h2,
+.mkt-cream-body h3,
+.mkt-cream-body h4,
+.mkt-cream-body h5,
+.mkt-cream-body .mkt-section-title,
+.mkt-cream-body .mkt-stat-number {
+  color: #3b2415 !important;
+}
+
+.mkt-cream-body p,
+.mkt-cream-body .mkt-section-subtitle,
+.mkt-cream-body .mkt-stat-label,
+.mkt-cream-body .mkt-feature-text p,
+.mkt-cream-body .mkt-feature-list-item,
+.mkt-cream-body .mkt-grid-card p,
+.mkt-cream-body .mkt-step-card p,
+.mkt-cream-body .mkt-faq-content,
+.mkt-cream-body .mkt-cta-box p {
+  color: #6F5F4F !important;
+}
+
+.mkt-cream-body .mkt-section-tag {
+  color: #7A4A2B !important;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.mkt-cream-body .mkt-step-num {
+  color: #7A4A2B !important;
+  background: rgba(122, 74, 43, 0.1) !important;
+  border: 1px solid rgba(122, 74, 43, 0.2) !important;
+  font-weight: 700;
+}
+
+/* Sections on cream background have transparent background so dots flow seamlessly */
+.mkt-stats-strip,
+.mkt-features-section,
+.mkt-grid-section,
+.mkt-how-section,
+.mkt-faq-section,
+.mkt-cta-band {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(217, 199, 180, 0.45) !important;
+}
+
+/* =============================================================================
+   5. Cards (White, rounded 20-24px, soft shadow, 1px light border #E2D6C6)
+   ============================================================================= */
+
+/* Stats Strip Cards */
 .mkt-stats-strip {
-  padding: 48px 0;
-  border-bottom: 1px solid var(--mkt-border);
-  background: var(--mkt-surface);
+  padding: 56px 0;
 }
 
 .mkt-stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-  text-align: center;
+  gap: 28px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .mkt-stats-grid {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 16px;
   }
 }
 
+.mkt-stat-item {
+  background: #FFFFFF !important;
+  border: 1px solid #E2D6C6 !important;
+  border-radius: 20px !important;
+  padding: 32px 24px !important;
+  box-shadow: 0 4px 18px rgba(43, 33, 24, 0.04) !important;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.mkt-stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(43, 33, 24, 0.08) !important;
+}
+
 .mkt-stat-number {
-  font-size: 38px;
-  font-weight: 700;
+  font-size: 40px !important;
+  font-weight: 700 !important;
   letter-spacing: -0.02em;
-  color: var(--mkt-text);
-  font-variant-numeric: tabular-nums;
-  margin-bottom: 4px;
+  color: #3b2415 !important;
+  margin-bottom: 6px !important;
 }
 
 .mkt-stat-label {
-  font-size: 14px;
-  color: var(--mkt-muted);
-  font-weight: 500;
+  font-size: 14px !important;
+  color: #6F5F4F !important;
+  font-weight: 500 !important;
 }
 
-/* =============================================================================
-   Alternating Feature Rows
-   ============================================================================= */
+/* Alternating Feature Rows */
 .mkt-features-section {
   padding: 88px 0;
-  border-bottom: 1px solid var(--mkt-border);
 }
 
 .mkt-section-header {
@@ -599,25 +905,25 @@ html[data-theme="dark"] .mkt-browser-mockup {
 
 .mkt-section-tag {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--mkt-accent);
+  color: #7A4A2B;
   margin-bottom: 12px;
 }
 
 .mkt-section-title {
-  font-size: 36px;
+  font-size: 38px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--mkt-text);
+  color: #3b2415;
   margin-bottom: 14px;
 }
 
 .mkt-section-subtitle {
   font-size: 16px;
   line-height: 1.6;
-  color: var(--mkt-muted);
+  color: #6F5F4F;
 }
 
 .mkt-feature-row {
@@ -656,13 +962,13 @@ html[data-theme="dark"] .mkt-browser-mockup {
   font-weight: 600;
   letter-spacing: -0.02em;
   margin-bottom: 12px;
-  color: var(--mkt-text);
+  color: #3b2415;
 }
 
 .mkt-feature-text p {
   font-size: 15px;
   line-height: 1.6;
-  color: var(--mkt-muted);
+  color: #6F5F4F;
   margin-bottom: 20px;
 }
 
@@ -680,29 +986,25 @@ html[data-theme="dark"] .mkt-browser-mockup {
   align-items: center;
   gap: 10px;
   font-size: 14px;
-  color: var(--mkt-text);
+  color: #3b2415;
 }
 
 .mkt-check-icon {
-  color: #10B981;
+  color: #4F7A4A;
   flex-shrink: 0;
 }
 
 .mkt-feature-card-preview {
-  background: var(--mkt-surface);
-  border: 1px solid var(--mkt-border);
-  border-radius: var(--mkt-radius-card);
-  padding: 24px;
-  box-shadow: var(--mkt-shadow);
+  background: #FFFFFF !important;
+  border: 1px solid #E2D6C6 !important;
+  border-radius: 22px !important;
+  padding: 30px !important;
+  box-shadow: 0 8px 24px rgba(43, 33, 24, 0.05) !important;
 }
 
-/* =============================================================================
-   Feature Grid (6 Cards)
-   ============================================================================= */
+/* Feature Grid (6 Cards) */
 .mkt-grid-section {
   padding: 88px 0;
-  background: var(--mkt-surface);
-  border-bottom: 1px solid var(--mkt-border);
 }
 
 .mkt-grid-6 {
@@ -724,51 +1026,50 @@ html[data-theme="dark"] .mkt-browser-mockup {
 }
 
 .mkt-grid-card {
-  background: var(--mkt-bg);
-  border: 1px solid var(--mkt-border);
-  border-radius: var(--mkt-radius-card);
-  padding: 28px 24px;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  background: #FFFFFF !important;
+  border: 1px solid #E2D6C6 !important;
+  border-radius: 22px !important;
+  padding: 32px 26px !important;
+  box-shadow: 0 4px 18px rgba(43, 33, 24, 0.04) !important;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 .mkt-grid-card:hover {
-  border-color: var(--mkt-accent-border);
-  box-shadow: var(--mkt-shadow-hover);
-  transform: translateY(-2px);
+  transform: translateY(-3px) !important;
+  border-color: #C99A6B !important;
+  box-shadow: 0 12px 32px rgba(43, 33, 24, 0.08) !important;
 }
 
 .mkt-card-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--mkt-accent-soft);
-  color: var(--mkt-accent);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(122, 74, 43, 0.08) !important;
+  color: #7A4A2B !important;
+  border: 1px solid rgba(122, 74, 43, 0.16) !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .mkt-grid-card h4 {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: var(--mkt-text);
+  color: #3b2415;
 }
 
 .mkt-grid-card p {
   font-size: 14px;
   line-height: 1.5;
-  color: var(--mkt-muted);
+  color: #6F5F4F;
   margin: 0;
 }
 
-/* =============================================================================
-   How It Works (3 Steps)
-   ============================================================================= */
+/* How It Works (3 Steps) */
 .mkt-how-section {
   padding: 88px 0;
-  border-bottom: 1px solid var(--mkt-border);
 }
 
 .mkt-steps-grid {
@@ -781,25 +1082,26 @@ html[data-theme="dark"] .mkt-browser-mockup {
 @media (max-width: 768px) {
   .mkt-steps-grid {
     grid-template-columns: 1fr;
-    gap: 28px;
+    gap: 20px;
   }
 }
 
 .mkt-step-card {
-  background: var(--mkt-surface);
-  border: 1px solid var(--mkt-border);
-  border-radius: var(--mkt-radius-card);
-  padding: 32px 24px;
+  background: #FFFFFF !important;
+  border: 1px solid #E2D6C6 !important;
+  border-radius: 22px !important;
+  padding: 34px 26px !important;
+  box-shadow: 0 4px 18px rgba(43, 33, 24, 0.04) !important;
   position: relative;
-  box-shadow: var(--mkt-shadow);
 }
 
 .mkt-step-num {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--mkt-accent);
-  background: var(--mkt-accent-soft);
+  color: #7A4A2B;
+  background: rgba(122, 74, 43, 0.08);
+  border: 1px solid rgba(122, 74, 43, 0.18);
   padding: 4px 10px;
   border-radius: 999px;
   display: inline-block;
@@ -810,23 +1112,19 @@ html[data-theme="dark"] .mkt-browser-mockup {
   font-size: 19px;
   font-weight: 600;
   margin-bottom: 10px;
-  color: var(--mkt-text);
+  color: #3b2415;
 }
 
 .mkt-step-card p {
   font-size: 14px;
   line-height: 1.6;
-  color: var(--mkt-muted);
+  color: #6F5F4F;
   margin: 0;
 }
 
-/* =============================================================================
-   FAQ Accordion
-   ============================================================================= */
+/* FAQ Accordion */
 .mkt-faq-section {
   padding: 88px 0;
-  background: var(--mkt-surface);
-  border-bottom: 1px solid var(--mkt-border);
 }
 
 .mkt-faq-list {
@@ -838,15 +1136,17 @@ html[data-theme="dark"] .mkt-browser-mockup {
 }
 
 .mkt-faq-item {
-  border: 1px solid var(--mkt-border);
-  border-radius: var(--mkt-radius-card);
-  background: var(--mkt-bg);
+  background: #FFFFFF !important;
+  border: 1px solid #E2D6C6 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 2px 10px rgba(43, 33, 24, 0.03) !important;
   overflow: hidden;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
 .mkt-faq-item.open {
-  border-color: var(--mkt-accent-border);
+  border-color: #7A4A2B !important;
+  box-shadow: 0 4px 16px rgba(122, 74, 43, 0.08) !important;
 }
 
 .mkt-faq-trigger {
@@ -861,34 +1161,30 @@ html[data-theme="dark"] .mkt-browser-mockup {
   text-align: left;
   font-size: 16px;
   font-weight: 600;
-  color: var(--mkt-text);
+  color: #3b2415 !important;
 }
 
 .mkt-faq-content {
   padding: 0 22px 18px;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--mkt-muted);
+  color: #6F5F4F !important;
 }
 
-/* =============================================================================
-   Final CTA Band
-   ============================================================================= */
+/* Final CTA Band */
 .mkt-cta-band {
   padding: 88px 0;
   text-align: center;
-  background: var(--mkt-bg);
-  border-bottom: 1px solid var(--mkt-border);
 }
 
 .mkt-cta-box {
   max-width: 820px;
   margin: 0 auto;
-  background: var(--mkt-surface);
-  border: 1px solid var(--mkt-border);
-  border-radius: 16px;
-  padding: 60px 32px;
-  box-shadow: var(--mkt-shadow);
+  background: #FFFFFF !important;
+  border: 1px solid #E2D6C6 !important;
+  border-radius: 24px !important;
+  padding: 64px 36px !important;
+  box-shadow: 0 16px 44px rgba(43, 33, 24, 0.07) !important;
 }
 
 .mkt-cta-box h2 {
@@ -896,22 +1192,59 @@ html[data-theme="dark"] .mkt-browser-mockup {
   font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 14px;
-  color: var(--mkt-text);
+  color: #3b2415 !important;
 }
 
 .mkt-cta-box p {
   font-size: 16px;
-  color: var(--mkt-muted);
+  color: #6F5F4F !important;
   max-width: 520px;
   margin: 0 auto 32px;
   line-height: 1.6;
 }
 
+/* Primary Button Style (The same brown as login page: #7A4A2B) */
+.mkt-btn-primary {
+  background: #7A4A2B !important;
+  border: 1px solid #7A4A2B !important;
+  color: #FFFFFF !important;
+  border-radius: 9999px !important;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(122, 74, 43, 0.25) !important;
+  transition: all 0.2s ease !important;
+}
+
+.mkt-btn-primary:hover {
+  background: #633A20 !important;
+  border-color: #633A20 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(122, 74, 43, 0.35) !important;
+}
+
+.mkt-btn-secondary {
+  background: #FFFFFF !important;
+  color: #3b2415 !important;
+  border: 1px solid #E2D6C6 !important;
+  border-radius: 9999px !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(43, 33, 24, 0.04) !important;
+  transition: all 0.2s ease !important;
+}
+
+.mkt-btn-secondary:hover {
+  background: #F3EDE4 !important;
+  border-color: #D9C7B4 !important;
+  transform: translateY(-1px);
+}
+
 /* =============================================================================
-   Footer
+   Footer (Cream #faf7f2 with Faint Dotted Grid)
    ============================================================================= */
 .mkt-footer {
-  background: var(--mkt-surface);
+  background-color: #FAF7F2 !important;
+  background-image: radial-gradient(#d9c7b4 1px, transparent 1px) !important;
+  background-size: 22px 22px !important;
+  border-top: 1px solid rgba(226, 214, 198, 0.8) !important;
   padding: 64px 0 32px;
 }
 
@@ -936,10 +1269,19 @@ html[data-theme="dark"] .mkt-browser-mockup {
   }
 }
 
+.mkt-footer-brand .mkt-logo-link {
+  color: #3b2415 !important;
+}
+
+.mkt-footer-brand .mkt-logo-icon {
+  background: #7A4A2B !important;
+  color: #FFFFFF !important;
+}
+
 .mkt-footer-brand p {
   font-size: 14px;
   line-height: 1.5;
-  color: var(--mkt-muted);
+  color: #6F5F4F !important;
   margin: 12px 0 20px;
   max-width: 280px;
 }
@@ -952,9 +1294,10 @@ html[data-theme="dark"] .mkt-browser-mockup {
   font-weight: 500;
   padding: 4px 10px;
   border-radius: var(--mkt-radius-pill);
-  background: var(--mkt-surface-2);
-  border: 1px solid var(--mkt-border);
-  color: var(--mkt-text);
+  background: #FFFFFF !important;
+  border: 1px solid #E2D6C6 !important;
+  color: #3b2415 !important;
+  box-shadow: 0 1px 4px rgba(43, 33, 24, 0.04);
 }
 
 .mkt-status-dot-pulse {
@@ -966,11 +1309,11 @@ html[data-theme="dark"] .mkt-browser-mockup {
 }
 
 .mkt-footer-col h5 {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--mkt-text);
+  letter-spacing: 0.05em;
+  color: #3b2415 !important;
   margin-bottom: 16px;
 }
 
@@ -984,24 +1327,24 @@ html[data-theme="dark"] .mkt-browser-mockup {
 }
 
 .mkt-footer-col a {
-  font-size: 14px;
-  color: var(--mkt-muted);
+  font-size: 13.5px;
+  color: #6F5F4F !important;
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .mkt-footer-col a:hover {
-  color: var(--mkt-text);
+  color: #7A4A2B !important;
 }
 
 .mkt-footer-bottom {
   padding-top: 32px;
-  border-top: 1px solid var(--mkt-border);
+  border-top: 1px solid rgba(226, 214, 198, 0.6) !important;
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 13px;
-  color: var(--mkt-dim);
+  color: #8C7B6B !important;
 }
 
 /* =============================================================================
@@ -1078,7 +1421,7 @@ html[data-theme="dark"] .mkt-browser-mockup {
 }
 
 .mkt-plan-card:hover:not(.highlighted) {
-  border-color: color-mix(in srgb, var(--accent, #4F46E5) 45%, var(--border, var(--mkt-border)));
+  border-color: var(--primary);
   box-shadow: var(--mkt-shadow-hover);
 }
 
@@ -1230,7 +1573,7 @@ html[data-theme="dark"] .mkt-browser-mockup {
   border-radius: 4px;
 }
 .mkt-get { background: rgba(16, 185, 129, 0.12); color: #10B981; }
-.mkt-post { background: rgba(79, 70, 229, 0.12); color: var(--mkt-accent); }
+.mkt-post { background: rgba(122, 74, 43, 0.12); color: var(--mkt-accent); }
 .mkt-patch { background: rgba(245, 158, 11, 0.12); color: #F59E0B; }
 .mkt-delete { background: rgba(239, 68, 68, 0.12); color: #EF4444; }
 

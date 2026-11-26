@@ -3,6 +3,7 @@ import MarketingLayout from "./MarketingLayout";
 import BrowserMockup from "./components/BrowserMockup";
 import MiniShortener from "./components/MiniShortener";
 import FaqAccordion from "./components/FaqAccordion";
+import authBg from "../assets/auth-bg.png";
 import {
   ArrowRight,
   CheckCircle2,
@@ -67,8 +68,12 @@ export default function LandingPage({ token, onNavigate }) {
       currentPath="/"
       onNavigate={onNavigate}
     >
-      {/* 1. HERO SECTION */}
-      <section className="mkt-hero" aria-labelledby="hero-title">
+      {/* 1. HERO SECTION (Dark neon background, overlay, headline, 2 buttons, preview, 160px fade) */}
+      <section
+        className="mkt-hero"
+        aria-labelledby="hero-title"
+        style={{ backgroundImage: `url(${authBg})` }}
+      >
         <div className="mkt-container">
           <h1 id="hero-title" className="mkt-hero-title">
             Short links you can actually measure
@@ -81,11 +86,26 @@ export default function LandingPage({ token, onNavigate }) {
           <div className="mkt-hero-ctas">
             <button
               type="button"
-              className="mkt-btn mkt-btn-primary mkt-btn-lg"
-              onClick={(e) => handleNav("/register", e)}
+              className="mkt-btn mkt-hero-btn-primary mkt-btn-lg"
+              onClick={(e) => handleNav("/login", e)}
             >
-              <span>Get started free</span>
+              <span>Get Started</span>
               <ArrowRight size={16} />
+            </button>
+            <button
+              type="button"
+              className="mkt-btn mkt-btn-outline-white mkt-btn-lg"
+              onClick={(e) => {
+                const el = document.getElementById("features");
+                if (el) {
+                  e.preventDefault();
+                  el.scrollIntoView({ behavior: "smooth" });
+                } else {
+                  handleNav("/#features", e);
+                }
+              }}
+            >
+              <span>Explore features</span>
             </button>
           </div>
 
@@ -99,9 +119,14 @@ export default function LandingPage({ token, onNavigate }) {
             alt="SmartLink live performance analytics dashboard"
           />
         </div>
+
+        {/* Smooth 160px bottom fade into cream #faf7f2 */}
+        <div className="mkt-hero-fade" aria-hidden="true" />
       </section>
 
-      {/* 2. STATS STRIP */}
+      {/* REST OF THE PAGE (Cream #faf7f2 background with faint dotted grid) */}
+      <div className="mkt-cream-body">
+        {/* 2. STATS STRIP */}
       <section className="mkt-stats-strip" aria-label="Platform metrics">
         <div className="mkt-container">
           <div className="mkt-stats-grid">
@@ -479,6 +504,7 @@ export default function LandingPage({ token, onNavigate }) {
           </div>
         </div>
       </section>
+      </div>
     </MarketingLayout>
   );
 }

@@ -8,8 +8,10 @@
 import { useState, useMemo } from "react";
 import SpecularButton from "./SpecularButton";
 import { SegmentedControl } from "./ui/SegmentedControl";
+import TimeRangeToggle from "./ui/TimeRangeToggle";
 import StatCard from "./ui/StatCard";
 import { Smartphone, Laptop, Monitor, Globe, Cpu, AlertTriangle } from "lucide-react";
+import RankedBars from "./RankedBars";
 
 // Helper icon renderers for Operating Systems
 function getOsIcon(name = "") {
@@ -39,143 +41,6 @@ function getVendorIcon(vendor = "") {
   return <Cpu size={15} style={{ color: "var(--accent)" }} />;
 }
 
-// -----------------------------------------------------------------------------
-// Sub-component: Device Donut Chart
-// -----------------------------------------------------------------------------
-function DeviceDonutChart({ data = [], title = "Device Category Split", icon = null }) {
-  const [hoveredIdx, setHoveredIdx] = useState(null);
-
-  const activeItems = useMemo(() => {
-    return (data || []).filter((d) => (d.count || 0) > 0);
-  }, [data]);
-
-  const total = useMemo(() => {
-    return activeItems.reduce((sum, d) => sum + (d.count || 0), 0);
-  }, [activeItems]);
-
-  const size = 150;
-  const strokeWidth = 15;
-  const radius = (size - strokeWidth) / 2 - 4;
-  const circumference = 2 * Math.PI * radius;
-
-  const defaultColors = useMemo(() => ["var(--accent)", "#64748B", "#94A3B8", "#475569", "#CBD5E1", "#334155"], []);
-
-  const slices = useMemo(() => {
-    return activeItems.map((item, idx) => {
-      const pct = total > 0 ? (item.count / total) * 100 : 0;
-      const priorPctSum = activeItems
-        .slice(0, idx)
-        .reduce((sum, prev) => sum + (total > 0 ? (prev.count / total) * 100 : 0), 0);
-      const strokeDasharray = `${(pct / 100) * circumference} ${circumference}`;
-      const strokeDashoffset = -((priorPctSum / 100) * circumference);
-      const color = item.color || defaultColors[idx % defaultColors.length];
-      return {
-        ...item,
-        pct: Number(pct.toFixed(1)),
-        strokeDasharray,
-        strokeDashoffset,
-        color,
-      };
-    });
-  }, [activeItems, total, circumference, defaultColors]);
-
-  const activeSlice = hoveredIdx !== null ? slices[hoveredIdx] : null;
-
-  return (
-    <div className="donut-card">
-      <div className="donut-card-top">
-        <h4>
-          <span style={{ marginRight: "8px" }}>{icon}</span>
-          {title}
-        </h4>
-        <span className="donut-total-count">
-          {total > 0 ? `${total.toLocaleString()} clicks` : "0 recorded"}
-        </span>
-      </div>
-
-      {total > 0 ? (
-        <div className="donut-card-layout">
-          <div className="donut-svg-box">
-            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-              <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                fill="transparent"
-                stroke="var(--border)"
-                strokeWidth={strokeWidth}
-              />
-              {slices.map((slice, idx) => {
-                const isHovered = hoveredIdx === idx;
-                return (
-                  <circle
-                    key={slice.name || idx}
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    fill="transparent"
-                    stroke={slice.color}
-                    strokeWidth={isHovered ? strokeWidth + 3 : strokeWidth}
-                    strokeDasharray={slice.strokeDasharray}
-                    strokeDashoffset={slice.strokeDashoffset}
-                    transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                    style={{
-                      transition: "stroke-width 0.2s ease, opacity 0.2s ease",
-                      cursor: "pointer",
-                      opacity: hoveredIdx === null || isHovered ? 1 : 0.45,
-                    }}
-                    onMouseEnter={() => setHoveredIdx(idx)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                  />
-                );
-              })}
-            </svg>
-            <div className="donut-center-label">
-              <span className="donut-center-pct">
-                {activeSlice ? `${activeSlice.pct}%` : "100%"}
-              </span>
-              <span className="donut-center-text">
-                {activeSlice ? activeSlice.name : "Total"}
-              </span>
-            </div>
-          </div>
-
-          <div className="donut-legend-list">
-            {slices.map((slice, idx) => {
-              const isHovered = hoveredIdx === idx;
-              return (
-                <div
-                  key={slice.name || idx}
-                  className="donut-legend-row"
-                  style={{
-                    opacity: hoveredIdx === null || isHovered ? 1 : 0.4,
-                    transition: "opacity 0.2s ease",
-                  }}
-                  onMouseEnter={() => setHoveredIdx(idx)}
-                  onMouseLeave={() => setHoveredIdx(null)}
-                >
-                  <div className="donut-legend-item">
-                    <span
-                      className="legend-swatch"
-                      style={{ background: slice.color }}
-                    />
-                    <span className="legend-label">{slice.name}</span>
-                  </div>
-                  <div className="donut-legend-stats">
-                    <span className="legend-val-num">{slice.count.toLocaleString()}</span>
-                    <span className="legend-val-pct">{slice.pct}%</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : (
-        <p className="donut-empty-text">No device data recorded in this time range.</p>
-      )}
-    </div>
-  );
-}
 
 // -----------------------------------------------------------------------------
 // Sub-component: KPI Cards (Top 4)
@@ -288,15 +153,10 @@ export default function DeviceAnalyticsView({
           </div>
 
           <div className="campaign-controls-group">
-            <SegmentedControl
-              options={[
-                { value: "7d", label: "Last 7 Days" },
-                { value: "30d", label: "Last 30 Days" },
-                { value: "all", label: "All Time" },
-              ]}
+            <TimeRangeToggle
               value={deviceRange}
               onChange={(val) => onRangeChange?.(val)}
-              size="md"
+              disabled={deviceLoading}
               ariaLabel="Date range filter"
             />
 
@@ -386,17 +246,19 @@ export default function DeviceAnalyticsView({
           {/* 5. Top 4 Metric Cards */}
           <DeviceMetricCards summary={summary} loading={deviceLoading} />
 
-          {/* 6. Device Categories & Channel Split (QR vs Direct) */}
+          {/* 6. Device Categories & Operating System Split */}
           <div className={`donuts-grid ${deviceLoading ? "data-refreshing" : ""}`}>
-            <DeviceDonutChart
+            <RankedBars
               title="Device Category Split"
               icon={<Smartphone size={16} />}
               data={deviceDonutData}
+              emptyMessage="No device data recorded in this time range."
             />
-            <DeviceDonutChart
+            <RankedBars
               title="Operating System Split"
               icon={<Laptop size={16} />}
               data={osDonutData}
+              emptyMessage="No operating system data recorded in this time range."
             />
           </div>
 
@@ -456,7 +318,7 @@ export default function DeviceAnalyticsView({
                         <div
                           style={{
                             width: `${qrPct}%`,
-                            background: "linear-gradient(90deg, #8B5CF6, #A855F7)",
+                            background: "var(--chart-1)",
                             transition: "width 0.3s ease",
                           }}
                           title={`QR Scans: ${qrClicks} (${qrPct}%)`}
@@ -464,15 +326,15 @@ export default function DeviceAnalyticsView({
                         <div
                           style={{
                             width: `${directPct}%`,
-                            background: "linear-gradient(90deg, #06B6D4, #38BDF8)",
+                            background: "var(--chart-2)",
                             transition: "width 0.3s ease",
                           }}
                           title={`Direct Clicks: ${directClicks} (${directPct}%)`}
                         />
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                        <span style={{ color: "#C084FC", display: "flex", alignItems: "center", gap: "4px" }}>
-                          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#8B5CF6", display: "inline-block" }} />
+                        <span style={{ color: "var(--primary)", display: "flex", alignItems: "center", gap: "4px" }}>
+                          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--chart-1)", display: "inline-block" }} />
                           QR: {qrClicks} ({qrPct}%)
                         </span>
                         <span style={{ color: "#38BDF8", display: "flex", alignItems: "center", gap: "4px" }}>

@@ -136,9 +136,10 @@ function buildFilteredTrends(
   if (!hasAnyData) return [];
 
   const todayIST = getTodayISTStr();
+  const normTimeRange = String(timeRange || "30d").toLowerCase();
 
-  if (timeRange === "7d" || timeRange === "30d") {
-    const numDays = timeRange === "7d" ? 7 : 30;
+  if (normTimeRange === "7d" || normTimeRange === "30d") {
+    const numDays = normTimeRange === "7d" ? 7 : 30;
     const result = [];
     for (let i = numDays - 1; i >= 0; i--) {
       const iso = shiftISODate(todayIST, -i);
@@ -297,6 +298,7 @@ function ClicksOverviewChart({
   onSelectLink,
   timeRange = "7d",
   onTimeRangeChange,
+  loading = false,
 }) {
   const isControlled = typeof onTimeRangeChange === "function";
   const [internalTimeRange, setInternalTimeRange] = useState(timeRange);
@@ -318,10 +320,12 @@ function ClicksOverviewChart({
     selectedLink === "__all__" ||
     selectedLink.shortCode === "__all__";
 
+  const normActiveRange = String(activeTimeRange || "30d").toLowerCase();
+
   const rangeLabel =
-    activeTimeRange === "7d"
+    normActiveRange === "7d"
       ? "last 7 days"
-      : activeTimeRange === "30d"
+      : normActiveRange === "30d"
       ? "last 30 days"
       : "all time";
 
@@ -381,11 +385,11 @@ function ClicksOverviewChart({
 
   // Compute comparison trend data for 7d & 30d
   const comparisonData = useMemo(() => {
-    if (activeTimeRange !== "7d" && activeTimeRange !== "30d") {
+    if (normActiveRange !== "7d" && normActiveRange !== "30d") {
       return { previousTrends: [], hasPreviousData: false, previousTotal: 0 };
     }
     const todayIST = getTodayISTStr();
-    const numDays = activeTimeRange === "7d" ? 7 : 30;
+    const numDays = normActiveRange === "7d" ? 7 : 30;
     const prevTrends = [];
     let prevTotal = 0;
 
@@ -409,7 +413,7 @@ function ClicksOverviewChart({
       hasPreviousData: hasPriorRecords,
       previousTotal: prevTotal,
     };
-  }, [activeTimeRange, countByIso]);
+  }, [normActiveRange, countByIso]);
 
   const totalPeriodClicks = useMemo(() => {
     return Math.max(
@@ -440,7 +444,7 @@ function ClicksOverviewChart({
 
   // Comparison metrics calculation
   const comparisonMetrics = useMemo(() => {
-    if (activeTimeRange === "all") {
+    if (normActiveRange === "all") {
       return {
         showBadge: false,
         text: "All-time total",
@@ -487,7 +491,7 @@ function ClicksOverviewChart({
     if (diff > 0) {
       return {
         showBadge: true,
-        text: `+${pct}% vs prior ${activeTimeRange === "7d" ? "7 days" : "30 days"}`,
+        text: `+${pct}% vs prior ${normActiveRange === "7d" ? "7 days" : "30 days"}`,
         type: "positive",
         diff,
         pct,
@@ -496,7 +500,7 @@ function ClicksOverviewChart({
     if (diff < 0) {
       return {
         showBadge: true,
-        text: `${pct}% vs prior ${activeTimeRange === "7d" ? "7 days" : "30 days"}`,
+        text: `${pct}% vs prior ${normActiveRange === "7d" ? "7 days" : "30 days"}`,
         type: "negative",
         diff,
         pct,
@@ -504,12 +508,12 @@ function ClicksOverviewChart({
     }
     return {
       showBadge: true,
-      text: `0% vs prior ${activeTimeRange === "7d" ? "7 days" : "30 days"}`,
+      text: `0% vs prior ${normActiveRange === "7d" ? "7 days" : "30 days"}`,
       type: "neutral",
       diff: 0,
       pct: 0,
     };
-  }, [activeTimeRange, comparisonData, totalPeriodClicks]);
+  }, [normActiveRange, comparisonData, totalPeriodClicks]);
 
   // Compact, professional graph dimensions (Dashboard 6)
   const width = 760;
@@ -571,7 +575,7 @@ function ClicksOverviewChart({
   }, [comparisonMode, prevPoints, padLeft, padRight, width, padTop, zeroY]);
 
   const hasData = points.length > 0;
-  const showComparison = comparisonMode && activeTimeRange !== "all" && prevPoints.length > 0;
+  const showComparison = comparisonMode && normActiveRange !== "all" && prevPoints.length > 0;
 
   const currentHovered = hoveredIndex !== null && points[hoveredIndex] ? points[hoveredIndex] : null;
   const prevHovered = hoveredIndex !== null && prevPoints[hoveredIndex] ? prevPoints[hoveredIndex] : null;
@@ -620,36 +624,6 @@ function ClicksOverviewChart({
               ))}
             </select>
           )}
-
-          {activeTimeRange !== "all" && (
-            <button
-              type="button"
-              className={`comparison-mode-toggle ${comparisonMode ? "active" : ""}`}
-              onClick={() => setComparisonMode((prev) => !prev)}
-              title="Toggle previous period comparison mode"
-              aria-label="Toggle previous period comparison"
-            >
-              <ArrowRightLeft size={13} />
-              <span>Compare</span>
-            </button>
-          )}
-
-          <div className="time-filter-pills" role="radiogroup" aria-label="Time period">
-            {[
-              { id: "7d", label: "Last 7 days" },
-              { id: "30d", label: "Last 30 days" },
-              { id: "all", label: "All time" },
-            ].map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={`time-pill-btn ${activeTimeRange === t.id ? "active" : ""}`}
-                onClick={() => handleRangeChange(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -669,13 +643,40 @@ function ClicksOverviewChart({
         </div>
       )}
 
-      {hasData ? (
-        <div className="chart-svg-container" onMouseLeave={() => setHoveredIndex(null)}>
+      {loading && !hasData ? (
+        <div style={{ height: "260px", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: "16px 20px" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", height: "180px", width: "100%" }}>
+            {[35, 60, 25, 80, 50, 90, 65].map((h, i) => (
+              <div
+                key={i}
+                style={{
+                  flex: 1,
+                  height: `${h}%`,
+                  background: "var(--surface-2)",
+                  borderRadius: "4px 4px 0 0",
+                  opacity: 0.6,
+                }}
+              />
+            ))}
+          </div>
+          <div style={{ height: "1px", background: "var(--border)", width: "100%", margin: "12px 0" }} />
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div style={{ width: "60px", height: "12px", background: "var(--surface-2)", borderRadius: "4px" }} />
+            <div style={{ width: "60px", height: "12px", background: "var(--surface-2)", borderRadius: "4px" }} />
+            <div style={{ width: "60px", height: "12px", background: "var(--surface-2)", borderRadius: "4px" }} />
+          </div>
+        </div>
+      ) : hasData ? (
+        <div
+          className="chart-svg-container"
+          style={loading ? { opacity: 0.5, pointerEvents: "none", transition: "opacity 0.15s ease" } : undefined}
+          onMouseLeave={() => setHoveredIndex(null)}
+        >
           <svg viewBox={`0 0 ${width} ${height}`} className="chart-svg" preserveAspectRatio="none">
             <defs>
               <linearGradient id="chartAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#6C7CFF" stopOpacity="0.20" />
-                <stop offset="100%" stopColor="#6C7CFF" stopOpacity="0.0" />
+                <stop offset="0%" stopColor="var(--chart-1)" stopOpacity="0.22" />
+                <stop offset="100%" stopColor="var(--chart-1)" stopOpacity="0.0" />
               </linearGradient>
             </defs>
 
@@ -794,9 +795,9 @@ function ClicksOverviewChart({
                       cx={pt.x}
                       cy={pt.y}
                       r="8"
-                      fill="#6C7CFF"
+                      fill="var(--chart-1)"
                       fillOpacity="0.2"
-                      stroke="#6C7CFF"
+                      stroke="var(--chart-1)"
                       strokeWidth="1"
                     />
                   )}
@@ -804,8 +805,8 @@ function ClicksOverviewChart({
                     cx={pt.x}
                     cy={pt.y}
                     r={isHovered ? "5" : points.length <= 10 ? "3.5" : "2.5"}
-                    fill={isHovered ? "#FFFFFF" : "#161B22"}
-                    stroke={isHovered ? "#6C7CFF" : "#6C7CFF"}
+                    fill={isHovered ? "var(--surface)" : "var(--surface-2)"}
+                    stroke="var(--chart-1)"
                     strokeWidth={isHovered ? "2.2" : "1.5"}
                   />
                   {/* Date labels along bottom */}

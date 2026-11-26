@@ -409,12 +409,12 @@ export default function GeoGlobe3D({
     rimLight.position.set(-4, -2, -3);
     scene.add(rimLight);
 
-    // 3. Deep Navy Ocean Sphere
+    // 3. Warm Espresso Ocean Sphere
     const oceanGeo = new THREE.SphereGeometry(GLOBE_RADIUS, 64, 64);
     const oceanMat = new THREE.MeshPhongMaterial({
-      color: new THREE.Color("#0A1124"),
-      emissive: new THREE.Color("#030712"),
-      specular: new THREE.Color("#1E3A8A"),
+      color: new THREE.Color("#1C1511"),
+      emissive: new THREE.Color("#120D0A"),
+      specular: new THREE.Color("#7A4A2B"),
       shininess: 28,
     });
     const oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
@@ -443,7 +443,7 @@ export default function GeoGlobe3D({
         }
       `,
       uniforms: {
-        glowColor: { value: new THREE.Color("#38BDF8") },
+        glowColor: { value: new THREE.Color("#D9A066") },
       },
       transparent: true,
       blending: THREE.AdditiveBlending,
@@ -471,7 +471,7 @@ export default function GeoGlobe3D({
     if (unvisitedPositions.length > 0) {
       const dotGeo = new THREE.SphereGeometry(0.010, 8, 8);
       const dotMat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color("#475569"),
+        color: new THREE.Color("#6F5F4F"),
         transparent: true,
         opacity: 0.38,
       });
@@ -489,7 +489,7 @@ export default function GeoGlobe3D({
     if (visitedPositions.length > 0) {
       const dotGeo = new THREE.SphereGeometry(0.012, 8, 8);
       const dotMat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color("#0E7490"),
+        color: new THREE.Color("#C99A6B"),
         transparent: true,
         opacity: 0.85,
       });
@@ -521,7 +521,7 @@ export default function GeoGlobe3D({
     const borderGeo = new THREE.BufferGeometry();
     borderGeo.setAttribute("position", new THREE.Float32BufferAttribute(borderPoints, 3));
     const borderMat = new THREE.LineBasicMaterial({
-      color: new THREE.Color("#1E2D4A"),
+      color: new THREE.Color("#3F3228"),
       transparent: true,
       opacity: 0.65,
     });
@@ -555,7 +555,7 @@ export default function GeoGlobe3D({
       const visitedBorderGeo = new THREE.BufferGeometry();
       visitedBorderGeo.setAttribute("position", new THREE.Float32BufferAttribute(visitedBorderPoints, 3));
       const visitedBorderMat = new THREE.LineBasicMaterial({
-        color: new THREE.Color("#06B6D4"),
+        color: new THREE.Color("#D9A066"),
         transparent: true,
         opacity: 0.9,
       });
@@ -576,10 +576,10 @@ export default function GeoGlobe3D({
     hoverBorderMesh.visible = false;
     globeGroup.add(hoverBorderMesh);
 
-    // Hover Glow Mesh (Purple atmospheric accent)
+    // Hover Glow Mesh (Warm accent)
     const hoverGlowGeo = new THREE.BufferGeometry();
     const hoverGlowMat = new THREE.LineBasicMaterial({
-      color: new THREE.Color("#A855F7"),
+      color: new THREE.Color("#D9774F"),
       transparent: true,
       opacity: 0.65,
     });
@@ -588,10 +588,10 @@ export default function GeoGlobe3D({
     hoverGlowMesh.visible = false;
     globeGroup.add(hoverGlowMesh);
 
-    // Selected Border Mesh (Electric Cyan)
+    // Selected Border Mesh (Warm Amber)
     const selectedBorderGeo = new THREE.BufferGeometry();
     const selectedBorderMat = new THREE.LineBasicMaterial({
-      color: new THREE.Color("#00F2FE"),
+      color: new THREE.Color("#D9A066"),
       transparent: true,
       opacity: 1.0,
     });
@@ -600,10 +600,10 @@ export default function GeoGlobe3D({
     selectedBorderMesh.visible = false;
     globeGroup.add(selectedBorderMesh);
 
-    // Selected Border Glow Mesh (Teal / Emerald accent)
+    // Selected Border Glow Mesh (Terracotta accent)
     const selectedGlowGeo = new THREE.BufferGeometry();
     const selectedGlowMat = new THREE.LineBasicMaterial({
-      color: new THREE.Color("#10B981"),
+      color: new THREE.Color("#B4552D"),
       transparent: true,
       opacity: 0.75,
     });
@@ -615,7 +615,7 @@ export default function GeoGlobe3D({
     // Selected Location Pin Halo Ring
     const selRingGeo = new THREE.RingGeometry(0.034, 0.046, 32);
     const selRingMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color("#00F2FE"),
+      color: new THREE.Color("#D9A066"),
       transparent: true,
       opacity: 0.95,
       side: THREE.DoubleSide,
@@ -752,11 +752,11 @@ export default function GeoGlobe3D({
             // Strict small controlled radius: 0.022 to 0.036
             const radius = 0.022 + ratio * 0.014;
 
-            // Core Pin Sphere (Cyan)
+            // Core Pin Sphere (Terracotta)
             const sphereGeo = new THREE.SphereGeometry(radius, 16, 16);
             const sphereMat = new THREE.MeshStandardMaterial({
-              color: new THREE.Color("#06B6D4"),
-              emissive: new THREE.Color("#06B6D4"),
+              color: new THREE.Color("#D9774F"),
+              emissive: new THREE.Color("#D9774F"),
               emissiveIntensity: 0.8,
               roughness: 0.3,
             });
@@ -777,7 +777,7 @@ export default function GeoGlobe3D({
             // Subtle Aura Ring
             const ringGeo = new THREE.RingGeometry(radius * 1.3, radius * 1.7, 24);
             const ringMat = new THREE.MeshBasicMaterial({
-              color: new THREE.Color("#06B6D4"),
+              color: new THREE.Color("#D9774F"),
               transparent: true,
               opacity: 0.55,
               side: THREE.DoubleSide,
@@ -1320,7 +1320,7 @@ export default function GeoGlobe3D({
               </span>
             )}
             {hoveredMarker.type === "country" && (
-              <span style={{ fontSize: "10.5px", color: "#06B6D4", marginLeft: "auto", fontWeight: 600 }}>
+              <span style={{ fontSize: "10.5px", color: "var(--primary)", marginLeft: "auto", fontWeight: 600 }}>
                 Country
               </span>
             )}
@@ -1369,10 +1369,10 @@ export default function GeoGlobe3D({
           fontSize: "11px",
           color: "var(--text-muted, #8B95A5)",
           pointerEvents: "none",
-          background: "rgba(14, 19, 30, 0.75)",
+          background: "var(--surface)",
           padding: "3px 8px",
           borderRadius: "4px",
-          border: "1px solid rgba(255, 255, 255, 0.05)",
+          border: "1px solid var(--border)",
         }}
       >
         Drag to rotate • Scroll to zoom

@@ -48,25 +48,23 @@
   gap: 6px;
   padding: 5px 12px;
   border-radius: 999px;
-  background: rgba(20, 25, 35, 0.85);
-  border: 1px solid var(--border, #252B38);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   font-size: 11.5px;
   font-weight: 500;
-  color: var(--text-muted, #8B95A5);
+  color: var(--text-muted);
 }
 
 .geo-sync-dot {
   width: 6.5px;
   height: 6.5px;
   border-radius: 50%;
-  background: #10B981;
-  box-shadow: 0 0 6px #10B981;
+  background: var(--success);
   transition: all 0.2s ease;
 }
 
 .geo-sync-dot.paused {
-  background: #F59E0B;
-  box-shadow: 0 0 6px #F59E0B;
+  background: var(--accent);
 }
 
 /* Date range pills group */
@@ -111,7 +109,7 @@
 }
 
 .geo-stat-card:hover {
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: var(--border-hover);
 }
 
 .geo-stat-card-header {
@@ -132,28 +130,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(99, 102, 241, 0.12);
-  color: var(--accent, #6366F1);
+  background: var(--accent-soft);
+  color: var(--primary);
 }
 
 .geo-stat-icon-wrap.cyan {
-  background: rgba(6, 182, 212, 0.12);
-  color: #06B6D4;
+  background: var(--accent-soft);
+  color: var(--chart-2);
 }
 
 .geo-stat-icon-wrap.emerald {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10B981;
+  background: var(--accent-soft);
+  color: var(--chart-3);
 }
 
 .geo-stat-icon-wrap.purple {
-  background: rgba(139, 92, 246, 0.12);
-  color: #8B5CF6;
+  background: var(--accent-soft);
+  color: var(--primary);
 }
 
 .geo-stat-icon-wrap.amber {
-  background: rgba(245, 158, 11, 0.12);
-  color: #F59E0B;
+  background: var(--accent-soft);
+  color: var(--chart-4);
 }
 
 .geo-stat-value {
@@ -345,13 +343,13 @@
 .geo-country-hover-tooltip {
   position: absolute;
   pointer-events: none;
-  background: rgba(15, 23, 42, 0.94);
-  border: 1px solid rgba(56, 189, 248, 0.45);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.65), 0 0 14px rgba(56, 189, 248, 0.22);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   font-size: 12.5px;
-  color: #F8FAFC;
+  color: var(--text);
   z-index: 60;
   backdrop-filter: blur(8px);
   display: flex;
@@ -400,13 +398,13 @@ html[data-theme="light"] .geo-country-hover-hint {
 .geo-tooltip-card {
   position: absolute;
   pointer-events: none;
-  background: rgba(20, 25, 35, 0.95);
-  border: 1px solid var(--border, #252B38);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(6, 182, 212, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   font-size: 12px;
-  color: var(--text, #E6EAF0);
+  color: var(--text);
   z-index: 50;
   backdrop-filter: blur(8px);
   min-width: 160px;
@@ -645,7 +643,7 @@ html[data-theme="light"] .geo-country-hover-hint {
 }
 
 .geo-search-input:focus {
-  border-color: var(--accent, #6366F1);
+  border-color: var(--primary);
 }
 
 .geo-data-table {
@@ -677,7 +675,7 @@ html[data-theme="light"] .geo-country-hover-hint {
 }
 
 .geo-data-table tr.clickable-row:hover {
-  background: rgba(99, 102, 241, 0.08);
+  background: var(--surface-2);
 }
 
 .geo-data-table tr.selected-row {
@@ -706,15 +704,15 @@ html[data-theme="light"] .geo-country-hover-hint {
 
 /* Light Theme Overrides (Multi-theme compatibility) */
 html[data-theme="light"] .geo-last-synced-pill {
-  background: #F1F5F9;
-  border-color: #E2E8F0;
-  color: #475569;
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-muted);
 }
 
 html[data-theme="light"] .geo-range-group,
 html[data-theme="light"] .geo-view-mode-group {
-  background: #F1F5F9;
-  border-color: #E2E8F0;
+  background: var(--surface-2);
+  border-color: var(--border);
 }
 
 html[data-theme="light"] .geo-stat-card {
