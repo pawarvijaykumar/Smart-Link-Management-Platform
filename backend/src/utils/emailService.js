@@ -28,24 +28,29 @@ const getTransporter = () => {
 
 /**
  * Sends a password reset email with a time-limited single-use reset link.
- * Does not expose secrets or credentials in logs.
+ * Never logs reset links or tokens in production.
+ * In non-production environments without SMTP credentials, logs the full reset link for local manual testing.
  *
  * @param {string} toEmail - Recipient email
  * @param {string} username - Recipient username
  * @param {string} resetToken - Cryptographically secure unhashed reset token
- * @returns {Promise<{ sent: boolean, reason?: string }>}
+ * @returns {Promise<{ sent: boolean, reason?: string, resetLink?: string }>}
  */
 export const sendPasswordResetEmail = async (toEmail, username, resetToken) => {
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-  const resetLink = `${frontendUrl}/?resetToken=${resetToken}`;
+  const resetLink = `${frontendUrl}/reset-password/${resetToken}`;
 
   const mailTransporter = getTransporter();
 
   if (!mailTransporter) {
-    // If SMTP is not yet configured, log an informational instruction without exposing tokens or secrets
+    // If SMTP is not yet configured, log an informational instruction
     console.info(
       `[EmailService] SMTP credentials not configured in backend/.env. Password reset email queued for ${toEmail}. Set SMTP_HOST, SMTP_USER, SMTP_PASS to send real emails.`
     );
+    // In non-production environments, print full reset link to console for manual testing
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[EmailService] Password reset link: ${resetLink}`);
+    }
     return { sent: false, reason: "smtp_not_configured", resetLink };
   }
 

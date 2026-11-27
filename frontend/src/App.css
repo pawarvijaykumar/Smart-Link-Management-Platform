@@ -2767,14 +2767,22 @@ button {
   white-space: nowrap;
 }
 
-/* 4. Bottom Features (3 short feature points with small icons) */
+/* 4. Bottom Features & Developer Profile Links */
+.auth-hero-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 310px;
+}
+
 .auth-hero-features {
   display: flex;
   flex-direction: column;
   gap: 7px;
   width: 100%;
-  max-width: 310px;
-  padding-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
@@ -2799,6 +2807,144 @@ button {
   justify-content: center;
   color: #ffffff;
   flex-shrink: 0;
+}
+
+/* Developer Social Profiles in Welcome Panel */
+.auth-hero-social {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  pointer-events: auto;
+}
+
+.auth-hero-social-heading {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.auth-hero-social-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.auth-hero-social-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: none;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.auth-hero-social-svg {
+  flex-shrink: 0;
+  transition: transform 0.22s ease;
+}
+
+.auth-hero-social-name {
+  white-space: nowrap;
+}
+
+/* Hover and Focus animations */
+.auth-hero-social-link:hover {
+  transform: translateY(-2px);
+  color: #ffffff;
+}
+
+.auth-hero-social-link--github:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 10px rgba(255, 255, 255, 0.22);
+}
+
+.auth-hero-social-link--github:hover .auth-hero-social-svg {
+  transform: rotate(-6deg) scale(1.1);
+}
+
+.auth-hero-social-link--linkedin:hover {
+  background: rgba(10, 102, 194, 0.24);
+  border-color: rgba(56, 189, 248, 0.55);
+  color: #38bdf8;
+  box-shadow: 0 4px 14px rgba(10, 102, 194, 0.35), 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.auth-hero-social-link--linkedin:hover .auth-hero-social-svg {
+  transform: scale(1.1);
+  fill: #38bdf8;
+}
+
+.auth-hero-social-link:active {
+  transform: translateY(0);
+}
+
+.auth-hero-social-link:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+/* Floating Tooltip */
+.auth-hero-tooltip {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 3px 8px;
+  background: rgba(8, 12, 24, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+}
+
+.auth-hero-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: rgba(8, 12, 24, 0.95) transparent transparent transparent;
+}
+
+.auth-hero-social-link:hover .auth-hero-tooltip,
+.auth-hero-social-link:focus-visible .auth-hero-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* Register Hero: on left half when mode is register */

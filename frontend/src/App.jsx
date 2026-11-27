@@ -37,6 +37,7 @@ import CountUp from "./components/CountUp";
 import AnimatedContent from "./components/AnimatedContent";
 import TrafficSourcesCard from "./components/TrafficSourcesCard";
 import RankedBars from "./components/RankedBars";
+import OverviewBreakdownRow from "./components/OverviewBreakdownRow";
 import {
   Button,
   Card,
@@ -4031,7 +4032,7 @@ function App() {
   );
 
   useEffect(() => {
-    if (activeView !== "geo-analytics" || !token) return;
+    if ((activeView !== "geo-analytics" && activeView !== "dashboard") || !token) return;
     let isMounted = true;
 
     const timer = setTimeout(() => {
@@ -4096,7 +4097,7 @@ function App() {
   );
 
   useEffect(() => {
-    if (activeView !== "device-analytics" || !token) return;
+    if ((activeView !== "device-analytics" && activeView !== "dashboard") || !token) return;
     let isMounted = true;
 
     const timer = setTimeout(() => {
@@ -4183,6 +4184,8 @@ function App() {
       if (activeView === "dashboard") {
         fetchDashboardAnalytics(apiR);
         fetchCampaignAnalytics(apiR);
+        fetchDeviceAnalytics(apiR);
+        fetchGeoAnalytics(apiR);
       } else if (activeView === "campaigns") {
         fetchCampaignAnalytics(apiR);
       } else if (activeView === "qr-analytics") {
@@ -4498,6 +4501,23 @@ function App() {
       setDetailLoading(false);
     }
   };
+
+  // Password reset route handler (direct path or query parameter)
+  const isResetRoute =
+    (typeof currentPath === "string" && currentPath.startsWith("/reset-password")) ||
+    (typeof window !== "undefined" &&
+      (window.location.search.includes("resetToken") || window.location.search.includes("token=")));
+
+  if (isResetRoute) {
+    return (
+      <Login
+        onLoginSuccess={handleLoginSuccess}
+        initialError={authError}
+        initialMode="reset"
+        onNavigate={navigateTo}
+      />
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // PUBLIC MARKETING ROUTES (No login needed)
@@ -5273,45 +5293,27 @@ function App() {
                     </div>
                   </AnimatedContent>
 
-                  {/* Section 4: Three sections in one row (Device Breakdown + Browser Breakdown + Traffic Sources) */}
+                  {/* Section 4: Breakdown Row (Device, Browser, OS, Countries + Traffic Sources) */}
                   <AnimatedContent distance={25} delay={0.24}>
-                    <div className="three-analytics-row">
-                      <div className="three-col-item">
-                        <RankedBars
-                          title="Device Breakdown"
-                          icon={<Smartphone size={16} />}
-                          data={dashboardAnalytics?.devices || []}
-                          loading={analyticsLoading}
-                          emptyMessage="No device data recorded yet. Share your short link to view visitor platforms."
-                        />
-                      </div>
-                      <div className="three-col-item">
-                        <RankedBars
-                          title="Browser Breakdown"
-                          icon={<Globe size={16} />}
-                          data={dashboardAnalytics?.browsers || []}
-                          loading={analyticsLoading}
-                          emptyMessage="No browser data recorded yet. Visitor browsers will appear after clicks."
-                        />
-                      </div>
-                      <div className="three-col-item source-col-item">
-                        <TrafficSourcesCard
-                          campaignAnalytics={campaignAnalytics}
-                          loading={campaignLoading}
-                          onCreateUtmLink={() => {
-                            setShowCreateModal(true);
-                            setCreateSuccessLink(null);
-                            setCreateError("");
-                            setNewUrlInput("");
-                            setUtmInputs(initialUtmState);
-                            setShowUtmSection(true);
-                            setExpiresAtInput("");
-                            setMaxClicksInput("");
-                            setShowAccessSection(false);
-                          }}
-                        />
-                      </div>
-                    </div>
+                    <OverviewBreakdownRow
+                      dashboardAnalytics={dashboardAnalytics}
+                      deviceAnalytics={deviceAnalytics}
+                      geoAnalytics={geoAnalytics}
+                      campaignAnalytics={campaignAnalytics}
+                      loading={analyticsLoading || deviceLoading || geoLoading || campaignLoading}
+                      onNavigate={setActiveView}
+                      onCreateUtmLink={() => {
+                        setShowCreateModal(true);
+                        setCreateSuccessLink(null);
+                        setCreateError("");
+                        setNewUrlInput("");
+                        setUtmInputs(initialUtmState);
+                        setShowUtmSection(true);
+                        setExpiresAtInput("");
+                        setMaxClicksInput("");
+                        setShowAccessSection(false);
+                      }}
+                    />
                   </AnimatedContent>
 
                   {/* Section 6: Smart Traffic Intelligence (Four Insight Cards in One Row) */}
