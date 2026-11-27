@@ -1,10 +1,10 @@
 import React from "react";
 import { Lock } from "lucide-react";
+import HeroDashboardPreview from "./HeroDashboardPreview";
 
 export default function BrowserMockup({
-  imageUrl = "/dashboard-preview.png",
   url = "app.smartlink.io/dashboard",
-  alt = "SmartLink Analytics Dashboard preview",
+  children,
 }) {
   return (
     <div className="mkt-browser-mockup" role="region" aria-label="Product interface preview">
@@ -23,14 +23,7 @@ export default function BrowserMockup({
         <div style={{ width: "42px" }} aria-hidden="true"></div>
       </div>
 
-      <img
-        src={imageUrl}
-        alt={alt}
-        className="mkt-browser-img"
-        loading="lazy"
-        width={1200}
-        height={675}
-      />
+      {children || <HeroDashboardPreview />}
     </div>
   );
 }

@@ -62,7 +62,7 @@ export default function LandingPage({ token, onNavigate }) {
 
   return (
     <MarketingLayout
-      title="SmartLink — Short links you can actually measure"
+      title="SmartLink — Short links you can measure"
       description="Create short links and track every click by country, device and campaign."
       token={token}
       currentPath="/"
@@ -112,12 +112,8 @@ export default function LandingPage({ token, onNavigate }) {
           {/* Quick URL Shortener Input in Hero */}
           <MiniShortener onNavigate={onNavigate} />
 
-          {/* Real Browser Mockup with Dashboard Screenshot */}
-          <BrowserMockup
-            imageUrl="/dashboard-preview.png"
-            url="app.smartlink.io/dashboard"
-            alt="SmartLink live performance analytics dashboard"
-          />
+          {/* Real Browser Mockup with Live Dashboard Components Preview */}
+          <BrowserMockup url="app.smartlink.io/dashboard" />
         </div>
 
         {/* Smooth 160px bottom fade into cream #faf7f2 */}

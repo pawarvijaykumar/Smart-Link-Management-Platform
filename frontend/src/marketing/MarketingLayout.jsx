@@ -5,7 +5,7 @@ import PageBackground from "../components/PageBackground";
 import "./Marketing.css";
 
 export default function MarketingLayout({
-  title = "SmartLink — Short links you can actually measure",
+  title = "SmartLink — Short links you can measure",
   description = "Create short links, track campaign attribution, and analyze clicks in real time.",
   token,
   currentPath = "/",

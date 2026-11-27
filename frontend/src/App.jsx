@@ -1592,6 +1592,12 @@ function CampaignMetricCards({ summary, loading = false }) {
 function CampaignPerformanceTable({ performance = [], loading = false }) {
   const [searchTerm, setSearchTerm] = useState("");
 
+  const maxClicks = useMemo(() => {
+    if (!performance || performance.length === 0) return 1;
+    const max = Math.max(...performance.map((r) => Number(r.count || 0)), 1);
+    return max > 0 ? max : 1;
+  }, [performance]);
+
   const filteredRows = useMemo(() => {
     if (!searchTerm || !searchTerm.trim()) return performance;
     const q = searchTerm.toLowerCase().trim();
@@ -1646,6 +1652,9 @@ function CampaignPerformanceTable({ performance = [], loading = false }) {
             ) : filteredRows.length > 0 ? (
               filteredRows.map((row, idx) => {
                 const isUntracked = row.campaign === "Direct / Untracked";
+                const count = Number(row.count || 0);
+                const barWidth = maxClicks > 0 ? Math.min(100, Math.max(0, (count / maxClicks) * 100)) : 0;
+
                 return (
                   <tr key={`${row.campaign}-${row.source}-${row.medium}-${idx}`}>
                     <td>
@@ -1672,9 +1681,17 @@ function CampaignPerformanceTable({ performance = [], loading = false }) {
                       </span>
                     </td>
                     <td style={{ textAlign: "right" }}>
-                      <span className="campaign-click-count-badge">
-                        {row.count.toLocaleString()}
-                      </span>
+                      <div className="campaign-click-cell">
+                        <div className="campaign-click-bar-track">
+                          <div
+                            className="campaign-click-bar-fill"
+                            style={{ width: `${barWidth}%` }}
+                          />
+                        </div>
+                        <span className="campaign-click-num">
+                          {count.toLocaleString()}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -1937,20 +1954,24 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
           })}
 
           {/* Gradient Area Fill */}
-          <path d={areaPath} fill="url(#campaignChartAreaGradient)" />
+          {totalPeriodClicks > 0 && (
+            <path d={areaPath} fill="url(#campaignChartAreaGradient)" />
+          )}
 
           {/* Spline Line */}
-          <path
-            d={linePath}
-            fill="none"
-            stroke="url(#campaignChartLineGradient)"
-            strokeWidth="2.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          {totalPeriodClicks > 0 && (
+            <path
+              d={linePath}
+              fill="none"
+              stroke="url(#campaignChartLineGradient)"
+              strokeWidth="2.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
 
           {/* Hover Crosshair Line */}
-          {hoveredPoint && (
+          {totalPeriodClicks > 0 && hoveredPoint && (
             <line
               x1={hoveredPoint.x}
               y1={padTop}
@@ -1963,24 +1984,25 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
           )}
 
           {/* Column hover catchers for smooth tracking across the graph */}
-          {points.map((pt, idx) => {
-            const prevX = idx === 0 ? padLeft : (points[idx - 1].x + pt.x) / 2;
-            const nextX = idx === points.length - 1 ? width - padRight : (points[idx + 1].x + pt.x) / 2;
-            const colW = Math.max(1, nextX - prevX);
+          {totalPeriodClicks > 0 &&
+            points.map((pt, idx) => {
+              const prevX = idx === 0 ? padLeft : (points[idx - 1].x + pt.x) / 2;
+              const nextX = idx === points.length - 1 ? width - padRight : (points[idx + 1].x + pt.x) / 2;
+              const colW = Math.max(1, nextX - prevX);
 
-            return (
-              <rect
-                key={`camp-col-${idx}`}
-                x={prevX}
-                y={padTop}
-                width={colW}
-                height={innerH}
-                fill="transparent"
-                style={{ cursor: "pointer" }}
-                onMouseEnter={() => setHoveredPoint(pt)}
-              />
-            );
-          })}
+              return (
+                <rect
+                  key={`camp-col-${idx}`}
+                  x={prevX}
+                  y={padTop}
+                  width={colW}
+                  height={innerH}
+                  fill="transparent"
+                  style={{ cursor: "pointer" }}
+                  onMouseEnter={() => setHoveredPoint(pt)}
+                />
+              );
+            })}
 
           {/* Visible Data Point Dots along the curve */}
           {points.map((pt, idx) => {
@@ -2004,25 +2026,29 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
 
             return (
               <g key={`camp-dot-${idx}`} style={{ pointerEvents: "none" }}>
-                {isHovered && (
-                  <circle
-                    cx={pt.x}
-                    cy={pt.y}
-                    r="9"
-                    fill="var(--chart-1)"
-                    fillOpacity="0.25"
-                    stroke="var(--chart-1)"
-                    strokeWidth="1"
-                  />
+                {totalPeriodClicks > 0 && (
+                  <>
+                    {isHovered && (
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r="9"
+                        fill="var(--chart-1)"
+                        fillOpacity="0.25"
+                        stroke="var(--chart-1)"
+                        strokeWidth="1"
+                      />
+                    )}
+                    <circle
+                      cx={pt.x}
+                      cy={pt.y}
+                      r={isHovered ? "5" : points.length <= 10 ? "3.5" : "2.6"}
+                      fill={isHovered ? "var(--surface)" : "var(--surface-2)"}
+                      stroke="var(--chart-1)"
+                      strokeWidth={isHovered ? "2.5" : "1.8"}
+                    />
+                  </>
                 )}
-                <circle
-                  cx={pt.x}
-                  cy={pt.y}
-                  r={isHovered ? "5" : points.length <= 10 ? "3.5" : "2.6"}
-                  fill={isHovered ? "var(--surface)" : "var(--surface-2)"}
-                  stroke="var(--chart-1)"
-                  strokeWidth={isHovered ? "2.5" : "1.8"}
-                />
                 {/* Date labels along bottom */}
                 {showDateLabel && !isNearClash && (
                   <text
@@ -2042,8 +2068,15 @@ function CampaignClicksChart({ dailyTrends = [], timeRange = "all", loading = fa
           })}
         </svg>
 
+        {/* Small centered empty-state message when selected timeframe has zero attributed clicks */}
+        {totalPeriodClicks === 0 && (
+          <div className="campaign-chart-empty-state">
+            No campaign clicks in this period. Try 30D or All.
+          </div>
+        )}
+
         {/* Floating Dark-Purple Tooltip */}
-        {hoveredPoint && (
+        {totalPeriodClicks > 0 && hoveredPoint && (
           <div
             className="chart-hover-tooltip"
             style={{
@@ -2188,7 +2221,7 @@ function CampaignAnalyticsView({
             </div>
           ) : (
             <div className="campaign-info-card">
-              <div className="campaign-info-icon"><TrendingUp size={20} style={{ color: "var(--accent)" }} /></div>
+              <div className="campaign-info-icon"><TrendingUp size={20} style={{ color: "#f5ede4" }} /></div>
               <div className="campaign-info-content">
                 <h4>Campaign Attribution & UTM Tracking</h4>
                 <p>
@@ -2406,35 +2439,34 @@ function QRLinksTable({
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <span
-                        className="campaign-click-count-badge"
-                        style={{
-                          background: (link.qrClicks || 0) > 0 ? "var(--accent-soft)" : "var(--surface-2)",
-                          color: (link.qrClicks || 0) > 0 ? "var(--primary)" : "var(--text-muted)",
-                          border: "1px solid var(--border)",
-                        }}
+                        className={`qr-num-cell ${(link.qrClicks || 0) > 0 ? "active" : "muted"}`}
                       >
                         {link.qrClicks?.toLocaleString() ?? 0}
                       </span>
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <span
-                        className="campaign-click-count-badge"
-                        style={{
-                          background: (link.directClicks || 0) > 0 ? "rgba(6, 182, 212, 0.15)" : "rgba(255, 255, 255, 0.04)",
-                          color: (link.directClicks || 0) > 0 ? "#22D3EE" : "var(--text-muted)",
-                          border: (link.directClicks || 0) > 0 ? "1px solid rgba(6, 182, 212, 0.3)" : "1px solid rgba(255, 255, 255, 0.06)",
-                        }}
+                        className={`qr-num-cell ${(link.directClicks || 0) > 0 ? "active" : "muted"}`}
                       >
                         {link.directClicks?.toLocaleString() ?? 0}
                       </span>
                     </td>
                     <td style={{ textAlign: "right" }}>
-                      <span
-                        className={`metric-trend-pill ${(link.qrClicks || 0) > 0 ? "positive" : "neutral"}`}
-                        style={{ display: "inline-block" }}
-                      >
-                        {link.qrPercentage ?? 0}%
-                      </span>
+                      <div className="qr-rate-cell">
+                        <div className="qr-rate-track">
+                          <div
+                            className="qr-rate-fill"
+                            style={{
+                              width: `${Math.min(100, Math.max(0, link.qrPercentage || 0))}%`,
+                            }}
+                          />
+                        </div>
+                        <span
+                          className={`qr-rate-value ${(link.qrPercentage || 0) > 0 ? "active" : "muted"}`}
+                        >
+                          {link.qrPercentage ?? 0}%
+                        </span>
+                      </div>
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <div className="table-actions-cell" style={{ justifyContent: "flex-end" }}>
@@ -2578,14 +2610,14 @@ function QRScanInsights({
 
             <div className="qr-best-metrics-cluster">
               <div className="qr-best-stat-item">
-                <span className="qr-best-stat-num" style={{ color: "#A855F7" }}>
+                <span className="qr-best-stat-num" style={{ color: "var(--primary)" }}>
                   {bestLink.qrClicks?.toLocaleString() ?? 0}
                 </span>
                 <span className="qr-best-stat-lbl">QR Scans</span>
               </div>
               <div className="qr-best-stat-divider" />
               <div className="qr-best-stat-item">
-                <span className="qr-best-stat-num" style={{ color: "#10B981" }}>
+                <span className="qr-best-stat-num" style={{ color: "var(--primary)" }}>
                   {bestLink.qrPercentage ?? 0}%
                 </span>
                 <span className="qr-best-stat-lbl">Scan Rate</span>
@@ -2698,25 +2730,14 @@ function QRScanInsights({
                       </td>
                       <td style={{ textAlign: "right" }}>
                         <span
-                          className="campaign-click-count-badge"
-                          style={{
-                            background: "var(--accent-soft)",
-                            color: "var(--primary)",
-                            border: "1px solid var(--border)",
-                            fontWeight: 700,
-                          }}
+                          className={`qr-num-cell ${(link.qrClicks || 0) > 0 ? "active" : "muted"}`}
                         >
                           {link.qrClicks?.toLocaleString() ?? 0}
                         </span>
                       </td>
                       <td style={{ textAlign: "right" }}>
                         <span
-                          className="campaign-click-count-badge"
-                          style={{
-                            background: "rgba(6, 182, 212, 0.15)",
-                            color: "#22D3EE",
-                            border: "1px solid rgba(6, 182, 212, 0.3)",
-                          }}
+                          className={`qr-num-cell ${(link.directClicks || 0) > 0 ? "active" : "muted"}`}
                         >
                           {link.directClicks?.toLocaleString() ?? 0}
                         </span>
@@ -2727,12 +2748,21 @@ function QRScanInsights({
                         </span>
                       </td>
                       <td style={{ textAlign: "right" }}>
-                        <span
-                          className="metric-trend-pill positive"
-                          style={{ display: "inline-block" }}
-                        >
-                          {link.qrPercentage ?? 0}%
-                        </span>
+                        <div className="qr-rate-cell">
+                          <div className="qr-rate-track">
+                            <div
+                              className="qr-rate-fill"
+                              style={{
+                                width: `${Math.min(100, Math.max(0, link.qrPercentage || 0))}%`,
+                              }}
+                            />
+                          </div>
+                          <span
+                            className={`qr-rate-value ${(link.qrPercentage || 0) > 0 ? "active" : "muted"}`}
+                          >
+                            {link.qrPercentage ?? 0}%
+                          </span>
+                        </div>
                       </td>
                       <td style={{ textAlign: "right" }}>
                         <div className="table-actions-cell" style={{ justifyContent: "flex-end" }}>

@@ -123,21 +123,35 @@
 }
 
 .ranked-bars-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: transparent;
   border: none;
   padding: 8px 0 0;
   color: var(--primary);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  text-decoration: underline;
+  text-decoration: none;
   text-align: left;
   align-self: flex-start;
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, transform 0.15s ease;
 }
 
 .ranked-bars-view-all:hover {
-  color: var(--primary-hover);
+  color: var(--primary-hover, var(--primary));
+  text-decoration: none;
+  transform: translateX(1px);
+}
+
+.ranked-bars-chevron {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.ranked-bars-chevron.expanded {
+  transform: rotate(90deg);
 }
 
 .ranked-bars-empty {

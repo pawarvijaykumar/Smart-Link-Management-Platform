@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { ChevronRight } from "lucide-react";
 import "./RankedBars.css";
 
 const CHART_PALETTE = [
@@ -146,10 +147,14 @@ export default function RankedBars({
               type="button"
               className="ranked-bars-view-all"
               onClick={() => setShowAll((prev) => !prev)}
+              aria-expanded={showAll}
             >
-              {showAll
-                ? "Show less"
-                : `View all (${normalizedItems.length})`}
+              <span>{showAll ? "Show less" : `View all (${normalizedItems.length})`}</span>
+              <ChevronRight
+                size={13}
+                className={`ranked-bars-chevron ${showAll ? "expanded" : ""}`}
+                aria-hidden="true"
+              />
             </button>
           )}
         </div>

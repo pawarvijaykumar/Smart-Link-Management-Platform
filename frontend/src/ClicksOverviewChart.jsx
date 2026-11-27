@@ -691,13 +691,13 @@ function ClicksOverviewChart({
                     y1={yPos}
                     x2={width - padRight}
                     y2={yPos}
-                    stroke={isBaseline ? "#232A34" : "#1B212A"}
+                    stroke={isBaseline ? "var(--border, #232A34)" : "var(--border-subtle, #1B212A)"}
                     strokeDasharray={isBaseline ? undefined : "3 3"}
                   />
                   <text
                     x={padLeft - 10}
                     y={yPos + 3.5}
-                    fill="#8B95A5"
+                    fill="var(--text-muted, #8B95A5)"
                     fontSize="10"
                     fontWeight="500"
                     textAnchor="end"
@@ -814,7 +814,7 @@ function ClicksOverviewChart({
                     <text
                       x={pt.x}
                       y={zeroY + 18}
-                      fill={isHovered ? "#E6EAF0" : "#8B95A5"}
+                      fill={isHovered ? "var(--text, #E6EAF0)" : "var(--text-muted, #8B95A5)"}
                       fontWeight={isHovered ? "600" : "500"}
                       fontSize="10"
                       textAnchor="middle"
