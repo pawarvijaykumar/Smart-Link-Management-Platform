@@ -9,6 +9,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import axios from "axios";
 import SpecularButton from "./SpecularButton";
 import TimeRangeToggle from "./ui/TimeRangeToggle";
+import { analyticsCache } from "../utils/analyticsCache";
 import { useTimeRange } from "../context/TimeRangeContext";
 import {
   TrendingUp,
@@ -328,6 +329,14 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
   // ---------------------------------------------------------------------------
   const fetchAnalytics = useCallback(async (expId, selectedRange = apiRange) => {
     if (!token || !expId) return;
+
+    const cacheKey = `ab:${expId}:${selectedRange}`;
+    const cached = analyticsCache.get(cacheKey);
+    if (cached) {
+      setAnalyticsData(cached);
+      if (cached.experiment) setSelectedExperiment(cached.experiment);
+    }
+
     setLoadingAnalytics(true);
     setErrorMsg("");
     try {
@@ -336,6 +345,7 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
         getAuthHeaders()
       );
       if (res.data?.success) {
+        analyticsCache.set(cacheKey, res.data);
         setAnalyticsData(res.data);
         setSelectedExperiment(res.data.experiment);
       }
@@ -799,7 +809,6 @@ export default function ABTestingView({ links: propLinks = [], token, apiBaseUrl
             <TimeRangeToggle
               value={timeRange}
               onChange={setTimeRange}
-              disabled={loadingAnalytics}
               ariaLabel="A/B Test evaluation timeframe"
             />
             <SpecularButton

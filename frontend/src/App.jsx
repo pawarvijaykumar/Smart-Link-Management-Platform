@@ -108,6 +108,7 @@ import AnnouncementBanner from "./components/AnnouncementBanner";
 import CommandPalette from "./components/CommandPalette";
 import { useTheme } from "./context/ThemeContext";
 import { PLAN_LIMITS, CURRENT_PLAN } from "./config/plans.config";
+import { analyticsCache } from "./utils/analyticsCache";
 import "./App.css";
 import "./AuroraTheme.css";
 
@@ -2129,7 +2130,6 @@ function CampaignAnalyticsView({
             <TimeRangeToggle
               value={campaignRange}
               onChange={onRangeChange}
-              disabled={campaignLoading}
               ariaLabel="Campaign time range"
             />
 
@@ -2142,7 +2142,7 @@ function CampaignAnalyticsView({
               title="Refresh campaign analytics"
             >
               <RefreshCw size={14} className={campaignLoading ? "spinning" : ""} />
-              <span>{campaignLoading ? "Refreshing..." : "Refresh"}</span>
+              <span>Refresh</span>
             </SpecularButton>
           </div>
         </div>
@@ -2850,7 +2850,6 @@ function QRAnalyticsView({
             <TimeRangeToggle
               value={qrRange}
               onChange={onRangeChange}
-              disabled={qrLoading}
               ariaLabel="QR Analytics time range"
             />
 
@@ -2863,7 +2862,7 @@ function QRAnalyticsView({
               title="Refresh QR analytics"
             >
               <RefreshCw size={14} className={qrLoading ? "spinning" : ""} />
-              <span>{qrLoading ? "Refreshing..." : "Refresh"}</span>
+              <span>Refresh</span>
             </SpecularButton>
           </div>
         </div>
@@ -3821,6 +3820,18 @@ function App() {
       const activeToken = token || localStorage.getItem("token");
       if (!activeToken) return;
 
+      const isAll =
+        !selectedLink ||
+        selectedLink === "__all__" ||
+        selectedLink.shortCode === "__all__";
+
+      const linkKey = isAll ? "__all__" : (selectedLink.shortCode || selectedLink._id || "__link__");
+      const cacheKey = `dashboard:${linkKey}:${selectedRange}`;
+      const cached = analyticsCache.get(cacheKey);
+      if (cached) {
+        setDashboardAnalytics(cached);
+      }
+
       if (dashboardAbortControllerRef.current) {
         dashboardAbortControllerRef.current.abort();
       }
@@ -3828,11 +3839,6 @@ function App() {
       const currentSignal = dashboardAbortControllerRef.current.signal;
 
       setAnalyticsLoading(true);
-
-      const isAll =
-        !selectedLink ||
-        selectedLink === "__all__" ||
-        selectedLink.shortCode === "__all__";
 
       const endpoint = isAll
         ? `${API_URL}/user/analytics/all-links`
@@ -3845,6 +3851,7 @@ function App() {
           signal: currentSignal,
         });
         if (res.data) {
+          analyticsCache.set(cacheKey, res.data);
           setDashboardAnalytics(res.data);
         }
       } catch (err) {
@@ -3882,6 +3889,12 @@ function App() {
       const activeToken = token || localStorage.getItem("token");
       if (!activeToken) return;
 
+      const cacheKey = `campaigns:${selectedRange}`;
+      const cached = analyticsCache.get(cacheKey);
+      if (cached) {
+        setCampaignAnalytics(cached);
+      }
+
       // Abort any in-flight campaign request to prevent race conditions & stale data
       if (campaignAbortControllerRef.current) {
         campaignAbortControllerRef.current.abort();
@@ -3903,6 +3916,7 @@ function App() {
         );
         // Ensure only the latest active filter range updates state
         if (activeCampaignRangeRef.current === selectedRange && res.data?.success && res.data?.data) {
+          analyticsCache.set(cacheKey, res.data.data);
           setCampaignAnalytics(res.data.data);
         }
       } catch (err) {
@@ -3950,6 +3964,12 @@ function App() {
       const activeToken = token || localStorage.getItem("token");
       if (!activeToken) return;
 
+      const cacheKey = `qr:${selectedRange}`;
+      const cached = analyticsCache.get(cacheKey);
+      if (cached) {
+        setQrAnalytics(cached);
+      }
+
       // Abort any in-flight QR request to prevent race conditions & stale data
       if (qrAbortControllerRef.current) {
         qrAbortControllerRef.current.abort();
@@ -3971,6 +3991,7 @@ function App() {
         );
         // Ensure only the latest active filter range updates state
         if (activeQrRangeRef.current === selectedRange && res.data?.success) {
+          analyticsCache.set(cacheKey, res.data);
           setQrAnalytics(res.data);
         }
       } catch (err) {
@@ -4017,6 +4038,12 @@ function App() {
       const activeToken = token || localStorage.getItem("token");
       if (!activeToken) return;
 
+      const cacheKey = `geo:${selectedRange}`;
+      const cached = analyticsCache.get(cacheKey);
+      if (cached) {
+        setGeoAnalytics(cached);
+      }
+
       // Abort any in-flight Geo request to prevent race conditions & stale data
       if (geoAbortControllerRef.current) {
         geoAbortControllerRef.current.abort();
@@ -4038,6 +4065,7 @@ function App() {
         );
         // Ensure only the latest active filter range updates state
         if (activeGeoRangeRef.current === selectedRange && res.data?.success) {
+          analyticsCache.set(cacheKey, res.data);
           setGeoAnalytics(res.data);
         }
       } catch (err) {
@@ -4084,6 +4112,12 @@ function App() {
       const activeToken = token || localStorage.getItem("token");
       if (!activeToken) return;
 
+      const cacheKey = `devices:${selectedRange}`;
+      const cached = analyticsCache.get(cacheKey);
+      if (cached) {
+        setDeviceAnalytics(cached);
+      }
+
       // Abort any in-flight Device request to prevent race conditions & stale data
       if (deviceAbortControllerRef.current) {
         deviceAbortControllerRef.current.abort();
@@ -4104,6 +4138,7 @@ function App() {
           }
         );
         if (activeDeviceRangeRef.current === selectedRange && res.data?.success) {
+          analyticsCache.set(cacheKey, res.data);
           setDeviceAnalytics(res.data);
         }
       } catch (err) {
@@ -4149,6 +4184,12 @@ function App() {
       const activeToken = token || localStorage.getItem("token");
       if (!activeToken) return;
 
+      const cacheKey = `traffic:${selectedRange}`;
+      const cached = analyticsCache.get(cacheKey);
+      if (cached) {
+        setTrafficAnalytics(cached);
+      }
+
       if (trafficAbortControllerRef.current) {
         trafficAbortControllerRef.current.abort();
       }
@@ -4168,6 +4209,7 @@ function App() {
           }
         );
         if (activeTrafficRangeRef.current === selectedRange && res.data?.success) {
+          analyticsCache.set(cacheKey, res.data);
           setTrafficAnalytics(res.data);
         }
       } catch (err) {

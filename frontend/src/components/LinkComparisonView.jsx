@@ -10,6 +10,7 @@ import axios from "axios";
 import SpecularButton from "./SpecularButton";
 import StatCard from "./ui/StatCard";
 import TimeRangeToggle from "./ui/TimeRangeToggle";
+import { analyticsCache } from "../utils/analyticsCache";
 import { useTimeRange } from "../context/TimeRangeContext";
 import { ArrowRightLeft, Trophy, AlertTriangle, Info, X, Smartphone, Monitor, Tablet, HardDrive, QrCode, Globe, TrendingUp } from "lucide-react";
 
@@ -1137,6 +1138,13 @@ export default function LinkComparisonView({
       abortControllerRef.current = new AbortController();
       const currentSignal = abortControllerRef.current.signal;
 
+      const sortedIds = [...curIds].sort().join(",");
+      const cacheKey = `comparison:${curRange}:${sortedIds}`;
+      const cached = analyticsCache.get(cacheKey);
+      if (cached) {
+        setComparisonData(cached);
+      }
+
       setLoading(true);
       setError("");
 
@@ -1150,6 +1158,7 @@ export default function LinkComparisonView({
         });
 
         if (res.data?.success) {
+          analyticsCache.set(cacheKey, res.data);
           setComparisonData(res.data);
         } else {
           setError(res.data?.message || "Failed to fetch link comparison analytics");
@@ -1233,7 +1242,6 @@ export default function LinkComparisonView({
           <TimeRangeToggle
             value={timeRange}
             onChange={setTimeRange}
-            disabled={loading}
             ariaLabel="Link Comparison timeframe"
           />
 

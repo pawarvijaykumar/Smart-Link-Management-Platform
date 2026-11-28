@@ -10,6 +10,7 @@ import axios from "axios";
 import SpecularButton from "./SpecularButton";
 import StatCard from "./ui/StatCard";
 import TimeRangeToggle from "./ui/TimeRangeToggle";
+import { analyticsCache } from "../utils/analyticsCache";
 import { useTimeRange } from "../context/TimeRangeContext";
 import { ShieldAlert, AlertTriangle, RefreshCw, CheckCircle2, TrendingUp, TrendingDown, Info, X } from "lucide-react";
 
@@ -1196,6 +1197,12 @@ export default function TrafficAnomalyView({
       abortControllerRef.current = new AbortController();
       const currentSignal = abortControllerRef.current.signal;
 
+      const cacheKey = `anomalies:${selectedRange}`;
+      const cached = analyticsCache.get(cacheKey);
+      if (cached) {
+        setData(cached);
+      }
+
       setLoading(true);
       setError("");
 
@@ -1207,6 +1214,7 @@ export default function TrafficAnomalyView({
         });
 
         if (res.data?.success) {
+          analyticsCache.set(cacheKey, res.data);
           setData(res.data);
         } else {
           setError(res.data?.message || "Failed to load anomaly detection data");
@@ -1349,7 +1357,6 @@ export default function TrafficAnomalyView({
           <TimeRangeToggle
             value={timeRange}
             onChange={setTimeRange}
-            disabled={loading}
             ariaLabel="Traffic Intelligence timeframe"
           />
 

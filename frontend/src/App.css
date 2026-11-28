@@ -3949,16 +3949,22 @@ button {
 .btn-refresh-campaigns {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 16px;
+  height: 40px;
+  min-height: 40px;
+  min-width: 112px;
+  padding: 0 16px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .btn-refresh-campaigns:hover:not(:disabled) {
@@ -11178,7 +11184,8 @@ button {
 
 /* Section 3: Clicks Overview Full-Width */
 .clicks-overview-fullwidth-section {
-  margin-bottom: 24px;
+  margin-top: 20px;
+  margin-bottom: 20px;
   width: 100%;
 }
 
@@ -11516,7 +11523,7 @@ button {
 
 /* Section 6: Smart Traffic Intelligence (Four Insight Cards in One Row) */
 .intelligence-fullwidth-section {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   width: 100%;
 }
 

@@ -198,7 +198,6 @@ export default function GeoAnalyticsView({
           <TimeRangeToggle
             value={geoRange}
             onChange={(val) => onRangeChange?.(val)}
-            disabled={refreshingActive}
             ariaLabel="Geo Analytics timeframe"
           />
 
@@ -266,19 +265,18 @@ export default function GeoAnalyticsView({
             size="sm"
             variant="cyan"
             radius={8}
+            className="btn-refresh-campaigns"
             onClick={handleManualRefresh}
             disabled={refreshingActive}
-            loading={refreshingActive}
             title="Fetch latest geolocation data from backend"
             aria-label="Refresh geolocation analytics"
-            style={{ height: "34px", padding: "0 14px" }}
           >
             <RefreshCw
               size={13}
               className={refreshingActive ? "spin-icon" : ""}
               style={{ marginRight: "6px" }}
             />
-            <span>{refreshingActive ? "Updating..." : "Refresh"}</span>
+            <span>Refresh</span>
           </SpecularButton>
         </div>
       </div>
@@ -318,6 +316,7 @@ export default function GeoAnalyticsView({
       )}
 
       {/* 2. Analytics Summary Cards (6 Cards wrapped in SpotlightCard) */}
+      <div className={`geo-dashboard-body ${refreshingActive ? "data-refreshing" : ""}`}>
       <div className="geo-metrics-grid-6">
         {/* Card 1: Total Global Clicks */}
         <SpotlightCard className="geo-stat-card">
@@ -851,6 +850,7 @@ export default function GeoAnalyticsView({
             </table>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

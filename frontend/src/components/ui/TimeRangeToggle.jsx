@@ -1,15 +1,16 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useTimeRange, TIME_RANGE_OPTIONS } from "../../context/TimeRangeContext";
 import "./TimeRangeToggle.css";
 
 /**
  * TimeRangeToggle: Reusable segmented button toggle for 7D, 30D, and All date ranges.
- * Fully accessible with role="radiogroup", keyboard arrow navigation, and optimistic state feedback.
+ * Fully accessible with role="radiogroup", keyboard arrow navigation, and instant optimistic state feedback.
+ * Buttons are never disabled during background loading to prevent lag and allow rapid switching.
  *
  * @param {string} value - Current active value ('7D' | '30D' | 'All' or lowercase variants)
  * @param {function} onChange - Callback invoked with selected value
  * @param {Array} options - Optional list of { value, label } options (defaults to 7D, 30D, All)
- * @param {boolean} disabled - Disable all toggle buttons
+ * @param {boolean} disabled - Ignored for toggle buttons during loading to ensure instant responsiveness
  * @param {string} className - Optional container className
  * @param {string} ariaLabel - Accessible label for the radiogroup
  */
@@ -28,6 +29,23 @@ export default function TimeRangeToggle({
   const activeValue = value !== undefined ? value : globalRange;
   const handleChange = onChange || setGlobalRange;
 
+  // Optimistic selection: set active state immediately in the exact same frame
+  const [optimisticValue, setOptimisticValue] = useState(activeValue);
+
+  useEffect(() => {
+    if (activeValue !== undefined) {
+      setOptimisticValue(activeValue);
+    }
+  }, [activeValue]);
+
+  const handleSelect = (optValue) => {
+    // Instant same-frame feedback: never wait for the async request to highlight button
+    setOptimisticValue(optValue);
+    if (typeof handleChange === "function") {
+      handleChange(optValue);
+    }
+  };
+
   const handleKeyDown = (e, index) => {
     let nextIndex = -1;
     if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
@@ -38,10 +56,10 @@ export default function TimeRangeToggle({
       nextIndex = index < options.length - 1 ? index + 1 : 0;
     }
 
-    if (nextIndex >= 0 && !disabled) {
+    if (nextIndex >= 0) {
       const nextOpt = options[nextIndex];
       if (nextOpt) {
-        handleChange(nextOpt.value);
+        handleSelect(nextOpt.value);
         buttonRefs.current[nextIndex]?.focus();
       }
     }
@@ -55,7 +73,7 @@ export default function TimeRangeToggle({
     >
       {options.map((opt, index) => {
         const isSelected =
-          String(activeValue).trim().toUpperCase() ===
+          String(optimisticValue).trim().toUpperCase() ===
           String(opt.value).trim().toUpperCase();
 
         return (
@@ -67,12 +85,11 @@ export default function TimeRangeToggle({
             aria-checked={isSelected}
             aria-pressed={isSelected}
             tabIndex={isSelected ? 0 : -1}
-            disabled={disabled}
             className={`time-range-toggle-btn ${isSelected ? "active" : ""}`}
             onClick={() => {
-              // Prevent double-fire if already selected or disabled
-              if (!isSelected && !disabled && typeof handleChange === "function") {
-                handleChange(opt.value);
+              // Never disable buttons while loading: allow rapid switching across timeframes
+              if (!isSelected) {
+                handleSelect(opt.value);
               }
             }}
             onKeyDown={(e) => handleKeyDown(e, index)}

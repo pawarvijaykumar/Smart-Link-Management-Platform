@@ -1,6 +1,6 @@
 /* =============================================================================
    TimeRangeToggle: Unified Segmented Date Range Toggle (7D | 30D | All)
-   Height: 40px | Gap: 4px | Min-width: 48px | Min-height: 36px | Font: 13px/500
+   Container: padding 4px, gap 4px | Buttons: min-h 36px, min-w 48px, rounded 10px, font 14px
    ============================================================================= */
 
 .time-range-toggle {
@@ -8,10 +8,9 @@
   align-items: center;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 2px;
-  height: 40px;
-  min-height: 40px;
+  border-radius: 12px;
+  padding: 4px;
+  min-height: 44px;
   box-sizing: border-box;
   gap: 4px;
   user-select: none;
@@ -25,9 +24,9 @@
   padding: 0 14px;
   border: none;
   background: transparent;
-  border-radius: 6px;
+  border-radius: 10px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1;
   letter-spacing: 0.01em;
@@ -38,6 +37,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
   box-sizing: border-box;
   outline: none;
 }
@@ -80,4 +80,131 @@
 .time-range-toggle-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* =============================================================================
+   Shared Analytics Refresh Button & Controls Group
+   ============================================================================= */
+.campaign-controls-group,
+.traffic-header-controls,
+.ab-range-controls,
+.geo-toolbar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+}
+
+.campaign-refresh-btn,
+.btn-refresh-campaigns,
+.traffic-refresh-btn,
+.ab-btn-refresh {
+  height: 40px !important;
+  min-height: 40px !important;
+  min-width: 112px !important;
+  padding: 0 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+/* Continuous rotation for spinning refresh icons */
+.spin,
+.spinning,
+.spin-icon,
+.refresh-icon.spinning {
+  display: inline-block !important;
+  animation: spin 1s linear infinite !important;
+  flex-shrink: 0 !important;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =============================================================================
+   Mobile / Small Screens (below 700px)
+   ============================================================================= */
+@media (max-width: 700px) {
+  .campaign-controls-group,
+  .traffic-header-controls,
+  .ab-range-controls,
+  .geo-toolbar {
+    flex-wrap: wrap !important;
+    gap: 10px 12px !important;
+  }
+
+  .time-range-toggle {
+    min-height: 48px;
+    padding: 4px;
+    box-sizing: border-box;
+  }
+
+  .time-range-toggle-btn {
+    height: 40px;
+    min-height: 40px;
+    padding: 0 14px;
+    box-sizing: border-box;
+  }
+
+  .campaign-refresh-btn,
+  .btn-refresh-campaigns,
+  .traffic-refresh-btn,
+  .ab-btn-refresh {
+    height: 40px !important;
+    min-height: 40px !important;
+    min-width: 112px !important;
+    padding: 0 16px !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* =============================================================================
+   Smooth Transitions for Metrics & Charts (180ms fade)
+   ============================================================================= */
+.ui-stat-value,
+.metric-card-value,
+.stat-value,
+.geo-stat-value,
+.chart-card svg,
+.chart-card canvas,
+.chart-card .recharts-wrapper,
+.donut-card svg,
+.overview-breakdown-container svg,
+.traffic-sources-card,
+.geo-map-container svg {
+  transition: opacity 180ms ease-out, transform 180ms ease-out;
+}
+
+.data-refreshing {
+  opacity: 0.65 !important;
+  transition: opacity 180ms ease-out !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-stat-value,
+  .metric-card-value,
+  .stat-value,
+  .geo-stat-value,
+  .chart-card svg,
+  .chart-card canvas,
+  .chart-card .recharts-wrapper,
+  .donut-card svg,
+  .overview-breakdown-container svg,
+  .traffic-sources-card,
+  .geo-map-container svg,
+  .data-refreshing {
+    transition: none !important;
+    animation: none !important;
+  }
 }

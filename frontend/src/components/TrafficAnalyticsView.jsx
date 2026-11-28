@@ -1010,7 +1010,6 @@ export default function TrafficAnalyticsView({
             <TimeRangeToggle
               value={trafficRange}
               onChange={(val) => onRangeChange?.(val)}
-              disabled={trafficLoading}
               ariaLabel="Traffic Analytics date filter"
             />
 
@@ -1037,7 +1036,7 @@ export default function TrafficAnalyticsView({
                 <path d="M1 20v-6h6" />
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
               </svg>
-              <span>{trafficLoading ? "Updating..." : "Refresh"}</span>
+              <span>Refresh</span>
             </SpecularButton>
           </div>
         </div>
@@ -1097,7 +1096,7 @@ export default function TrafficAnalyticsView({
           </div>
         </div>
       ) : (
-        <>
+        <div className={`traffic-content-body ${trafficLoading ? "data-refreshing" : ""}`}>
           {/* 1. Responsive 4-card Metric Row */}
           <TrafficMetricCards summary={summary} loading={trafficLoading} />
 
@@ -1135,7 +1134,7 @@ export default function TrafficAnalyticsView({
             heatmapData={heatmap}
             totalClicks={totalClicks}
           />
-        </>
+        </div>
       )}
     </div>
   );

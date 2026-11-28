@@ -1,5 +1,5 @@
 // StatCard: Clean metrics card with muted uppercase label, tabular-nums Geist Mono value, delta pill, and optional sparkline.
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./ui.css";
 
 function MiniSparkline({ data = [], color = "var(--chart-1)", height = 24, width = 72 }) {
@@ -47,9 +47,17 @@ function StatCard({
   suffix = "",
 }) {
   const finalHelper = helperText || helper;
-  const numericVal = typeof value === "number" ? value : parseFloat(value);
-  const isNumber = !isNaN(numericVal);
-  const [displayValue, setDisplayValue] = useState(isNumber ? 0 : value);
+  const cleanNum =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+      ? parseFloat(value.replace(/,/g, ""))
+      : NaN;
+  const isNumber = !isNaN(cleanNum);
+  const numericVal = isNumber ? cleanNum : 0;
+  const [displayValue, setDisplayValue] = useState(isNumber ? numericVal : value);
+  const prevValRef = useRef(numericVal);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     if (!isNumber) {
@@ -57,17 +65,40 @@ function StatCard({
       return;
     }
 
-    // Single gentle count-up on initial load (600ms)
-    let startTimestamp = null;
-    const duration = 600;
-    const startVal = 0;
-    const endVal = numericVal;
+    // Check user preference for reduced motion
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    // On initial mount or reduced motion, set immediately without animation
+    if (prefersReducedMotion || isInitialMount.current) {
+      isInitialMount.current = false;
+      setDisplayValue(numericVal);
+      prevValRef.current = numericVal;
+      return;
+    }
+
+    const startVal =
+      prevValRef.current !== undefined && !isNaN(prevValRef.current)
+        ? prevValRef.current
+        : numericVal;
+    const endVal = numericVal;
+    prevValRef.current = numericVal;
+
+    if (startVal === endVal) {
+      setDisplayValue(decimals > 0 ? endVal.toFixed(decimals) : endVal);
+      return;
+    }
+
+    // Smooth, unified 180ms transition from previous value to new value (never jumping from 0)
+    let startTimestamp = null;
+    const duration = 180;
     let rafId;
+
     const step = (timestamp) => {
       if (!startTimestamp) startTimestamp = timestamp;
       const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      // Ease out quad
       const current = startVal + (endVal - startVal) * (1 - (1 - progress) * (1 - progress));
       setDisplayValue(decimals > 0 ? current.toFixed(decimals) : Math.round(current));
       if (progress < 1) {
